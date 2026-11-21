@@ -1,0 +1,14 @@
+.header {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { width: 34px; height: 34px; border-radius: 10px; }
+.title { font-family: var(--font-heading); font-weight: 700; font-size: 16px; line-height: 1.1; }
+.subtitle { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-secondary); }
+.actions { display: flex; align-items: center; gap: 14px; }
+.iconBtn { display: grid; border: 0; background: transparent; padding: 0; color: var(--color-text); cursor: pointer; }
+.avatarBtn { display: grid; border: 0; background: transparent; padding: 0; cursor: pointer; }

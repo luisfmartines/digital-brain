@@ -1,16 +1,13 @@
-.shell {
-  display: flex;
-  justify-content: center;
-  min-height: 100dvh;
-  background: var(--color-bg);
-}
-
-.frame {
-  width: 100%;
-  max-width: 480px;
-  min-height: 100dvh;
-}
-
-.content {
-  padding: calc(16px + env(safe-area-inset-top)) 16px calc(88px + env(safe-area-inset-bottom));
+.shell { display: flex; justify-content: center; min-height: 100dvh; background: var(--color-bg); }
+.frame { width: 100%; max-width: 480px; min-height: 100dvh; }
+.content { padding: 8px 16px calc(100px + env(safe-area-inset-bottom)); }
+.fab {
+  position: fixed;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  right: max(16px, calc((100vw - 480px) / 2 + 16px));
+  width: 56px; height: 56px; display: grid; place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-tertiary));
+  color: var(--color-secondary);
+  box-shadow: 0 0 24px rgba(63, 166, 114, 0.45);
 }
