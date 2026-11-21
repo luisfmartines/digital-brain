@@ -1,0 +1,16 @@
+.shell {
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+.frame {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+}
+
+.content {
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(88px + env(safe-area-inset-bottom));
+}
