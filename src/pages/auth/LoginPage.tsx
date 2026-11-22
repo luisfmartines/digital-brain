@@ -1,24 +1,16 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
-  ArrowRight, AtSign, CheckCircle2, ChevronRight, Eye, EyeOff, Lock,
+  ArrowRight, AtSign, CheckCircle2, ChevronRight, Circle, Eye, EyeOff, Lock,
   LogIn, RefreshCw, ShieldCheck, User, UserPlus,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { PASSWORD_RULES, passwordStrength } from '../../features/auth/password'
 import styles from './LoginPage.module.css'
 
 type Mode = 'login' | 'signup'
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
-const STRENGTH_LABELS = ['Too short', 'Weak', 'Fair', 'Good', 'Strong']
-
-function strengthOf(pw: string) {
-  let score = 0
-  if (pw.length >= 8) score++
-  if (pw.length >= 12) score++
-  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++
-  if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++
-  return score
-}
+const USERNAME_RE = /^[a-z0-9._]{3,20}$/
 
 function GoogleG() {
   return (
@@ -34,6 +26,8 @@ function GoogleG() {
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('login')
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
+  const [availability, setAvailability] = useState<{ name: string; ok: boolean } | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -42,8 +36,33 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
 
   const signup = mode === 'signup'
-  const score = strengthOf(password)
+  const strength = passwordStrength(password)
   const emailOk = EMAIL_RE.test(email)
+  const usernameValid = USERNAME_RE.test(username)
+
+  // Confere se o @ está livre (com pequeno atraso para não consultar a cada tecla)
+  useEffect(() => {
+    if (!signup || !usernameValid) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const { data, error: rpcError } = await supabase.rpc('is_username_available', { u: username })
+      if (!cancelled && !rpcError) setAvailability({ name: username, ok: !!data })
+    }, 400)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [signup, usernameValid, username])
+
+  const userStatus = !username
+    ? 'idle'
+    : !usernameValid
+      ? 'invalid'
+      : availability?.name === username
+        ? availability.ok ? 'available' : 'taken'
+        : 'checking'
+
+  const canSignup = strength.ok && userStatus === 'available'
 
   function switchMode(next: Mode) {
     setMode(next)
@@ -53,10 +72,21 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setBusy(true)
     setError(null)
     setInfo(null)
 
+    if (signup) {
+      if (!strength.ok) {
+        setError('Password needs 6+ characters with uppercase, lowercase and a number.')
+        return
+      }
+      if (userStatus !== 'available') {
+        setError('Choose an available username.')
+        return
+      }
+    }
+
+    setBusy(true)
     if (!signup) {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
       if (authError) setError(authError.message)
@@ -64,7 +94,7 @@ export default function LoginPage() {
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: name } },
+        options: { data: { full_name: name, username } },
       })
       if (authError) setError(authError.message)
       else if (!data.session) setInfo('Account created! Confirm your email to log in.')
@@ -119,16 +149,46 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {signup && (
-            <div className={styles.field}>
-              <div className={styles.labelRow}>
-                <label htmlFor="name">Full Name</label>
-                <span className={styles.hint}>Cognitive Key</span>
+            <>
+              <div className={styles.field}>
+                <div className={styles.labelRow}>
+                  <label htmlFor="name">Full Name</label>
+                  <span className={styles.hint}>Cognitive Key</span>
+                </div>
+                <div className={styles.inputWrap}>
+                  <User size={18} />
+                  <input id="name" className={styles.input} value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
+                </div>
               </div>
-              <div className={styles.inputWrap}>
-                <User size={18} />
-                <input id="name" className={styles.input} value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
+
+              <div className={styles.field}>
+                <div className={styles.labelRow}>
+                  <label htmlFor="username">Username</label>
+                  <span className={userStatus === 'taken' ? styles.bad : styles.hint}>
+                    {userStatus === 'taken' && 'Already taken'}
+                    {userStatus === 'invalid' && '3–20 chars: a-z, 0-9, . _'}
+                    {userStatus === 'checking' && 'Checking…'}
+                    {userStatus === 'available' && 'Available'}
+                    {userStatus === 'idle' && 'Your @handle'}
+                  </span>
+                </div>
+                <div className={styles.inputWrap}>
+                  <span className={styles.at}>@</span>
+                  <input
+                    id="username"
+                    className={styles.input}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, '').slice(0, 20))}
+                    required
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="luisfelipe"
+                  />
+                  {userStatus === 'available' && <CheckCircle2 size={18} className={styles.ok} />}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           <div className={styles.field}>
@@ -147,7 +207,7 @@ export default function LoginPage() {
             <div className={styles.labelRow}>
               <label htmlFor="password">Password</label>
               {signup ? (
-                <span className={styles.hint}>Min. 6 characters</span>
+                <span className={styles.hint}>Medium or stronger</span>
               ) : (
                 <button type="button" className={styles.link} onClick={handleForgot}>Forgot password?</button>
               )}
@@ -161,7 +221,6 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
                 autoComplete={signup ? 'new-password' : 'current-password'}
               />
               <button type="button" className={styles.eye} onClick={() => setShowPw((v) => !v)} aria-label="Show or hide password">
@@ -170,26 +229,42 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {signup && password.length > 0 && (
+          {signup && (
             <div className={styles.strength}>
-              <div className={styles.strengthRow}>
-                <span className={styles.strengthLabel}>
-                  <i /> {STRENGTH_LABELS[score]} · {password.length} chars
-                </span>
-                <span className={styles.hint}>Entropy · {score >= 3 ? 'High' : score === 2 ? 'Medium' : 'Low'}</span>
-              </div>
-              <div className={styles.meter}>
-                {[1, 2, 3, 4].map((n) => (
-                  <span key={n} className={n <= score ? styles.segOn : styles.seg} />
-                ))}
-              </div>
+              {password.length > 0 && (
+                <>
+                  <div className={styles.strengthRow}>
+                    <span className={styles.strengthLabel}>
+                      <i /> {strength.label} · {password.length} chars
+                    </span>
+                    <span className={styles.hint}>
+                      Entropy · {strength.level >= 3 ? 'High' : strength.level === 2 ? 'Medium' : 'Low'}
+                    </span>
+                  </div>
+                  <div className={styles.meter}>
+                    {[1, 2, 3, 4].map((n) => (
+                      <span key={n} className={n <= strength.level ? styles.segOn : styles.seg} />
+                    ))}
+                  </div>
+                </>
+              )}
+              <ul className={styles.rules}>
+                {PASSWORD_RULES.map((r) => {
+                  const met = r.test(password)
+                  return (
+                    <li key={r.id} className={met ? styles.ruleOk : ''}>
+                      {met ? <CheckCircle2 size={12} /> : <Circle size={12} />} {r.label}
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
           )}
 
           {error && <p className={styles.error}>{error}</p>}
           {info && <p className={styles.info}>{info}</p>}
 
-          <button className={styles.primary} type="submit" disabled={busy}>
+          <button className={styles.primary} type="submit" disabled={busy || (signup && !canSignup)}>
             {busy ? 'Please wait…' : signup ? 'Create Account' : 'Log In'} <ArrowRight size={16} />
           </button>
         </form>

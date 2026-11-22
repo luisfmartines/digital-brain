@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { BadgeCheck, Calendar, Cloud, Flame, Maximize2, Repeat, SlidersHorizontal, Sparkles, Wallet, Zap, ShieldCheck } from 'lucide-react'
+import { BadgeCheck, Cloud, Flame, Repeat, ShieldCheck, SlidersHorizontal, Sparkles, Wallet, Zap } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useAuth } from '../../features/auth/useAuth'
 import { useProfile } from '../../features/profile/useProfile'
@@ -11,9 +11,6 @@ import { fmtTime, formatBRL } from '../../features/onboarding/utils'
 import styles from './onboarding.module.css'
 
 const RANKS = ['Voyager', 'Explorer', 'Navigator', 'Architect', 'Master']
-const CORE_LABEL: Record<string, string> = {
-  muscle_gain: 'HYPERTROPHY CORE', fat_loss: 'FAT LOSS CORE', strength: 'STRENGTH CORE', longevity: 'LONGEVITY CORE',
-}
 
 export default function OnboardingReadyPage() {
   const { data } = useOnboarding()
@@ -25,17 +22,15 @@ export default function OnboardingReadyPage() {
   const [error, setError] = useState<string | null>(null)
 
   const finance = data.modules.includes('finance')
-  const workouts = data.modules.includes('workouts')
   const auto = ['tasks', 'calendar', 'assistant'].some((m) => data.modules.includes(m))
   const habits = data.habits.filter((h) => h.active)
-  const engines = 1 + Number(finance) + Number(workouts) + Number(auto)
+  const engines = 1 + Number(finance) + Number(auto)
   const savings = Math.round(data.monthlyIncome * data.savingsPct) / 100
-  const tier = ['beginner', 'intermediate', 'advanced'].indexOf(data.experience) + 1
 
   const level = profile?.level ?? 1
   const xpNow = (profile?.xp ?? 0) + 100
   const xpNext = 100 * (level + 1) * level
-  const username = '@' + (user?.email?.split('@')[0] ?? 'you').toLowerCase()
+  const username = '@' + (profile?.username ?? user?.email?.split('@')[0] ?? 'you')
 
   async function finish() {
     setBusy(true)
@@ -101,20 +96,6 @@ export default function OnboardingReadyPage() {
           <div className={styles.stats}>
             <div><span className={styles.cap}>MONTHLY NET FLOW</span><strong>{formatBRL(data.monthlyIncome)}</strong></div>
             <div><span className={styles.cap}>TARGET SAVINGS ({data.savingsPct}%)</span><strong>{formatBRL(savings)}</strong></div>
-          </div>
-        </section>
-      )}
-
-      {workouts && (
-        <section className={styles.section}>
-          <div className={styles.cardHead}>
-            <span className={styles.iconBox}><Maximize2 size={18} /></span>
-            <div className={styles.cardTitle}><strong>Workouts &amp; Hypertrophy</strong><small>Adaptive Progressive Overload</small></div>
-            <span className={styles.badge}>Tier {tier}</span>
-          </div>
-          <div className={styles.strip}>
-            <Calendar size={12} /> {data.weeklyFrequency} Days / Week Split
-            <span className={styles.primed}>{CORE_LABEL[data.trainingGoal]}</span>
           </div>
         </section>
       )}

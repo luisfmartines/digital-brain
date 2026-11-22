@@ -2,16 +2,12 @@ import { supabase } from '../../lib/supabase'
 import type { OnboardingData } from './types'
 
 export async function saveOnboarding(userId: string, data: OnboardingData) {
-  const workouts = data.modules.includes('workouts')
   const finance = data.modules.includes('finance')
 
   const { error: settingsError } = await supabase.from('user_settings').upsert({
     user_id: userId,
     monthly_income: finance ? data.monthlyIncome : null,
     savings_goal: finance ? Math.round(data.monthlyIncome * data.savingsPct) / 100 : null,
-    training_goal: workouts ? data.trainingGoal : null,
-    experience_level: workouts ? data.experience : null,
-    weekly_frequency: workouts ? data.weeklyFrequency : null,
     mvh_protocol: data.mvhProtocol,
     weekend_elasticity: data.weekendElasticity,
     streak_grace_days: 1,

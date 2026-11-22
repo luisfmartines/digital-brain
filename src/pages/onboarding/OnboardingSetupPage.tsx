@@ -1,27 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, CheckCircle2, Flame, Flower2, Maximize2, Plus, Shield, SlidersHorizontal, Sparkles, Target, Wallet } from 'lucide-react'
+import { ArrowRight, Check, Flame, Plus, SlidersHorizontal, Sparkles, Wallet } from 'lucide-react'
 import { useOnboarding } from '../../features/onboarding/useOnboarding'
 import { PRESETS, customDraft, toDraft } from '../../features/onboarding/habitPresets'
 import { HABIT_ICONS } from '../../features/onboarding/habitIcons'
 import { formatBRL } from '../../features/onboarding/utils'
-import type { Experience, TrainingGoal } from '../../features/onboarding/types'
 import MoneyInput from './MoneyInput'
 import styles from './onboarding.module.css'
 
-const GOALS: { id: TrainingGoal; label: string; icon: typeof Target }[] = [
-  { id: 'muscle_gain', label: 'Muscle Gain', icon: Target },
-  { id: 'fat_loss', label: 'Fat Loss', icon: Flame },
-  { id: 'strength', label: 'Raw Strength', icon: Shield },
-  { id: 'longevity', label: 'Longevity & Mobility', icon: Flower2 },
-]
-const LEVELS: { id: Experience; label: string }[] = [
-  { id: 'beginner', label: 'Beginner' },
-  { id: 'intermediate', label: 'Intermediate' },
-  { id: 'advanced', label: 'Advanced' },
-]
-const FREQUENCIES = [3, 4, 5, 6]
-const SPLITS: Record<number, string> = { 3: 'Full Body', 4: 'Upper / Lower', 5: 'Push / Pull / Legs+', 6: 'Push / Pull / Legs' }
 const MAX_HABITS = 5
 
 export default function OnboardingSetupPage() {
@@ -31,15 +17,15 @@ export default function OnboardingSetupPage() {
   const [custom, setCustom] = useState('')
 
   const finance = data.modules.includes('finance')
-  const workouts = data.modules.includes('workouts')
-  const engines = 1 + Number(finance) + Number(workouts)
+  const engines = 1 + Number(finance)
   const hasAuto = ['tasks', 'calendar', 'assistant'].some((m) => data.modules.includes(m))
   const savings = Math.round(data.monthlyIncome * data.savingsPct) / 100
-  const tier = LEVELS.findIndex((l) => l.id === data.experience) + 1
 
   const customHabits = data.habits.filter((h) => !PRESETS.some((p) => p.key === h.key))
-  const rows = [...PRESETS.map((p) => ({ key: p.key, name: p.name, subtitle: p.subtitle, icon: p.icon })),
-    ...customHabits.map((h) => ({ key: h.key, name: h.name, subtitle: h.subtitle, icon: h.icon }))]
+  const rows = [
+    ...PRESETS.map((p) => ({ key: p.key, name: p.name, subtitle: p.subtitle, icon: p.icon })),
+    ...customHabits.map((h) => ({ key: h.key, name: h.name, subtitle: h.subtitle, icon: h.icon })),
+  ]
 
   function toggleHabit(key: string) {
     setData((d) => {
@@ -68,7 +54,7 @@ export default function OnboardingSetupPage() {
         <span className={styles.iconBox}><SlidersHorizontal size={18} /></span>
         <div className={styles.loadText}>
           <span className={styles.cap}>ACTIVE SETUP LOAD</span>
-          <strong>{engines} Primary Engines</strong>
+          <strong>{engines} Primary {engines === 1 ? 'Engine' : 'Engines'}</strong>
         </div>
         <span className={styles.badge}>Est. 2 min</span>
       </section>
@@ -97,44 +83,6 @@ export default function OnboardingSetupPage() {
               {[{ l: 'Safe (10%)', v: 10 }, { l: 'Optimal (25%)', v: 25 }, { l: 'Aggressive (50%)', v: 50 }].map((p) => (
                 <button key={p.v} type="button" className={`${styles.presetBtn} ${data.savingsPct === p.v ? styles.presetOn : ''}`} onClick={() => setData((d) => ({ ...d, savingsPct: p.v }))}>
                   {p.l}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {workouts && (
-        <section className={styles.section}>
-          <div className={styles.cardHead}>
-            <span className={styles.iconBox}><Maximize2 size={18} /></span>
-            <div className={styles.cardTitle}><strong>Workouts &amp; Hypertrophy</strong><small>Training Protocol &amp; Volume</small></div>
-            <span className={styles.badge}>Engine 02</span>
-          </div>
-          <span className={styles.label}>Primary Training Focus</span>
-          <div className={styles.grid2}>
-            {GOALS.map(({ id, label, icon: Icon }) => {
-              const on = data.trainingGoal === id
-              return (
-                <button key={id} type="button" className={`${styles.goalBtn} ${on ? styles.goalOn : ''}`} onClick={() => setData((d) => ({ ...d, trainingGoal: id }))}>
-                  <span>{label}</span>
-                  {on ? <CheckCircle2 size={16} /> : <Icon size={16} />}
-                </button>
-              )
-            })}
-          </div>
-          <div className={styles.inner}>
-            <div className={styles.rowBetween}><span className={styles.hint}>Experience Level</span><span className={styles.accentSm}>Hypertrophy Tier {tier}</span></div>
-            <div className={styles.segmented}>
-              {LEVELS.map((l) => (
-                <button key={l.id} type="button" className={data.experience === l.id ? styles.segOn : styles.seg} onClick={() => setData((d) => ({ ...d, experience: l.id }))}>{l.label}</button>
-              ))}
-            </div>
-            <div className={styles.rowBetween}><span className={styles.hint}>Weekly Frequency</span><span className={styles.accentSm}>{SPLITS[data.weeklyFrequency]}</span></div>
-            <div className={styles.segmented}>
-              {FREQUENCIES.map((f) => (
-                <button key={f} type="button" className={data.weeklyFrequency === f ? styles.segOn : styles.seg} onClick={() => setData((d) => ({ ...d, weeklyFrequency: f }))}>
-                  {data.weeklyFrequency === f ? `${f}d / wk` : `${f}d`}
                 </button>
               ))}
             </div>
