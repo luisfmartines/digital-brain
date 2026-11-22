@@ -4,6 +4,9 @@ import { PublicOnly, RequireAuth, RequireOnboarded } from './guards'
 import LoginPage from '../pages/auth/LoginPage'
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage'
 import HomePage from '../pages/home/HomePage'
+import TasksPage from '../pages/tasks/TasksPage'
+import TaskFormPage from '../pages/tasks/TaskFormPage'
+import HabitsPage from '../pages/habits/HabitsPage'
 import AssistantPage from '../pages/assistant/AssistantPage'
 import ProfilePage from '../pages/profile/ProfilePage'
 import OnboardingLayout from '../pages/onboarding/OnboardingLayout'
@@ -37,12 +40,15 @@ export const router = createBrowserRouter([
       {
         element: <RequireOnboarded />,
         children: [
+          // Telas cheias, sem barra inferior
+          { path: '/tasks/new', element: <TaskFormPage /> },
+          { path: '/tasks/:id/edit', element: <TaskFormPage /> },
           {
             element: <AppShell />,
             children: [
               { path: '/', element: <HomePage /> },
-              { path: '/tasks', element: <Page title="Tasks" /> },
-              { path: '/habits', element: <Page title="Habits" /> },
+              { path: '/tasks', element: <TasksPage /> },
+              { path: '/habits', element: <HabitsPage /> },
               { path: '/workouts', element: <Page title="Workouts" /> },
               { path: '/finance', element: <Page title="Finances" /> },
               { path: '/calendar', element: <Page title="Calendar" /> },

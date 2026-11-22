@@ -96,7 +96,10 @@ export function useToggleHabit() {
         if (error) throw error
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['home', 'habits'] }),
+        onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['home', 'habits'] })
+      queryClient.invalidateQueries({ queryKey: ['habits'] })
+    },
   })
 }
 

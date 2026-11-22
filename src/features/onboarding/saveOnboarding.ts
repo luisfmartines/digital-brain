@@ -1,6 +1,14 @@
 import { supabase } from '../../lib/supabase'
 import type { OnboardingData } from './types'
 
+const CATEGORY_BY_ICON: Record<string, string> = {
+  meditation: 'mindfulness',
+  read: 'mindfulness',
+  water: 'health',
+  cold: 'health',
+  deepwork: 'discipline',
+}
+
 export async function saveOnboarding(userId: string, data: OnboardingData) {
   const finance = data.modules.includes('finance')
 
@@ -24,6 +32,7 @@ export async function saveOnboarding(userId: string, data: OnboardingData) {
         anchor_cue: h.anchorCue || null,
         reminder_time: `${h.time}:00`,
         weekdays: h.weekdays,
+        category: CATEGORY_BY_ICON[h.icon] ?? 'discipline',
       }))
     )
     if (error) throw error
