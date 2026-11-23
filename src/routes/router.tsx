@@ -18,6 +18,7 @@ import RoutineFormPage from '../pages/workouts/RoutineFormPage'
 import ActiveWorkoutPage from '../pages/workouts/ActiveWorkoutPage'
 import WorkoutSummaryPage from '../pages/workouts/WorkoutSummaryPage'
 import WorkoutDetailPage from '../pages/workouts/WorkoutDetailPage'
+import AddFriendsPage from '../pages/social/AddFriendsPage'
 
 const Page = ({ title }: { title: string }) => <h1>{title}</h1>
 
@@ -47,6 +48,9 @@ export const router = createBrowserRouter([
           // Telas cheias, sem barra inferior
           { path: '/tasks/new', element: <TaskFormPage /> },
           { path: '/tasks/:id/edit', element: <TaskFormPage /> },
+
+          // Amigos
+          { path: '/friends/add', element: <AddFriendsPage /> },
 
           // Treino ativo
           { path: '/workouts/active/:id', element: <ActiveWorkoutPage /> },

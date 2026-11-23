@@ -196,3 +196,40 @@ export function useWorkoutDetail(id?: string) {
     },
   })
 }
+
+
+/* ---------- Conectar amigos ---------- */
+
+export interface SuggestedProfile extends Profile { level: number | null }
+
+// Quem já te segue (a tela filtra quem você já segue de volta)
+export function useFollowers() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['social', 'followers', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('follows').select('follower_id').eq('following_id', user!.id)
+      if (error) throw error
+      const ids = ((data ?? []) as { follower_id: string }[]).map((r) => r.follower_id)
+      return [...(await profilesByIds(ids)).values()]
+    },
+  })
+}
+
+// Perfis para recomendar (os mais ativos primeiro); a tela remove quem você já segue
+export function useSuggestedProfiles() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['social', 'suggested', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles').select(`${PROFILE_COLS}, level`)
+        .not('username', 'is', null).neq('id', user!.id)
+        .order('xp', { ascending: false }).limit(30)
+      if (error) throw error
+      return (data ?? []) as SuggestedProfile[]
+    },
+  })
+}
