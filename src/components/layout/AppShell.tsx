@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { BrainCircuit, Maximize2 } from 'lucide-react'
+import { Maximize2 } from 'lucide-react'
 import AppHeader from './AppHeader'
 import BottomNav from './BottomNav'
+import MascotFab from '../mascot/MascotFab'
 import { useProfile } from '../../features/profile/useProfile'
 import { useActiveWorkout } from '../../features/workouts/queries'
 import { useEnsureWaterHabit } from '../../features/water/queries'
@@ -23,7 +24,8 @@ const SUBTITLES: Record<string, string> = {
 const ALWAYS_SHOW_WORKOUT_FAB = false
 
 // Esconde os botões flutuantes ao rolar para baixo e enquanto o teclado está aberto,
-// para não cobrirem conteúdo nem campos de texto.
+// para não cobrirem conteúdo nem campos de texto. O mascote só se esconde com o teclado
+// (ele é arrastável, então o usuário o posiciona onde não atrapalha).
 function useHideFabs() {
   const [scrolledDown, setScrolledDown] = useState(false)
   const [typing, setTyping] = useState(false)
@@ -49,14 +51,15 @@ function useHideFabs() {
     }
   }, [])
 
-  return scrolledDown || typing
+  return { scrolledDown, typing }
 }
 
 export default function AppShell() {
   const { pathname } = useLocation()
   const { data: profile } = useProfile()
   const { data: active } = useActiveWorkout()
-  const hideFabs = useHideFabs()
+  const { scrolledDown, typing } = useHideFabs()
+  const hideFabs = scrolledDown || typing
   useEnsureWaterHabit() // o hábito de água já vem pronto
 
   const modules: string[] = profile?.enabled_modules ?? []
@@ -72,23 +75,17 @@ export default function AppShell() {
         <main className={`${styles.content} ${fabCount === 1 ? styles.contentFab : ''} ${fabCount === 2 ? styles.contentFab2 : ''}`}>
           <Outlet />
         </main>
-        {fabCount > 0 && (
+        {showAi && <MascotFab hidden={typing} lifted={showWorkout} />}
+        {showWorkout && (
           <div className={`${styles.fabs} ${hideFabs ? styles.fabsHidden : ''}`}>
-            {showWorkout && (
-              <Link
-                to={active ? `/workouts/active/${active.id}` : '/workouts'}
-                className={`${styles.fab} ${styles.fabDark}`}
-                aria-label={active ? 'Resume workout' : 'Workouts'}
-              >
-                <Maximize2 size={22} />
-                {active && <i className={styles.live} />}
-              </Link>
-            )}
-            {showAi && (
-              <Link to="/assistant" className={styles.fab} aria-label="AI Assistant">
-                <BrainCircuit size={24} />
-              </Link>
-            )}
+            <Link
+              to={active ? `/workouts/active/${active.id}` : '/workouts'}
+              className={`${styles.fab} ${styles.fabDark}`}
+              aria-label={active ? 'Resume workout' : 'Workouts'}
+            >
+              <Maximize2 size={22} />
+              {active && <i className={styles.live} />}
+            </Link>
           </div>
         )}
         <BottomNav />

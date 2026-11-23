@@ -1,0 +1,23 @@
+/* Posição padrão: onde ficava o botão flutuante (canto inferior direito).
+   Depois que o usuário arrasta, o componente passa a usar left/top inline. */
+.fab {
+  position: fixed;
+  z-index: 8;
+  width: 96px;
+  height: 58px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  right: max(16px, calc((100vw - 480px) / 2 + 16px));
+
+  touch-action: none; /* essencial: sem isso o navegador rola a página em vez de arrastar */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+  outline: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+/* acima do botão de treino (52px + 10px de espaço) quando ele está visível */
+.lifted { bottom: calc(72px + 62px + env(safe-area-inset-bottom)); }
+.dragging { cursor: grabbing; z-index: 20; }
+.hidden { opacity: 0; transform: scale(0.85); pointer-events: none; }
+.fab:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 6px; border-radius: 18px; }

@@ -1,0 +1,102 @@
+.root {
+  --mascot-color: #4ade80;
+  width: 100%;
+  height: 100%;
+  /* inclinação/elevação vêm do MascotFab (variáveis CSS) */
+  transform: rotate(var(--tilt, 0deg)) scale(var(--lift, 1));
+  transition: transform 0.18s ease-out;
+  pointer-events: none;
+}
+.dragging { --lift: 1.1; }
+
+/* flutuar */
+.float { width: 100%; height: 100%; animation: float 3.6s ease-in-out infinite; }
+.dragging .float { animation: none; }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.28));
+}
+.landing .svg { animation: land 0.45s ease-out; }
+@keyframes land {
+  0% { transform: scale(1.14, 0.86); }
+  55% { transform: scale(0.95, 1.07); }
+  100% { transform: scale(1); }
+}
+
+.fill { fill: var(--mascot-color); }
+.fillStroke { stroke: var(--mascot-color); }
+
+/* respirar */
+.body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+@keyframes breathe { 50% { transform: scale(1.03, 0.97); } }
+
+/* olhos: crossfade entre humores, piscar e olhar pros lados */
+.look {
+  transform: translateX(calc(var(--look, 0) * 3px));
+  transition: transform 0.25s ease-out;
+}
+.blinkable {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.07s ease-in;
+}
+.blink { transform: scaleY(0.08); }
+.set { opacity: 0; transition: opacity 0.25s ease; }
+.on { opacity: 1; }
+
+/* feliz: pulinho com squash & stretch */
+.feliz .body { animation: hop 2.4s ease-in-out infinite; }
+.celebrate .body { animation: hop 0.7s ease-in-out infinite; }
+@keyframes hop {
+  0%, 52%, 100% { transform: scale(1); }
+  60% { transform: scale(1.07, 0.9); }
+  72% { transform: translateY(-13px) scale(0.95, 1.08); }
+  84% { transform: scale(1.06, 0.93); }
+  92% { transform: scale(0.99, 1.01); }
+}
+
+/* triste: murcho, respiração lenta, lágrima escorrendo */
+.triste .body { animation: sad 4.6s ease-in-out infinite; }
+.triste .float { animation-duration: 5.5s; }
+@keyframes sad {
+  0%, 100% { transform: scale(1.02, 0.94); }
+  50% { transform: scale(1.0, 0.9); }
+}
+.tear { animation: tear 2.6s ease-in infinite; }
+@keyframes tear {
+  0% { transform: translateY(-4px); opacity: 0; }
+  20% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; }
+  100% { transform: translateY(14px); opacity: 0; }
+}
+
+/* abandonado: quase parado, tremidinha ocasional, poeira piscando */
+.abandonado .float { animation: none; }
+.abandonado .body { animation: shiver 6s ease-in-out infinite; }
+@keyframes shiver {
+  0%, 88%, 100% { transform: scale(1, 0.97); }
+  90% { transform: translateX(-1.5px) scale(1, 0.97); }
+  92% { transform: translateX(1.5px) scale(1, 0.97); }
+  94% { transform: translateX(-1px) scale(1, 0.97); }
+  96% { transform: translateX(1px) scale(1, 0.97); }
+}
+.dust { animation: twinkle 2.2s ease-in-out infinite; }
+@keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.dragging .body { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .float, .body, .tear, .dust, .landing .svg { animation: none !important; }
+  .blink { transform: none; }
+  .tear { opacity: 1; }
+}
