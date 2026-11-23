@@ -46,7 +46,7 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
   const week = rangeStats(habits, ix, weekStart, upTo)
   const prevWeek = rangeStats(habits, ix, addDays(weekStart, -7), addDays(weekStart, -1))
   const delta = prevWeek.scheduled > 0 ? week.pct - prevWeek.pct : null
-  const range = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+  const range = `${weekStart.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
   const rows = habits.map((h) => {
     const st = rangeStats([h], ix, weekStart, upTo)
@@ -54,7 +54,7 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
   })
   const targets = rows.filter((r) => r.sched > 0)
   const perfect = targets.filter((r) => r.done === r.sched).length
-  const flow = week.pct >= 80 ? 'High Flow' : week.pct >= 50 ? 'Steady' : 'Building'
+  const flow = week.pct >= 80 ? 'Ritmo alto' : week.pct >= 50 ? 'Estável' : 'Construindo'
   const bars = days.map((d) => {
     if (d > today) return 0
     const s = dayStats(habits, ix, d)
@@ -93,32 +93,32 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
   return (
     <>
       <div className={styles.pillRowSplit}>
-        <span className={styles.syncPill}><i /> HABIT MATRIX • SYNAPSES SYNCHRONIZED</span>
+        <span className={styles.syncPill}><i /> MATRIZ DE HÁBITOS • SINAPSES SINCRONIZADAS</span>
         {delta !== null && <span className={styles.delta}><TrendingUp size={11} /> {delta >= 0 ? '+' : ''}{delta}% vs lw</span>}
       </div>
       <div className={styles.titleRow}>
         <div>
-          <h1 className={styles.h1}>Daily Habits</h1>
-          <span className={styles.sub}>Week {isoWeek(weekStart)} • {range}</span>
+          <h1 className={styles.h1}>Hábitos diários</h1>
+          <span className={styles.sub}>Semana {isoWeek(weekStart)} • {range}</span>
         </div>
-        <div className={styles.bigPct}><strong>{week.pct}%</strong><small>Consistency</small></div>
+        <div className={styles.bigPct}><strong>{week.pct}%</strong><small>Consistência</small></div>
       </div>
 
       <ViewSwitch view={view} onChange={setView} />
 
       <div className={styles.weekNav}>
-        <button type="button" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Previous week"><ChevronLeft size={16} /></button>
+        <button type="button" onClick={() => setWeekStart(addDays(weekStart, -7))}         aria-label="Semana anterior"><ChevronLeft size={16} /></button>
         <strong>{range}</strong>
-        <button type="button" disabled={isCurrent} onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week"><ChevronRight size={16} /></button>
+        <button type="button" disabled={isCurrent} onClick={() => setWeekStart(addDays(weekStart, 7))}         aria-label="Próxima semana"><ChevronRight size={16} /></button>
         <span className={styles.badge}>W{isoWeek(weekStart)}</span>
-        {isCurrent && <span className={styles.badgeSolid}>Current</span>}
+        {isCurrent && <span className={styles.badgeSolid}>Atual</span>}
       </div>
 
       <section className={styles.hero}>
         <span className={styles.heroIcon}><Flame size={20} /></span>
         <div className={styles.heroText}>
           <strong>{week.pct}% <em className={styles.badge}>{flow}</em></strong>
-          <small>Weekly Success Rate • {perfect}/{targets.length} Target Streaks</small>
+          <small>Taxa de sucesso semanal • {perfect}/{targets.length} sequências atingidas</small>
         </div>
         <div className={styles.bars}>
           {bars.map((b, i) => <i key={i} className={b > 0 ? styles.barOn : ''} style={{ height: `${Math.max(14, b * 100)}%` }} />)}
@@ -127,23 +127,23 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
 
       <section className={styles.panel}>
         <div className={styles.sectionHead}>
-          <span>Consistency Matrix <em className={styles.badge}>{habits.length} active routines</em></span>
-          <span className={styles.legendMini}><i className={styles.dotDone} /> Done <i className={styles.dotPlan} /> Plan</span>
+          <span>Matriz de consistência <em className={styles.badge}>{habits.length} rotinas ativas</em></span>
+          <span className={styles.legendMini}><i className={styles.dotDone} /> Concluído <i className={styles.dotPlan} /> Planejado</span>
         </div>
         <div className={styles.matrix}>
           <div className={`${styles.mRow} ${styles.mHead}`}>
-            <span className={styles.cap}>ROUTINE</span>
+            <span className={styles.cap}>ROTINA</span>
             {days.map((d) => (
               <span key={localDateStr(d)} className={`${styles.mDay} ${localDateStr(d) === todayStr ? styles.mToday : ''}`}>
-                {'SMTWTFS'[d.getDay()]}<b>{d.getDate()}</b>
+                {['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][d.getDay()]}<b>{d.getDate()}</b>
               </span>
             ))}
           </div>
           {rows.map(({ h, done, sched, cells }) => (
             <div key={h.id} className={styles.mRow}>
-              <button type="button" className={`${styles.mName} ${styles.mNameBtn}`} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}>
+              <button type="button" className={`${styles.mName} ${styles.mNameBtn}`} onClick={() => onEdit(h)}               aria-label={`Editar ${h.name}`}>
                 <strong>{h.name}</strong>
-                <small>{h.weekdays.length === 7 ? `${done}/${sched} so far` : slash(h)}</small>
+                <small>{h.weekdays.length === 7 ? `${done}/${sched} até agora` : slash(h)}</small>
               </button>
               {cells.map((st, i) => (
                 <button
@@ -162,15 +162,15 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
               ))}
             </div>
           ))}
-          {rows.length === 0 && <p className={styles.empty}>No habits yet. Add your first routine below.</p>}
+          {rows.length === 0 && <p className={styles.empty}>Nenhum hábito ainda. Adicione sua primeira rotina abaixo.</p>}
         </div>
       </section>
 
       {shown.length > 0 && (
         <>
           <div className={styles.sectionHead}>
-            <span>Daily Momentum Breakdown</span>
-            <small className={styles.accentSm}>Week {isoWeek(weekStart)} Progress</small>
+            <span>Detalhamento do impulso diário</span>
+            <small className={styles.accentSm}>Semana {isoWeek(weekStart)} em andamento</small>
           </div>
           <div className={styles.breakdown}>
             {shown.map((d) => {
@@ -179,8 +179,8 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
               const pct = s.scheduled ? Math.round((s.done / s.scheduled) * 100) : 0
               return (
                 <div key={localDateStr(d)} className={`${styles.dayCard} ${isToday ? styles.dayCardToday : ''}`}>
-                  <small>{isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' })} {d.getDate()}</small>
-                  <strong>{isToday ? `${s.done}/${s.scheduled} Done` : `${pct}%`}</strong>
+                  <small>{isToday ? 'Hoje' : d.toLocaleDateString('pt-BR', { weekday: 'short' })} {d.getDate()}</small>
+                  <strong>{isToday ? `${s.done}/${s.scheduled} concluído(s)` : `${pct}%`}</strong>
                   <span className={styles.miniBar}><i style={{ width: `${pct}%` }} /></span>
                 </div>
               )
@@ -193,33 +193,33 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
         <section className={styles.nextCard}>
           <span className={styles.iconBox}><NextIcon size={16} /></span>
           <div className={styles.rowText}>
-            <strong>{next.name} <em className={styles.badge}>{currentStreak(next, ix, today)}d streak</em></strong>
-            <small>{timeOfDay(next.reminder_time)} routine • {pendingToday.length} remaining today</small>
+            <strong>{next.name} <em className={styles.badge}>sequência de {currentStreak(next, ix, today)} dias</em></strong>
+            <small>Rotina da {timeOfDay(next.reminder_time).toLowerCase()} • {pendingToday.length} pendentes hoje</small>
           </div>
           <button type="button" className={styles.checkBtn} onClick={() => toggle.mutate({ habitId: next.id, date: todayStr, done: false })}>
-            <Check size={14} /> Check
+            <Check size={14} /> Concluir
           </button>
         </section>
       )}
 
       <div className={styles.twoCards}>
         <section className={styles.miniCard}>
-          <span className={styles.cap}><AlarmClock size={12} /> PEAK WINDOW</span>
+          <span className={styles.cap}><AlarmClock size={12} /> MELHOR HORÁRIO</span>
           <strong>{peak ? `${hourLabel(peak.hr)} – ${hourLabel(peak.hr + 1)}` : '—'}</strong>
-          <small>{peak ? `${peak.pct}% completion adherence` : 'Set reminder times to unlock'}</small>
+          <small>{peak ? `${peak.pct}% de conclusão` : 'Defina horários para desbloquear'}</small>
         </section>
         <section className={styles.miniCard}>
-          <span className={styles.cap}><CheckCircle2 size={12} /> TOTAL OUTPUT</span>
-          <strong>{week.done} Completed</strong>
-          <small>{prevWeek.scheduled > 0 ? `${diff >= 0 ? '+' : ''}${diff} vs previous cycle` : 'First cycle'}</small>
+          <span className={styles.cap}><CheckCircle2 size={12} /> PRODUÇÃO TOTAL</span>
+          <strong>{week.done} concluídos</strong>
+          <small>{prevWeek.scheduled > 0 ? `${diff >= 0 ? '+' : ''}${diff} vs. ciclo anterior` : 'Primeiro ciclo'}</small>
         </section>
       </div>
 
-      <span className={styles.cap}>IGNITE NEW ROUTINE</span>
+      <span className={styles.cap}>ATIVAR NOVA ROTINA</span>
       <div className={styles.quick}>
         <Zap size={16} />
-        <input value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="e.g. Cold Shower 2m, Journaling..." />
-        <button type="button" className={styles.addBtn} onClick={addQuick} disabled={!quick.trim() || create.isPending}><Plus size={14} /> Add</button>
+        <input value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="Ex.: Banho frio 2 min, Diário..." />
+        <button type="button" className={styles.addBtn} onClick={addQuick} disabled={!quick.trim() || create.isPending}><Plus size={14} /> Adicionar</button>
       </div>
     </>
   )

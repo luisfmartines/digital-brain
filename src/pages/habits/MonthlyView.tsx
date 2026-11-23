@@ -66,17 +66,17 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
   return (
     <>
       <div className={styles.topRow}>
-        <span className={styles.kicker}>HABIT MATRIX</span>
-        <span className={styles.syncPill}><i /> Synapses Synchronized</span>
+        <span className={styles.kicker}>MATRIZ DE HÁBITOS</span>
+        <span className={styles.syncPill}><i /> Sinapses sincronizadas</span>
       </div>
       <div className={styles.titleRow}>
-        <h1 className={styles.h1}>Daily Habits</h1>
-        <span className={styles.todayLabel}>Today, {today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+        <h1 className={styles.h1}>Hábitos diários</h1>
+        <span className={styles.todayLabel}>Hoje, {today.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}</span>
       </div>
       <div className={styles.pillRow}>
-        <span className={styles.pillBox}><CheckCircle2 size={13} /> {last30.pct}% Consistency</span>
+        <span className={styles.pillBox}><CheckCircle2 size={13} /> {last30.pct}% de consistência</span>
         {delta !== null && (
-          <span className={styles.delta}><TrendingUp size={12} /> {delta >= 0 ? '+' : ''}{delta}% vs last month</span>
+          <span className={styles.delta}><TrendingUp size={12} /> {delta >= 0 ? '+' : ''}{delta}% vs. mês passado</span>
         )}
       </div>
 
@@ -84,21 +84,21 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
         <div className={styles.panelHead}>
           <ViewSwitch view={view} onChange={setView} compact />
           <div className={styles.monthNav}>
-            <button type="button" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft size={16} /></button>
-            <strong>{cursor.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</strong>
-            <button type="button" disabled={isCurrentMonth} onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} aria-label="Next month"><ChevronRight size={16} /></button>
+            <button type="button" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}             aria-label="Mês anterior"><ChevronLeft size={16} /></button>
+            <strong>{cursor.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}</strong>
+            <button type="button" disabled={isCurrentMonth} onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}             aria-label="Próximo mês"><ChevronRight size={16} /></button>
           </div>
         </div>
 
         <div className={styles.adherence}>
           <div>
-            <span className={styles.cap}>TARGET ADHERENCE</span>
-            <strong>{month.pct}% Success Rate</strong>
+            <span className={styles.cap}>ADERÊNCIA À META</span>
+            <strong>{month.pct}% de sucesso</strong>
           </div>
           <span className={styles.iconBox}><Zap size={16} /></span>
         </div>
 
-        <div className={styles.calHead}>{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => <span key={i}>{l}</span>)}</div>
+        <div className={styles.calHead}>{['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'].map((l, i) => <span key={i}>{l}</span>)}</div>
         <div className={styles.calGrid}>
           {cells.map((d) => {
             const inMonth = d.getMonth() === cursor.getMonth()
@@ -113,16 +113,16 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
           })}
         </div>
         <div className={styles.legend}>
-          <b>Intensity Scale</b>
-          <span>Less</span>
+          <b>Escala de intensidade</b>
+          <span>Menos</span>
           {[1, 2, 3, 4].map((n) => <i key={n} className={`${styles.sw} ${heatClass(n)}`} />)}
-          <span>Peak</span>
+          <span>Máximo</span>
         </div>
       </section>
 
       <div className={styles.sectionHead}>
-        <span><Calendar size={14} /> Scheduled for Today</span>
-        <em className={styles.badge}>{pending.length} Remaining</em>
+        <span><Calendar size={14} /> Programados para hoje</span>
+        <em className={styles.badge}>{pending.length} pendentes</em>
       </div>
       <ul className={styles.rows}>
         {pending.map((h) => {
@@ -131,20 +131,20 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
             <li key={h.id} className={styles.row}>
               <span className={styles.iconBox}><Icon size={16} /></span>
               <div className={styles.rowText}><strong>{h.name}</strong><small>{rowSub(h, currentStreak(h, ix, today))}</small></div>
-              <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}><MoreVertical size={16} /></button>
-              <button type="button" className={styles.circle} onClick={() => toggle.mutate({ habitId: h.id, date: todayStr, done: false })} aria-label={`Complete ${h.name}`} />
+              <button type="button" className={styles.kebab} onClick={() => onEdit(h)}               aria-label={`Editar ${h.name}`}><MoreVertical size={16} /></button>
+              <button type="button" className={styles.circle} onClick={() => toggle.mutate({ habitId: h.id, date: todayStr, done: false })}               aria-label={`Concluir ${h.name}`} />
             </li>
           )
         })}
         {pending.length === 0 && (
-          <li className={styles.empty}>{scheduled.length ? 'All habits done for today.' : 'No habits scheduled today.'}</li>
+          <li className={styles.empty}>{scheduled.length ? 'Todos os hábitos concluídos hoje.' : 'Nenhum hábito programado hoje.'}</li>
         )}
       </ul>
 
       {finished.length > 0 && (
         <>
           <button type="button" className={styles.sectionHeadBtn} onClick={() => setShowDone((v) => !v)}>
-            <span><i className={styles.dot} /> Completed Today <em className={styles.badge}>{finished.length} Finished</em></span>
+            <span><i className={styles.dot} /> Concluídos hoje <em className={styles.badge}>{finished.length} concluídos</em></span>
             <ChevronDown size={16} className={showDone ? '' : styles.rotated} />
           </button>
           {showDone && (
@@ -156,10 +156,10 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
                     <span className={styles.iconBox}><Icon size={16} /></span>
                     <div className={styles.rowText}>
                       <strong>{h.name}</strong>
-                      <small className={styles.accentSm}>✓ +1 Streak ({ix.byHabit.get(h.id) ?? 0} days total)</small>
+                      <small className={styles.accentSm}>✓ +1 sequência ({ix.byHabit.get(h.id) ?? 0} dias no total)</small>
                     </div>
-                    <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}><MoreVertical size={16} /></button>
-                    <button type="button" className={styles.doneCheck} onClick={() => toggle.mutate({ habitId: h.id, date: todayStr, done: true })} aria-label={`Undo ${h.name}`}><Check size={14} /></button>
+                    <button type="button" className={styles.kebab} onClick={() => onEdit(h)}                     aria-label={`Editar ${h.name}`}><MoreVertical size={16} /></button>
+                    <button type="button" className={styles.doneCheck} onClick={() => toggle.mutate({ habitId: h.id, date: todayStr, done: true })} aria-label={`Desfazer ${h.name}`}><Check size={14} /></button>
                   </li>
                 )
               })}
@@ -171,8 +171,8 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
       {rest.length > 0 && (
         <>
           <div className={styles.sectionHead}>
-            <span><Calendar size={14} /> Not Scheduled Today</span>
-            <small className={styles.hint}>Rest / Alternate Cycle</small>
+            <span><Calendar size={14} /> Não programados hoje</span>
+            <small className={styles.hint}>Descanso / Ciclo alternado</small>
           </div>
           <ul className={styles.rows}>
             {rest.map((h) => {
@@ -180,9 +180,9 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
               return (
                 <li key={h.id} className={`${styles.row} ${styles.rowDim}`}>
                   <span className={styles.iconBox}><Icon size={16} /></span>
-                  <div className={styles.rowText}><strong>{h.name}</strong><small>Schedule: {dayList(h)} only</small></div>
+                  <div className={styles.rowText}><strong>{h.name}</strong><small>Agenda: apenas {dayList(h)}</small></div>
                   <span className={styles.nextTag}>{nextRun(h, today)}</span>
-                  <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}><MoreVertical size={16} /></button>
+                  <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Editar ${h.name}`}><MoreVertical size={16} /></button>
                 </li>
               )
             })}
@@ -192,14 +192,14 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
 
       <section className={styles.panel}>
         <div className={styles.sectionHead}>
-          <span><PlusCircle size={15} /> Ignite New Habit</span>
-          <em className={styles.badge}>Neural Loop</em>
+          <span><PlusCircle size={15} /> Criar novo hábito</span>
+          <em className={styles.badge}>Ciclo neural</em>
         </div>
-        <span className={styles.cap}>HABIT ACTION</span>
-        <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Read 20 minutes" />
+        <span className={styles.cap}>AÇÃO DO HÁBITO</span>
+        <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Ler por 20 minutos" />
         <div className={styles.rowBetween}>
-          <span className={styles.cap}>ACTIVE DAYS</span>
-          <button type="button" className={styles.link} onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])}>All Days</button>
+          <span className={styles.cap}>DIAS ATIVOS</span>
+          <button type="button" className={styles.link} onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])}>Todos os dias</button>
         </div>
         <div className={styles.days}>
           {DAYS.map((d) => (
@@ -218,7 +218,7 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
           </label>
         </div>
         <button type="button" className={styles.primary} onClick={ignite} disabled={!name.trim() || create.isPending}>
-          <Zap size={14} /> Ignite Habit
+          <Zap size={14} /> Ativar hábito
         </button>
       </section>
     </>

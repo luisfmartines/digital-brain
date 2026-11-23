@@ -51,7 +51,7 @@ export default function HabitSheet({ habit, onClose }: Props) {
       }
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save')
+      setError(e instanceof Error ? e.message : 'Não foi possível salvar')
     }
   }
 
@@ -61,37 +61,37 @@ export default function HabitSheet({ habit, onClose }: Props) {
       await remove.mutateAsync(habit.id)
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete')
+      setError(e instanceof Error ? e.message : 'Não foi possível excluir')
     }
   }
 
   return (
     <div className={styles.overlay} onClick={onClose} role="presentation">
-      <div className={styles.sheet} role="dialog" aria-modal="true" aria-label="Edit habit" onClick={(e) => e.stopPropagation()}>
+      <div className={styles.sheet} role="dialog" aria-modal="true" aria-label="Editar hábito" onClick={(e) => e.stopPropagation()}>
         <div className={styles.sheetHead}>
-          <strong>{isWater ? 'Water goal' : 'Edit habit'}</strong>
-          <button type="button" className={styles.sheetClose} onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <strong>{isWater ? 'Meta de água' : 'Editar hábito'}</strong>
+          <button type="button" className={styles.sheetClose} onClick={onClose} aria-label="Fechar"><X size={18} /></button>
         </div>
 
         {isWater ? (
           <>
             <p className={styles.sheetNote}>
-              <Droplet size={14} /> Linked to the water card on Home. The habit completes automatically when you reach your goal.
+              <Droplet size={14} /> Vinculado ao cartão de água na tela inicial. O hábito é concluído automaticamente ao atingir a meta.
             </p>
-            <span className={styles.cap}>DAILY GOAL</span>
+            <span className={styles.cap}>META DIÁRIA</span>
             <div className={styles.stepper}>
-              <button type="button" onClick={() => setGoalLocal(Math.max(WATER_MIN, goalMl - WATER_STEP))} disabled={goalMl <= WATER_MIN} aria-label="Less water"><Minus size={18} /></button>
-              <div><strong>{litersLabel(goalMl)}</strong><small>{goalMl} ml / day</small></div>
-              <button type="button" onClick={() => setGoalLocal(Math.min(WATER_MAX, goalMl + WATER_STEP))} disabled={goalMl >= WATER_MAX} aria-label="More water"><Plus size={18} /></button>
+              <button type="button" onClick={() => setGoalLocal(Math.max(WATER_MIN, goalMl - WATER_STEP))} disabled={goalMl <= WATER_MIN} aria-label="Diminuir água"><Minus size={18} /></button>
+              <div><strong>{litersLabel(goalMl)}</strong><small>{goalMl} ml / dia</small></div>
+              <button type="button" onClick={() => setGoalLocal(Math.min(WATER_MAX, goalMl + WATER_STEP))} disabled={goalMl >= WATER_MAX} aria-label="Aumentar água"><Plus size={18} /></button>
             </div>
           </>
         ) : (
           <>
-            <span className={styles.cap}>HABIT ACTION</span>
-            <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Habit name" />
+            <span className={styles.cap}>AÇÃO DO HÁBITO</span>
+            <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do hábito" />
             <div className={styles.rowBetween}>
-              <span className={styles.cap}>ACTIVE DAYS</span>
-              <button type="button" className={styles.link} onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])}>All Days</button>
+              <span className={styles.cap}>DIAS ATIVOS</span>
+              <button type="button" className={styles.link} onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])}>Todos os dias</button>
             </div>
             <div className={styles.days}>
               {DAYS.map((d) => (
@@ -117,16 +117,16 @@ export default function HabitSheet({ habit, onClose }: Props) {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button type="button" className={styles.primary} onClick={save} disabled={busy || (!isWater && !name.trim())}>Save changes</button>
+        <button type="button" className={styles.primary} onClick={save} disabled={busy || (!isWater && !name.trim())}>Salvar alterações</button>
 
         {!isWater && (
           confirmDelete ? (
             <div className={styles.confirmRow}>
-              <button type="button" className={styles.ghostBtn} onClick={() => setConfirmDelete(false)}>Keep it</button>
-              <button type="button" className={styles.dangerBtn} onClick={destroy} disabled={busy}><Trash2 size={14} /> Yes, delete</button>
+              <button type="button" className={styles.ghostBtn} onClick={() => setConfirmDelete(false)}>Manter</button>
+              <button type="button" className={styles.dangerBtn} onClick={destroy} disabled={busy}><Trash2 size={14} /> Sim, excluir</button>
             </div>
           ) : (
-            <button type="button" className={styles.dangerLink} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete habit</button>
+            <button type="button" className={styles.dangerLink} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Excluir hábito</button>
           )
         )}
       </div>

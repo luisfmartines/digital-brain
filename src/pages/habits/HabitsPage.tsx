@@ -17,8 +17,8 @@ export default function HabitsPage() {
   const habits = useMemo(() => data?.habits ?? [], [data])
   const ix = useMemo(() => buildIndex(data?.logs ?? []), [data])
 
-  if (isLoading) return <p className={styles.muted}>Loading…</p>
-  if (error) return <p className={styles.error}>Could not load your habits.</p>
+  if (isLoading) return <p className={styles.muted}>Carregando…</p>
+  if (error) return <p className={styles.error}>Não foi possível carregar seus hábitos.</p>
 
   // ?edit=water (vem do card de água da Home) abre direto a meta de água
   const wantsWater = params.get('edit') === 'water'

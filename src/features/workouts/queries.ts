@@ -205,7 +205,7 @@ export function useStartWorkout() {
       if (active.data?.[0]) return active.data[0].id as string
 
       const created = await supabase
-        .from('workouts').insert({ name: routine?.name ?? 'Quick Workout', routine_id: routine?.id ?? null })
+        .from('workouts').insert({ name: routine?.name ?? 'Treino rápido', routine_id: routine?.id ?? null })
         .select('id').single()
       if (created.error) throw created.error
       const wid = created.data.id as string

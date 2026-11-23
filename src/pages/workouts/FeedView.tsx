@@ -24,7 +24,7 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
   const shown = open ? post.comments : lastComment ? [lastComment] : []
 
   async function share() {
-    const msg = `${post.author?.display_name ?? 'A friend'} finished ${w?.name ?? 'a workout'}${w ? ` (${fmtNum(w.volume)} kg volume)` : ''} on Digital Brain.`
+    const msg = `${post.author?.display_name ?? 'Um amigo'} concluiu ${w?.name ?? 'um treino'}${w ? ` (${fmtNum(w.volume)} kg de volume)` : ''} no Digital Brain.`
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Digital Brain', text: msg })
@@ -41,37 +41,37 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
       <div className={styles.postHead}>
         <Avatar url={post.author?.avatar_url} name={post.author?.display_name} size={38} />
         <div className={styles.rText}>
-          <strong>{post.author?.display_name ?? 'Athlete'}</strong>
-          <small>@{post.author?.username ?? 'user'} • {ago(post.created_at)}</small>
+          <strong>{post.author?.display_name ?? 'Atleta'}</strong>
+          <small>@{post.author?.username ?? 'usuário'} • {ago(post.created_at)}</small>
         </div>
       </div>
-      {w && <div className={styles.postTag}><span><Trophy size={12} /> {w.name}</span><b>{fmtNum(w.volume)} kg volume</b></div>}
+      {w && <div className={styles.postTag}><span><Trophy size={12} /> {w.name}</span><b>{fmtNum(w.volume)} kg de volume</b></div>}
       {post.photo_url && <img className={styles.photo} src={post.photo_url} alt="" />}
       {w && (
-        <button type="button" className={styles.postSummary} onClick={() => navigate(`/workouts/view/${w.id}`)} aria-label={`View full workout: ${w.name}`}>
+        <button type="button" className={styles.postSummary} onClick={() => navigate(`/workouts/view/${w.id}`)} aria-label={`Ver treino completo: ${w.name}`}>
           <span className={styles.iconBox}><Zap size={15} /></span>
           <div className={styles.rText}>
             <strong>{w.top ? `${w.top.name} ${w.top.weight}kg` : w.name}</strong>
-            <small>{w.minutes} mins duration</small>
+            <small>{w.minutes} min de duração</small>
           </div>
           <span className={styles.badge}>+{xpFor(w.volume)} XP</span>
           <ChevronRight size={16} className={styles.chev} />
         </button>
       )}
       <div className={styles.postActions}>
-        <button type="button" className={post.liked ? styles.likeOn : ''} onClick={() => like.mutate({ postId: post.id, liked: post.liked, userId })} aria-label="Like"><Heart size={17} fill={post.liked ? 'currentColor' : 'none'} /> {post.likes}</button>
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Comments"><MessageCircle size={17} /> {post.comments.length}</button>
-        <button type="button" onClick={share} aria-label="Share"><Send size={16} /></button>
+        <button type="button" className={post.liked ? styles.likeOn : ''} onClick={() => like.mutate({ postId: post.id, liked: post.liked, userId })} aria-label="Curtir"><Heart size={17} fill={post.liked ? 'currentColor' : 'none'} /> {post.likes}</button>
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Comentários"><MessageCircle size={17} /> {post.comments.length}</button>
+        <button type="button" onClick={share} aria-label="Compartilhar"><Send size={16} /></button>
       </div>
       {shown.map((c) => (
-        <p key={c.id} className={styles.commentLine}><b>{c.author?.display_name?.split(' ')[0] ?? 'User'}:</b> {c.content}</p>
+        <p key={c.id} className={styles.commentLine}><b>{c.author?.display_name?.split(' ')[0] ?? 'Usuário'}:</b> {c.content}</p>
       ))}
       {post.comments.length > 1 && !open && (
-        <button type="button" className={styles.viewAll} onClick={() => setOpen(true)}>View all {post.comments.length} comments</button>
+        <button type="button" className={styles.viewAll} onClick={() => setOpen(true)}>Ver todos os {post.comments.length} comentários</button>
       )}
       <form className={styles.commentForm} onSubmit={(e) => { e.preventDefault(); if (text.trim()) add.mutate({ postId: post.id, content: text.trim() }, { onSuccess: () => setText('') }) }}>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a comment…" />
-        <button type="submit" disabled={!text.trim() || add.isPending}>Post</button>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Adicionar comentário…" />
+        <button type="submit" disabled={!text.trim() || add.isPending}>Publicar</button>
       </form>
     </li>
   )
@@ -85,7 +85,7 @@ function Finder() {
 
   return (
     <section className={styles.finder}>
-      <label className={styles.search}><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by @username" autoFocus /></label>
+      <label className={styles.search}><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar por @usuário" autoFocus /></label>
       {(results.data ?? []).map((p) => {
         const on = following?.has(p.id) ?? false
         return (
@@ -93,12 +93,12 @@ function Finder() {
             <Avatar url={p.avatar_url} name={p.display_name} size={34} />
             <div className={styles.rText}><strong>{p.display_name}</strong><small>@{p.username}</small></div>
             <button type="button" className={on ? styles.followOn : styles.follow} onClick={() => toggle.mutate({ id: p.id, following: on })}>
-              {on ? <><UserCheck size={13} /> Following</> : <><UserPlus size={13} /> Follow</>}
+              {on ? <><UserCheck size={13} /> Seguindo</> : <><UserPlus size={13} /> Seguir</>}
             </button>
           </div>
         )
       })}
-      {q.trim().length >= 2 && results.data?.length === 0 && <p className={styles.empty}>Nobody found with that username.</p>}
+      {q.trim().length >= 2 && results.data?.length === 0 && <p className={styles.empty}>Nenhum usuário encontrado.</p>}
     </section>
   )
 }
@@ -127,8 +127,8 @@ export default function FeedView() {
   return (
     <>
       <div className={styles.feedPills}>
-        <span className={styles.pill}><i className={online ? styles.dot : styles.dotOff} /> {online ? 'NEURAL MESH SYNCED' : 'OFFLINE · SYNC PENDING'}</span>
-        <button type="button" className={styles.pillBtn} onClick={() => setFinder((v) => !v)}><Zap size={11} /> {following?.size ?? 0} Active Rivals · Find</button>
+        <span className={styles.pill}><i className={online ? styles.dot : styles.dotOff} /> {online ? 'REDE NEURAL SINCRONIZADA' : 'OFFLINE · SINCRONIZAÇÃO PENDENTE'}</span>
+        <button type="button" className={styles.pillBtn} onClick={() => setFinder((v) => !v)}><Zap size={11} /> {following?.size ?? 0} rivais ativos · Buscar</button>
       </div>
 
       {finder && <Finder />}
@@ -136,15 +136,15 @@ export default function FeedView() {
       <section className={styles.cta}>
         <Avatar url={profile?.avatar_url} name={profile?.display_name} size={40} />
         <div className={styles.rText}>
-          <strong>{ready ? `${ready.name} ready, ${firstName}?` : `Ready, ${firstName}?`}</strong>
+          <strong>{ready ? `${ready.name} pronta, ${firstName}?` : `Pronto, ${firstName}?`}</strong>
           <small>
-            {gap !== null ? `Target: ${fmtNum(gap)} kg to secure #1` : me && rivals.length > 1 ? 'You lead this week' : 'Follow friends to start a rivalry'}
+            {gap !== null ? `Faltam ${fmtNum(gap)} kg para assumir o 1º lugar` : me && rivals.length > 1 ? 'Você lidera esta semana' : 'Siga amigos para começar uma competição'}
           </small>
         </div>
-        <button type="button" className={styles.smallBtn} onClick={log} disabled={start.isPending}><Plus size={13} /> Log Set</button>
+        <button type="button" className={styles.smallBtn} onClick={log} disabled={start.isPending}><Plus size={13} /> Registrar série</button>
       </section>
 
-      {feed.data?.length === 0 && <p className={styles.empty}>No posts yet. Finish a workout and share it, or follow friends to see theirs.</p>}
+      {feed.data?.length === 0 && <p className={styles.empty}>Nenhuma publicação ainda. Finalize um treino e compartilhe, ou siga amigos para ver os deles.</p>}
       <ul className={styles.list}>
         {(feed.data ?? []).map((p) => <PostCard key={p.id} post={p} userId={user!.id} />)}
       </ul>

@@ -16,10 +16,10 @@ export interface Log {
 }
 
 export const CATEGORIES = [
-  { id: 'health', label: 'Health & Wellness' },
-  { id: 'mindfulness', label: 'Mindfulness & Knowledge' },
-  { id: 'fitness', label: 'Fitness & Movement' },
-  { id: 'discipline', label: 'Discipline & Nutrition' },
+  { id: 'health', label: 'Saúde e Bem-estar' },
+  { id: 'mindfulness', label: 'Mente e Conhecimento' },
+  { id: 'fitness', label: 'Condicionamento e Movimento' },
+  { id: 'discipline', label: 'Disciplina e Alimentação' },
 ]
 
 export function buildIndex(logs: Log[]) {
@@ -84,9 +84,9 @@ export function cellState(h: Habit, ix: Index, d: Date, today: Date): CellState 
 export const byTime = (a: Habit, b: Habit) => (a.reminder_time ?? '99').localeCompare(b.reminder_time ?? '99')
 
 export function timeOfDay(t: string | null) {
-  if (!t) return 'Anytime'
+  if (!t) return 'Qualquer horário'
   const h = Number(t.slice(0, 2))
-  return h < 12 ? 'Morning' : h < 18 ? 'Afternoon' : 'Evening'
+  return h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
 }
 
 // Dias seguidos (nos dias agendados) até hoje
@@ -122,13 +122,13 @@ export function longestStreak(h: Habit, ix: Index, today: Date) {
 
 export function rowSub(h: Habit, streak: number) {
   const when = h.reminder_time ? fmtTime(h.reminder_time) : timeOfDay(h.reminder_time)
-  return `${when} • ${streak > 0 ? `${streak} days streak` : 'Start your streak'}`
+  return `${when} • ${streak > 0 ? `sequência de ${streak} dias` : 'Comece sua sequência'}`
 }
 
 export function nextRun(h: Habit, today: Date) {
   for (let i = 1; i <= 7; i++) {
     const d = addDays(today, i)
-    if (h.weekdays.includes(d.getDay())) return i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short' })
+    if (h.weekdays.includes(d.getDay())) return i === 1 ? 'Amanhã' : d.toLocaleDateString('pt-BR', { weekday: 'short' })
   }
   return '—'
 }

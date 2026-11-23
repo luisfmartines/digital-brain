@@ -3,9 +3,9 @@ import styles from './habits.module.css'
 export type View = 'weekly' | 'monthly' | 'yearly'
 
 const OPTIONS: { id: View; label: string }[] = [
-  { id: 'weekly', label: 'Weekly' },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'yearly', label: 'Yearly' },
+  { id: 'weekly', label: 'Semanal' },
+  { id: 'monthly', label: 'Mensal' },
+  { id: 'yearly', label: 'Anual' },
 ]
 
 export function ViewSwitch({ view, onChange, compact }: { view: View; onChange: (v: View) => void; compact?: boolean }) {

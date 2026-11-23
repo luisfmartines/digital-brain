@@ -10,7 +10,7 @@ import { saveOnboarding } from '../../features/onboarding/saveOnboarding'
 import { fmtTime, formatBRL } from '../../features/onboarding/utils'
 import styles from './onboarding.module.css'
 
-const RANKS = ['Voyager', 'Explorer', 'Navigator', 'Architect', 'Master']
+const RANKS = ['Viajante', 'Explorador', 'Navegador', 'Arquiteto', 'Mestre']
 
 export default function OnboardingReadyPage() {
   const { data } = useOnboarding()
@@ -40,17 +40,17 @@ export default function OnboardingReadyPage() {
       await queryClient.refetchQueries({ queryKey: ['profile'] })
       navigate('/', { replace: true })
     } catch (e) {
-      setError((e as { message?: string }).message ?? 'Could not save. Please try again.')
+      setError((e as { message?: string }).message ?? 'Não foi possível salvar. Tente novamente.')
       setBusy(false)
     }
   }
 
   return (
     <>
-      <span className={`${styles.tag} ${styles.tagCenter}`}><i className={styles.dot} /> SYSTEM READY · SYNC COMPLETE</span>
-      <h1 className={`${styles.h1} ${styles.center}`}>Your Digital Brain is Calibrated</h1>
+      <span className={`${styles.tag} ${styles.tagCenter}`}><i className={styles.dot} /> SISTEMA PRONTO · SINCRONIZAÇÃO CONCLUÍDA</span>
+      <h1 className={`${styles.h1} ${styles.center}`}>Seu Digital Brain está pronto</h1>
       <p className={`${styles.lead} ${styles.center}`}>
-        Here is your personalized cockpit, {profile?.display_name?.split(' ')[0] ?? ''}. Unselected modules sleep silently and wake whenever you need them.
+        Este é seu painel personalizado, {profile?.display_name?.split(' ')[0] ?? ''}. Os módulos não selecionados podem ser ativados quando você precisar.
       </p>
 
       <section className={styles.profileCard}>
@@ -62,40 +62,40 @@ export default function OnboardingReadyPage() {
           <strong>{profile?.display_name} <BadgeCheck size={14} className={styles.verified} /></strong>
           <small>{username}</small>
         </div>
-        <div className={styles.cloudTag}><Cloud size={12} /> CLOUD SYNC<small>Personal OS</small></div>
+        <div className={styles.cloudTag}><Cloud size={12} /> SINCRONIZAÇÃO NA NUVEM<small>Sistema pessoal</small></div>
       </section>
 
       <section className={styles.section}>
         <div className={styles.rowBetween}>
           <div className={styles.xpTitle}>
             <Zap size={16} />
-            <div><span className={styles.cap}>ONBOARDING BOOST</span><strong>+100 XP Unlocked</strong></div>
+            <div><span className={styles.cap}>BÔNUS DE CONFIGURAÇÃO</span><strong>+100 XP desbloqueados</strong></div>
           </div>
           <span className={styles.xpCount}>{xpNow} <small>/{xpNext} XP</small></span>
         </div>
         <div className={styles.bar}><div className={styles.barFill} style={{ width: `${Math.min(100, (xpNow / xpNext) * 100)}%` }} /></div>
         <div className={styles.rankRow}>
-          <span className={styles.rank}>Rank: Level {level} {RANKS[level - 1] ?? 'Master'}</span>
-          <span className={styles.rank}>System Architect</span>
-          <span className={styles.rank}>Day 1 Pioneer</span>
+          <span className={styles.rank}>Classe: nível {level} {RANKS[level - 1] ?? 'Mestre'}</span>
+          <span className={styles.rank}>Arquiteto do sistema</span>
+          <span className={styles.rank}>Pioneiro do dia 1</span>
         </div>
       </section>
 
       <div className={styles.rowBetween}>
-        <span className={styles.sectionLabel}>ACTIVE SYNAPSE ENGINES <span className={styles.badge}>{engines} Active</span></span>
-        <span className={styles.accentSm}>All Systems Green</span>
+        <span className={styles.sectionLabel}>MÓDULOS ATIVOS <span className={styles.badge}>{engines} ativos</span></span>
+        <span className={styles.accentSm}>Tudo pronto</span>
       </div>
 
       {finance && (
         <section className={styles.section}>
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Wallet size={18} /></span>
-            <div className={styles.cardTitle}><strong>Capital &amp; Liquidity</strong><small>Cashflow &amp; budget tracking</small></div>
-            <span className={styles.badge}>READY</span>
+            <div className={styles.cardTitle}><strong>Capital e Liquidez</strong><small>Controle de fluxo de caixa e orçamento</small></div>
+            <span className={styles.badge}>PRONTO</span>
           </div>
           <div className={styles.stats}>
-            <div><span className={styles.cap}>MONTHLY NET FLOW</span><strong>{formatBRL(data.monthlyIncome)}</strong></div>
-            <div><span className={styles.cap}>TARGET SAVINGS ({data.savingsPct}%)</span><strong>{formatBRL(savings)}</strong></div>
+            <div><span className={styles.cap}>FLUXO LÍQUIDO MENSAL</span><strong>{formatBRL(data.monthlyIncome)}</strong></div>
+            <div><span className={styles.cap}>META DE ECONOMIA ({data.savingsPct}%)</span><strong>{formatBRL(savings)}</strong></div>
           </div>
         </section>
       )}
@@ -103,8 +103,8 @@ export default function OnboardingReadyPage() {
       <section className={styles.section}>
         <div className={styles.cardHead}>
           <span className={styles.iconBox}><Repeat size={18} /></span>
-          <div className={styles.cardTitle}><strong>Identity Habits</strong><small>Streak Shield Active (1 Grace/14d)</small></div>
-          <span className={styles.badge}>{habits.length} Loops Primed</span>
+          <div className={styles.cardTitle}><strong>Hábitos de identidade</strong><small>Proteção ativa (1 folga a cada 14 dias)</small></div>
+          <span className={styles.badge}>{habits.length} ciclos ativos</span>
         </div>
         {habits.map((h) => (
           <div key={h.key} className={styles.strip}>
@@ -118,8 +118,8 @@ export default function OnboardingReadyPage() {
         <section className={styles.section}>
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Sparkles size={18} /></span>
-            <div className={styles.cardTitle}><strong>Autonomous Baseline</strong><small>Daily brief, smart schedule, AI notes</small></div>
-            <span className={styles.badge}>STANDARD</span>
+            <div className={styles.cardTitle}><strong>Configuração automática</strong><small>Resumo diário, agenda inteligente e notas por IA</small></div>
+            <span className={styles.badge}>PADRÃO</span>
           </div>
         </section>
       )}
@@ -127,18 +127,18 @@ export default function OnboardingReadyPage() {
       <section className={styles.infoBox}>
         <ShieldCheck size={16} />
         <div>
-          <strong>Secure Cloud Sync</strong>
-          <p>Your data syncs to your account and is available on every device where you log in. The bottom navigation bar has been re-indexed to match your active engines.</p>
+          <strong>Sincronização segura na nuvem</strong>
+          <p>Seus dados são sincronizados com sua conta e ficam disponíveis em todos os dispositivos onde você entrar.</p>
         </div>
       </section>
 
       {error && <p className={styles.error}>{error}</p>}
 
       <button type="button" className={styles.primary} onClick={finish} disabled={busy}>
-        {busy ? 'Saving…' : 'Enter Digital Brain'} <Zap size={16} />
+        {busy ? 'Salvando…' : 'Entrar no Digital Brain'} <Zap size={16} />
       </button>
       <button type="button" className={styles.ghost} onClick={() => navigate('/onboarding/setup')}>
-        <SlidersHorizontal size={14} /> Modify Engine Parameters
+        <SlidersHorizontal size={14} /> Ajustar parâmetros
       </button>
     </>
   )

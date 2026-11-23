@@ -46,41 +46,41 @@ export default function OnboardingSetupPage() {
 
   return (
     <>
-      <span className={styles.tag}><Sparkles size={12} /> TAILORED CONFIGURATION</span>
-      <h1 className={styles.h1}>Configure Your Engines</h1>
-      <p className={styles.lead}>Fine-tune the parameters for your chosen modules. Only active engines require baseline inputs.</p>
+      <span className={styles.tag}><Sparkles size={12} /> CONFIGURAÇÃO PERSONALIZADA</span>
+      <h1 className={styles.h1}>Configure seus módulos</h1>
+      <p className={styles.lead}>Ajuste os parâmetros dos módulos escolhidos. Apenas os módulos ativos precisam de informações básicas.</p>
 
       <section className={styles.loadCard}>
         <span className={styles.iconBox}><SlidersHorizontal size={18} /></span>
         <div className={styles.loadText}>
-          <span className={styles.cap}>ACTIVE SETUP LOAD</span>
-          <strong>{engines} Primary {engines === 1 ? 'Engine' : 'Engines'}</strong>
+          <span className={styles.cap}>CONFIGURAÇÃO ATIVA</span>
+          <strong>{engines} {engines === 1 ? 'módulo principal' : 'módulos principais'}</strong>
         </div>
-        <span className={styles.badge}>Est. 2 min</span>
+        <span className={styles.badge}>Cerca de 2 min</span>
       </section>
 
       {finance && (
         <section className={styles.section}>
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Wallet size={18} /></span>
-            <div className={styles.cardTitle}><strong>Finance &amp; Capital</strong><small>Monthly Cashflow Baseline</small></div>
+            <div className={styles.cardTitle}><strong>Finanças e Capital</strong><small>Base mensal de fluxo de caixa</small></div>
             <span className={styles.badge}>R$ BRL</span>
           </div>
-          <div className={styles.rowBetween}><span className={styles.label}>Net Monthly Income</span><span className={styles.hint}>Take-home post tax</span></div>
+          <div className={styles.rowBetween}><span className={styles.label}>Renda mensal líquida</span><span className={styles.hint}>Após impostos</span></div>
           <MoneyInput value={data.monthlyIncome} onChange={(n) => setData((d) => ({ ...d, monthlyIncome: n }))} />
           <div className={styles.inner}>
             <div className={styles.rowBetween}>
-              <span className={styles.hint}>Monthly Savings Target</span>
+              <span className={styles.hint}>Meta mensal de economia</span>
               <span className={styles.accent}>{formatBRL(savings)} ({data.savingsPct}%)</span>
             </div>
-            <p className={styles.hint}>Autonomous allocation toward Emergency Fund &amp; Index Funds</p>
+            <p className={styles.hint}>Alocação automática para Reserva de Emergência e investimentos</p>
             <input
               type="range" min={5} max={60} step={1} value={data.savingsPct} className={styles.range}
               onChange={(e) => setData((d) => ({ ...d, savingsPct: Number(e.target.value) }))}
-              aria-label="Savings percentage"
+              aria-label="Percentual de economia"
             />
             <div className={styles.rowBetween}>
-              {[{ l: 'Safe (10%)', v: 10 }, { l: 'Optimal (25%)', v: 25 }, { l: 'Aggressive (50%)', v: 50 }].map((p) => (
+              {[{ l: 'Seguro (10%)', v: 10 }, { l: 'Ideal (25%)', v: 25 }, { l: 'Ambicioso (50%)', v: 50 }].map((p) => (
                 <button key={p.v} type="button" className={`${styles.presetBtn} ${data.savingsPct === p.v ? styles.presetOn : ''}`} onClick={() => setData((d) => ({ ...d, savingsPct: p.v }))}>
                   {p.l}
                 </button>
@@ -93,10 +93,10 @@ export default function OnboardingSetupPage() {
       <section className={styles.section}>
         <div className={styles.cardHead}>
           <span className={styles.iconBox}><Flame size={18} /></span>
-          <div className={styles.cardTitle}><strong>Habits &amp; Consistency</strong><small>Starter Loops (Pick up to {MAX_HABITS})</small></div>
-          <span className={styles.badge}>{data.habits.length}/{MAX_HABITS} selected</span>
+          <div className={styles.cardTitle}><strong>Hábitos e Consistência</strong><small>Rotinas iniciais (até {MAX_HABITS})</small></div>
+          <span className={styles.badge}>{data.habits.length}/{MAX_HABITS} selecionados</span>
         </div>
-        <p className={styles.hint}>Prime your neural reward loop with high-momentum routines configured for Day 1.</p>
+        <p className={styles.hint}>Ative seus ciclos de recompensa com rotinas simples para o primeiro dia.</p>
         <ul className={styles.list}>
           {rows.map((r) => {
             const on = data.habits.some((h) => h.key === r.key)
@@ -114,12 +114,12 @@ export default function OnboardingSetupPage() {
         </ul>
         {adding ? (
           <div className={styles.row}>
-            <input className={styles.input} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Habit name" autoFocus />
-            <button type="button" className={styles.smallBtn} onClick={addCustom}>Add</button>
+            <input className={styles.input} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Nome do hábito" autoFocus />
+            <button type="button" className={styles.smallBtn} onClick={addCustom}>Adicionar</button>
           </div>
         ) : (
           <button type="button" className={styles.addBtn} onClick={() => setAdding(true)} disabled={data.habits.length >= MAX_HABITS}>
-            <Plus size={14} /> Add custom habit
+            <Plus size={14} /> Adicionar hábito personalizado
           </button>
         )}
       </section>
@@ -128,16 +128,16 @@ export default function OnboardingSetupPage() {
         <section className={styles.infoBox}>
           <Sparkles size={16} />
           <div>
-            <strong>Zero-Friction Autonomous Modules</strong>
-            <p>Tasks, Calendar &amp; AI Assistant are configured automatically with calibrated defaults. You can fine-tune them anytime in System Settings.</p>
+            <strong>Módulos automáticos sem atrito</strong>
+            <p>Tarefas, Calendário e Assistente de IA são configurados automaticamente. Você pode ajustá-los depois nas configurações.</p>
           </div>
         </section>
       )}
 
       <button type="button" className={styles.primary} onClick={() => navigate('/onboarding/habits')}>
-        Continue to Habit Loop <ArrowRight size={16} />
+        Continuar para os hábitos <ArrowRight size={16} />
       </button>
-      <button type="button" className={styles.ghost} onClick={() => navigate('/onboarding/modules')}>Back to Module Selection</button>
+      <button type="button" className={styles.ghost} onClick={() => navigate('/onboarding/modules')}>Voltar aos módulos</button>
     </>
   )
 }

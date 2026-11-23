@@ -4,9 +4,9 @@ export default function AssistantPage() {
   const { state } = useLocation()
   return (
     <>
-      <h1>AI Assistant</h1>
-      <p style={{ color: 'var(--color-text-muted)' }}>Coming soon.</p>
-      {state?.prompt && <p>You asked: “{state.prompt}”</p>}
+      <h1>Assistente de IA</h1>
+      <p style={{ color: 'var(--color-text-muted)' }}>Em breve.</p>
+      {state?.prompt && <p>Você perguntou: “{state.prompt}”</p>}
     </>
   )
 }

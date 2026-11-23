@@ -17,7 +17,7 @@ interface Props {
   setView: (v: View) => void
 }
 
-const WEEKDAY_NAMES = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays']
+const WEEKDAY_NAMES = ['domingos', 'segundas-feiras', 'terças-feiras', 'quartas-feiras', 'quintas-feiras', 'sextas-feiras', 'sábados']
 
 function Ring({ pct }: { pct: number }) {
   return (
@@ -59,7 +59,7 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
   const selDate = parseDate(sel)
   const selStats = dayStats(habits, ix, selDate)
   const selRate = selStats.scheduled ? Math.round((selStats.done / selStats.scheduled) * 100) : null
-  const selState = selRate === null ? 'Rest Day' : selRate === 100 ? 'Peak Focus State' : selRate >= 60 ? 'Steady State' : 'Low Signal'
+  const selState = selRate === null ? 'Dia de descanso' : selRate === 100 ? 'Estado máximo de foco' : selRate >= 60 ? 'Estado estável' : 'Sinal baixo'
   const selDiff = selRate === null ? null : selRate - period.pct
 
   const streaks = habits.map((h) => ({ h, longest: longestStreak(h, ix, today), current: currentStreak(h, ix, today) }))
@@ -100,7 +100,7 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
   }
 
   async function share() {
-    const text = `My Digital Brain ${year}: ${period.pct}% consistency, ${active} active days, ${completed} habits completed.`
+    const text = `Meu Digital Brain ${year}: ${period.pct}% de consistência, ${active} dias ativos e ${completed} hábitos concluídos.`
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Digital Brain', text })
@@ -115,28 +115,28 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
   return (
     <>
       <div className={styles.pillRowSplit}>
-        <span className={styles.syncPill}><i /> HABIT MATRIX • ANNUAL SYNAPSE LEDGER</span>
-        <span className={styles.calibrated}><CheckCircle2 size={12} /> System Calibrated</span>
+        <span className={styles.syncPill}><i /> MATRIZ DE HÁBITOS • REGISTRO ANUAL DE SINAPSES</span>
+        <span className={styles.calibrated}><CheckCircle2 size={12} /> Sistema calibrado</span>
       </div>
-      <h1 className={styles.h1}>Annual Habit Consistency</h1>
-      <span className={styles.sub}>{year} Year in Review &amp; Active Momentum</span>
+      <h1 className={styles.h1}>Consistência anual dos hábitos</h1>
+      <span className={styles.sub}>Resumo de {year} e impulso ativo</span>
       <div className={styles.pillRow}>
-        <span className={styles.pillBox}><Flame size={13} /> {active} Active Days</span>
-        <span className={styles.pillBox}><Activity size={13} /> {period.pct}% Annual Consistency</span>
+        <span className={styles.pillBox}><Flame size={13} /> {active} dias ativos</span>
+        <span className={styles.pillBox}><Activity size={13} /> {period.pct}% de consistência anual</span>
       </div>
 
       <ViewSwitch view={view} onChange={setView} />
 
       <div className={styles.yearNav}>
         <div className={styles.monthNav}>
-          <button type="button" onClick={() => setYear(year - 1)} aria-label="Previous year"><ChevronLeft size={16} /></button>
+          <button type="button" onClick={() => setYear(year - 1)}           aria-label="Ano anterior"><ChevronLeft size={16} /></button>
           <strong>{year}</strong>
-          <button type="button" disabled={isCurrentYear} onClick={() => setYear(year + 1)} aria-label="Next year"><ChevronRight size={16} /></button>
+          <button type="button" disabled={isCurrentYear} onClick={() => setYear(year + 1)}           aria-label="Próximo ano"><ChevronRight size={16} /></button>
         </div>
         <div className={styles.quarters}>
           {[1, 2, 3, 4].map((q) => (
             <button key={q} type="button" className={quarter === q ? styles.qOn : styles.q} onClick={() => setQuarter(quarter === q ? 0 : q)}>
-              Q{q}{isCurrentYear && q === currentQ ? ' (Now)' : ''}
+              T{q}{isCurrentYear && q === currentQ ? ' (atual)' : ''}
             </button>
           ))}
         </div>
@@ -144,23 +144,23 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
 
       <section className={styles.panel}>
         <div className={styles.sectionHead}>
-          <span><LayoutGrid size={14} /> Synaptic Heatmap</span>
-          <em className={styles.badge}>52 WEEKS</em>
+          <span><LayoutGrid size={14} /> Mapa de sinapses</span>
+          <em className={styles.badge}>52 SEMANAS</em>
         </div>
         <div className={styles.selCard}>
           <i className={styles.selDot} />
           <div className={styles.rowText}>
-            <strong>{selDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
-            <small className={styles.accentSm}>{ix.byDay.get(sel) ?? 0} habits logged • {selState}</small>
+            <strong>{selDate.toLocaleDateString('pt-BR', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+            <small className={styles.accentSm}>{ix.byDay.get(sel) ?? 0} hábitos registrados • {selState}</small>
           </div>
-          {selDiff !== null && <span className={styles.badge}>{selDiff >= 0 ? '+' : ''}{selDiff}% vs avg</span>}
+          {selDiff !== null && <span className={styles.badge}>{selDiff >= 0 ? '+' : ''}{selDiff}% vs. média</span>}
         </div>
         <div className={styles.heatMonths}>
           {Array.from({ length: 12 }, (_, m) => {
             const col = Math.floor((new Date(year, m, 1).getTime() - gridStart.getTime()) / 86400000 / 7)
             return (
               <span key={m} style={{ left: `${(col / weeks) * 100}%` }}>
-                {new Date(year, m, 1).toLocaleDateString('en-US', { month: 'short' })}
+                {new Date(year, m, 1).toLocaleDateString('pt-BR', { month: 'short' })}
               </span>
             )
           })}
@@ -176,9 +176,9 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
           })}
         </div>
         <div className={styles.legend}>
-          <b>Less Synapses</b>
+          <b>Menos sinapses</b>
           {[0, 1, 2, 3, 4].map((n) => <i key={n} className={`${styles.sw} ${heatClass(n)}`} />)}
-          <span>Peak</span>
+          <span>Máximo</span>
         </div>
       </section>
 
@@ -186,34 +186,34 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
         <div className={styles.statCard}>
           <Trophy size={14} />
           <strong>{bestLongest?.longest ?? 0}d</strong>
-          <small>Longest Streak</small>
+          <small>Maior sequência</small>
           <em>{bestLongest?.longest ? bestLongest.h.name : '—'}</em>
         </div>
         <div className={styles.statCard}>
           <Zap size={14} />
           <strong className={styles.accent}>{bestCurrent?.current ?? 0}d</strong>
-          <small>Active Streak</small>
+          <small>Sequência ativa</small>
           <em>{bestCurrent?.current ? bestCurrent.h.name : '—'}</em>
         </div>
         <div className={styles.statCard}>
           <CheckCircle2 size={14} />
-          <strong>{completed.toLocaleString('en-US')}</strong>
-          <small>Completed</small>
-          <em>Cloud synced</em>
+          <strong>{completed.toLocaleString('pt-BR')}</strong>
+          <small>Concluídos</small>
+          <em>Sincronizado na nuvem</em>
         </div>
       </div>
 
       {catRows.length > 0 && (
         <section className={styles.panel}>
           <div className={styles.sectionHead}>
-            <span><Activity size={14} /> Category Consistency</span>
-            <small className={styles.hint}>Annual Ledger</small>
+            <span><Activity size={14} /> Consistência por categoria</span>
+            <small className={styles.hint}>Registro anual</small>
           </div>
           {catRows.map((c) => (
             <div key={c.id} className={styles.catRow}>
               <div className={styles.rowBetween}>
                 <span className={styles.catName}><i className={styles.dot} /> {c.label}</span>
-                <span><b className={styles.accentSm}>{c.st.pct}%</b> <small className={styles.hint}>({c.st.done} logs)</small></span>
+                <span><b className={styles.accentSm}>{c.st.pct}%</b> <small className={styles.hint}>({c.st.done} registros)</small></span>
               </div>
               <span className={styles.track}><i style={{ width: `${c.st.pct}%` }} /></span>
             </div>
@@ -224,15 +224,15 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
       {fame.length > 0 && (
         <section className={styles.panel}>
           <div className={styles.sectionHead}>
-            <span><Trophy size={14} /> Habit Hall of Fame</span>
-            <em className={styles.badge}>Top 3 Pillar Habits</em>
+            <span><Trophy size={14} /> Hall dos hábitos</span>
+            <em className={styles.badge}>3 hábitos principais</em>
           </div>
           {fame.map(({ h, st }) => {
             const Icon = HABIT_ICONS[h.icon ?? 'custom'] ?? HABIT_ICONS.custom
             return (
               <div key={h.id} className={styles.fameRow}>
                 <Ring pct={st.pct} />
-                <div className={styles.rowText}><strong>{h.name}</strong><small>{st.done} active days in {year}</small></div>
+                <div className={styles.rowText}><strong>{h.name}</strong><small>{st.done} dias ativos em {year}</small></div>
                 <span className={styles.iconBox}><Icon size={15} /></span>
               </div>
             )
@@ -243,25 +243,25 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
       {isCurrentYear && (
         <section className={styles.projection}>
           <div className={styles.sectionHead}>
-            <span><BrainCircuit size={15} /> Yearly Growth Projection</span>
-            <em className={styles.badge}>INSIGHT</em>
+            <span><BrainCircuit size={15} /> Projeção anual de crescimento</span>
+            <em className={styles.badge}>INFORMAÇÃO</em>
           </div>
           <p>
-            {velocity !== null ? `At your current ${velocity >= 0 ? '+' : ''}${velocity}% monthly velocity` : 'At your current pace'}, you will cross{' '}
-            <b>{projected.toLocaleString('en-US')} annual habit completions</b> by Dec 31.
+            {velocity !== null ? `Na sua velocidade mensal atual de ${velocity >= 0 ? '+' : ''}${velocity}%` : 'No seu ritmo atual'}, você ultrapassará{' '}
+            <b>{projected.toLocaleString('pt-BR')} conclusões anuais de hábitos</b> até 31 de dezembro.
           </p>
           <span className={styles.tactical}>
             <Lightbulb size={13} />
             {weak
-              ? `Tactical Focus: Protect ${weak.habit.name} consistency on ${WEEKDAY_NAMES[weak.weekday]}.`
-              : 'Tactical Focus: keep logging to unlock personalized insights.'}
+              ? `Foco tático: proteja a consistência de ${weak.habit.name} às ${WEEKDAY_NAMES[weak.weekday]}.`
+              : 'Foco tático: continue registrando para desbloquear informações personalizadas.'}
           </span>
         </section>
       )}
 
       <div className={styles.exportRow}>
-        <button type="button" className={styles.exportBtn} onClick={exportJson}><Download size={14} /> Export {year} Audit (.JSON)</button>
-        <button type="button" className={styles.shareBtn} onClick={share}><Share2 size={14} /> Share Heatmap</button>
+        <button type="button" className={styles.exportBtn} onClick={exportJson}><Download size={14} /> Exportar relatório de {year} (.JSON)</button>
+        <button type="button" className={styles.shareBtn} onClick={share}><Share2 size={14} /> Compartilhar mapa</button>
       </div>
     </>
   )

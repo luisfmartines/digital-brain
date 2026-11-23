@@ -15,7 +15,7 @@ export default function ResetPasswordPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!strength.ok) {
-      setError('Password needs 6+ characters with uppercase, lowercase and a number.')
+      setError('A senha precisa de 6 ou mais caracteres, com maiúscula, minúscula e número.')
       return
     }
     setBusy(true)
@@ -34,15 +34,15 @@ export default function ResetPasswordPage() {
       <div className={styles.glow} />
       <div className={styles.card}>
         <div className={styles.logoBox}><img src="/icons/icon-192.png" alt="" /></div>
-        <h1 className={styles.title} style={{ marginTop: 16 }}>New password</h1>
-        <p className={styles.subtitle}>6+ characters with uppercase, lowercase and a number</p>
+        <h1 className={styles.title} style={{ marginTop: 16 }}>Nova senha</h1>
+        <p className={styles.subtitle}>6 ou mais caracteres, com maiúscula, minúscula e número</p>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.inputWrap}>
             <Lock size={18} />
-            <input className={styles.input} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" placeholder="New password" />
+            <input className={styles.input} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" placeholder="Nova senha" />
           </div>
           {error && <p className={styles.error}>{error}</p>}
-          <button className={styles.primary} type="submit" disabled={busy || !strength.ok}>{busy ? 'Saving…' : 'Save password'}</button>
+          <button className={styles.primary} type="submit" disabled={busy || !strength.ok}>{busy ? 'Salvando…' : 'Salvar senha'}</button>
         </form>
       </div>
     </div>

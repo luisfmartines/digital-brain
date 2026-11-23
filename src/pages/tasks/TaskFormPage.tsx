@@ -12,27 +12,27 @@ import { addDays, localDateStr, parseDate, startOfDay } from '../../lib/date'
 import styles from './TaskForm.module.css'
 
 const QUICK = [
-  { label: 'Morning (09:00)', time: '09:00', icon: Sunrise },
-  { label: 'Afternoon (14:00)', time: '14:00', icon: Sun },
-  { label: 'Evening (19:00)', time: '19:00', icon: Moon },
+  { label: 'Manhã (09:00)', time: '09:00', icon: Sunrise },
+  { label: 'Tarde (14:00)', time: '14:00', icon: Sun },
+  { label: 'Noite (19:00)', time: '19:00', icon: Moon },
 ]
 const CATS: { id: TaskCategory; label: string; icon: typeof Laptop }[] = [
-  { id: 'work', label: 'Work', icon: Laptop },
-  { id: 'personal', label: 'Personal', icon: Home },
-  { id: 'fitness', label: 'Fitness', icon: PersonStanding },
-  { id: 'mindset', label: 'Mindset', icon: Flower2 },
+  { id: 'work', label: 'Trabalho', icon: Laptop },
+  { id: 'personal', label: 'Pessoal', icon: Home },
+  { id: 'fitness', label: 'Condicionamento', icon: PersonStanding },
+  { id: 'mindset', label: 'Mentalidade', icon: Flower2 },
 ]
 const PRIORITIES: { id: TaskPriority; label: string }[] = [
-  { id: 'low', label: 'Low' },
-  { id: 'medium', label: 'Medium' },
-  { id: 'high', label: 'High' },
+  { id: 'low', label: 'Baixa' },
+  { id: 'medium', label: 'Média' },
+  { id: 'high', label: 'Alta' },
 ]
 
 function dateLabel(ds: string) {
   const t = startOfDay()
-  if (ds === localDateStr(t)) return 'Today'
-  if (ds === localDateStr(addDays(t, 1))) return 'Tomorrow'
-  return parseDate(ds).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  if (ds === localDateStr(t)) return 'Hoje'
+  if (ds === localDateStr(addDays(t, 1))) return 'Amanhã'
+  return parseDate(ds).toLocaleDateString('pt-BR', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 function TaskForm({ task }: { task?: Task }) {
@@ -73,7 +73,7 @@ function TaskForm({ task }: { task?: Task }) {
   }
 
   function destroy() {
-    if (!task || !window.confirm('Delete this task?')) return
+    if (!task || !window.confirm('Excluir esta tarefa?')) return
     remove.mutate(task.id, { onSuccess: () => navigate('/routine?tab=tasks', { replace: true }) })
   }
 
@@ -81,12 +81,12 @@ function TaskForm({ task }: { task?: Task }) {
     <div className={styles.page}>
       <div className={styles.frame}>
         <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={() => navigate(-1)} aria-label="Back"><ChevronLeft size={22} /></button>
-          <h1 className={styles.headerTitle}>{task ? 'Edit Task' : 'New Task'}</h1>
+          <button type="button" className={styles.back} onClick={() => navigate(-1)} aria-label="Voltar"><ChevronLeft size={22} /></button>
+          <h1 className={styles.headerTitle}>{task ? 'Editar tarefa' : 'Nova tarefa'}</h1>
           {task && (
             <div className={styles.menuWrap}>
-              <button type="button" className={styles.kebab} onClick={() => setMenu((v) => !v)} aria-label="Options"><MoreVertical size={18} /></button>
-              {menu && <div className={styles.menu}><button type="button" onClick={destroy}>Delete task</button></div>}
+              <button type="button" className={styles.kebab} onClick={() => setMenu((v) => !v)} aria-label="Opções"><MoreVertical size={18} /></button>
+              {menu && <div className={styles.menu}><button type="button" onClick={destroy}>Excluir tarefa</button></div>}
             </div>
           )}
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={32} />
@@ -94,20 +94,20 @@ function TaskForm({ task }: { task?: Task }) {
 
         <section className={styles.workspace}>
           <div className={styles.rowBetween}>
-            <span className={styles.kicker}><i /> ACTIVE WORKSPACE</span>
+            <span className={styles.kicker}><i /> ÁREA DE TRABALHO ATIVA</span>
             <span className={styles.hint}>Digital Brain OS</span>
           </div>
-          <p>Capture your objective into the second brain with natural scheduling and cognitive tags.</p>
+          <p>Registre seu objetivo no segundo cérebro com programação natural e categorias cognitivas.</p>
         </section>
 
         <label className={styles.field}>
-          <span className={styles.label}><CheckCircle2 size={14} /> Task name <b>*</b></span>
-          <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Review Q4 Architecture PRDs" autoFocus={!task} />
+          <span className={styles.label}><CheckCircle2 size={14} /> Nome da tarefa <b>*</b></span>
+          <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex.: Revisar os documentos do projeto" autoFocus={!task} />
         </label>
 
         <div className={styles.field}>
           <div className={styles.rowBetween}>
-            <span className={styles.label}><Clock size={14} /> Due / Scheduled time</span>
+            <span className={styles.label}><Clock size={14} /> Prazo / horário</span>
             <label className={styles.dateBtn}>
               {dateLabel(date)}
               <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
@@ -125,8 +125,8 @@ function TaskForm({ task }: { task?: Task }) {
 
         <div className={styles.field}>
           <div className={styles.rowBetween}>
-            <span className={styles.label}><Tag size={14} /> Domain category</span>
-            <span className={styles.hint}>1 Selected</span>
+            <span className={styles.label}><Tag size={14} /> Categoria</span>
+            <span className={styles.hint}>1 selecionada</span>
           </div>
           <div className={styles.grid2}>
             {CATS.map(({ id, label, icon: Icon }) => (
@@ -140,8 +140,8 @@ function TaskForm({ task }: { task?: Task }) {
 
         <div className={styles.field}>
           <div className={styles.rowBetween}>
-            <span className={styles.label}><Flag size={14} /> Cognitive priority</span>
-            <span className={styles.hint}>Default intensity</span>
+            <span className={styles.label}><Flag size={14} /> Prioridade cognitiva</span>
+            <span className={styles.hint}>Intensidade padrão</span>
           </div>
           <div className={styles.segmented}>
             {PRIORITIES.map((p) => (
@@ -154,32 +154,32 @@ function TaskForm({ task }: { task?: Task }) {
 
         <label className={styles.field}>
           <div className={styles.rowBetween}>
-            <span className={styles.label}><AlignLeft size={14} /> Optional note</span>
-            <span className={styles.hint}>Markdown ready</span>
+            <span className={styles.label}><AlignLeft size={14} /> Nota opcional</span>
+            <span className={styles.hint}>Texto simples</span>
           </div>
-          <textarea className={styles.textarea} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add context, link or checklist items..." />
+          <textarea className={styles.textarea} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Adicione contexto, link ou itens da checklist..." />
         </label>
 
         <section className={styles.alarm}>
           <span className={styles.iconBox}><Bell size={16} /></span>
-          <div className={styles.alarmText}><strong>Bio-sync alarm</strong><small>Gentle chime 10m before</small></div>
-          <Toggle checked={alarm} onChange={setAlarm} label="Bio-sync alarm" />
+          <div className={styles.alarmText}><strong>Alarme de sincronização</strong><small>Toque suave 10 min antes</small></div>
+          <Toggle checked={alarm} onChange={setAlarm} label="Alarme de sincronização" />
         </section>
 
         <section className={styles.focus}>
           <span className={styles.iconBox}><Lightbulb size={16} /></span>
           <div>
-            <span className={styles.kicker}>FOCUS RECOMMENDATION</span>
-            <p>Early slots tend to protect your most important work. Try scheduling priority tasks in the morning.</p>
+            <span className={styles.kicker}>RECOMENDAÇÃO DE FOCO</span>
+            <p>Horários mais cedo costumam proteger seu trabalho importante. Tente programar tarefas prioritárias pela manhã.</p>
           </div>
         </section>
 
         {error && <p className={styles.error}>{error}</p>}
 
         <button type="button" className={styles.primary} onClick={submit} disabled={!title.trim() || save.isPending}>
-          <CheckCheck size={16} /> {save.isPending ? 'Saving…' : 'Save task'}
+          <CheckCheck size={16} /> {save.isPending ? 'Salvando…' : 'Salvar tarefa'}
         </button>
-        <button type="button" className={styles.cancel} onClick={() => navigate(-1)}>Cancel</button>
+        <button type="button" className={styles.cancel} onClick={() => navigate(-1)}>Cancelar</button>
       </div>
     </div>
   )
@@ -188,6 +188,6 @@ function TaskForm({ task }: { task?: Task }) {
 export default function TaskFormPage() {
   const { id } = useParams()
   const { data: task, isLoading } = useTask(id)
-  if (id && isLoading) return <p style={{ padding: 24 }}>Loading…</p>
+  if (id && isLoading) return <p style={{ padding: 24 }}>Carregando…</p>
   return <TaskForm key={task?.id ?? 'new'} task={task ?? undefined} />
 }

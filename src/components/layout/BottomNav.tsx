@@ -5,11 +5,11 @@ import styles from './BottomNav.module.css'
 
 // `modules`: aparece se QUALQUER um dos módulos estiver ativo (null = sempre)
 const TABS = [
-  { to: '/', label: 'Home', icon: Home, modules: null },
-  { to: '/routine', label: 'Routine', icon: ListChecks, modules: ['tasks', 'habits'] },
-  { to: '/workouts', label: 'Workouts', icon: Maximize2, modules: ['workouts'] },
-  { to: '/finance', label: 'Finances', icon: Wallet, modules: ['finance'] },
-  { to: '/calendar', label: 'Calendar', icon: CalendarDays, modules: ['calendar'] },
+  { to: '/', label: 'Início', icon: Home, modules: null },
+  { to: '/routine', label: 'Rotina', icon: ListChecks, modules: ['tasks', 'habits'] },
+  { to: '/workouts', label: 'Treinos', icon: Maximize2, modules: ['workouts'] },
+  { to: '/finance', label: 'Finanças', icon: Wallet, modules: ['finance'] },
+  { to: '/calendar', label: 'Calendário', icon: CalendarDays, modules: ['calendar'] },
 ]
 
 export default function BottomNav() {

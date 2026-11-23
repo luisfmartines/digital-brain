@@ -35,7 +35,7 @@ export async function saveOnboarding(userId: string, data: OnboardingData) {
   // O hábito de água sempre vem pronto (o usuário só ajusta a meta depois)
   if (!rows.some((r) => r.icon === 'water')) {
     rows.unshift({
-      user_id: userId, name: 'Drink 2.5L Water', icon: 'water', anchor_cue: 'Refill your flask with every work sprint',
+      user_id: userId, name: 'Beber 2,5 L de água', icon: 'water', anchor_cue: 'Reencher sua garrafa a cada bloco de trabalho',
       reminder_time: '09:00:00', weekdays: [0, 1, 2, 3, 4, 5, 6], category: 'health',
     })
   }

@@ -7,8 +7,8 @@ import styles from './Routine.module.css'
 type Tab = 'tasks' | 'habits'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'habits', label: 'Habits' },
+  { id: 'tasks', label: 'Tarefas' },
+  { id: 'habits', label: 'Hábitos' },
 ]
 
 export default function RoutinePage() {

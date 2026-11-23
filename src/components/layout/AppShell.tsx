@@ -10,14 +10,14 @@ import { useEnsureWaterHabit } from '../../features/water/queries'
 import styles from './AppShell.module.css'
 
 const SUBTITLES: Record<string, string> = {
-  '/': 'HOME',
-  '/routine': 'ROUTINE',
-  '/workouts': 'WORKOUTS',
-  '/workouts/stats': 'WORKOUTS',
-  '/finance': 'FINANCES',
-  '/calendar': 'CALENDAR',
-  '/assistant': 'AI ASSISTANT',
-  '/profile': 'PROFILE',
+  '/': 'INÍCIO',
+  '/routine': 'ROTINA',
+  '/workouts': 'TREINOS',
+  '/workouts/stats': 'TREINOS',
+  '/finance': 'FINANÇAS',
+  '/calendar': 'CALENDÁRIO',
+  '/assistant': 'ASSISTENTE IA',
+  '/profile': 'PERFIL',
 }
 
 // true = o botão escuro de treino aparece sempre (fora de /workouts).
@@ -72,7 +72,7 @@ export default function AppShell() {
   return (
     <div className={styles.shell}>
       <div className={styles.frame}>
-        <AppHeader subtitle={SUBTITLES[pathname] ?? 'HOME'} />
+        <AppHeader subtitle={SUBTITLES[pathname] ?? 'INÍCIO'} />
         <main className={`${styles.content} ${fabCount === 1 ? styles.contentFab : ''} ${fabCount === 2 ? styles.contentFab2 : ''}`}>
           <Outlet />
         </main>
@@ -82,7 +82,7 @@ export default function AppShell() {
             <Link
               to={active ? `/workouts/active/${active.id}` : '/workouts'}
               className={`${styles.fab} ${styles.fabDark}`}
-              aria-label={active ? 'Resume workout' : 'Workouts'}
+              aria-label={active ? 'Retomar treino' : 'Treinos'}
             >
               <Maximize2 size={22} />
               {active && <i className={styles.live} />}

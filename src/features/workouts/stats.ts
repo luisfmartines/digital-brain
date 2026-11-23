@@ -46,15 +46,15 @@ export function periodWindow(p: Period, now: Date, first: Date | null) {
 
 export interface Bucket { start: Date; label: string; long: string; volume: number; minutes: number; workouts: number }
 
-const MON = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' })
-const DAY = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const MON = (d: Date) => d.toLocaleDateString('pt-BR', { month: 'short' })
+const DAY = (d: Date) => d.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })
 
 export function makeBuckets(p: Period, from: Date, now: Date): Bucket[] {
   const empty = (start: Date, label: string, long: string): Bucket => ({ start, label, long, volume: 0, minutes: 0, workouts: 0 })
   if (p === '3m') {
     return Array.from({ length: 13 }, (_, i) => {
       const s = addDays(from, i * 7)
-      return empty(s, DAY(s), `Week of ${DAY(s)}`)
+      return empty(s, DAY(s), `Semana de ${DAY(s)}`)
     })
   }
   const months = (now.getFullYear() - from.getFullYear()) * 12 + now.getMonth() - from.getMonth() + 1
@@ -66,7 +66,7 @@ export function makeBuckets(p: Period, from: Date, now: Date): Bucket[] {
     const yy = `’${String(s.getFullYear()).slice(2)}`
     const label = p === 'all' ? `${MON(s)} ${yy}` : MON(s)
     const long = step === 1
-      ? s.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      ? s.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
       : `${MON(s)} ${s.getFullYear()} – ${MON(e)} ${e.getFullYear()}`
     out.push(empty(s, label, long))
   }
@@ -111,7 +111,7 @@ export function breakdown(ms: Metric[], by: 'muscle' | 'exercise', top = 5): { l
   for (const m of ms) {
     for (const s of m.w.workout_sets) {
       if (!s.completed || s.is_warmup || !s.reps) continue
-      const label = !s.exercise ? 'Other' : by === 'muscle' ? muscleLabel(s.exercise.muscle_group) : s.exercise.name
+      const label = !s.exercise ? 'Outros' : by === 'muscle' ? muscleLabel(s.exercise.muscle_group) : s.exercise.name
       acc.set(label, (acc.get(label) ?? 0) + s.reps)
     }
   }

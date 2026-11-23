@@ -11,9 +11,9 @@ import w from './workouts.module.css'
 import styles from './stats.module.css'
 
 const PERIODS: { id: Period; label: string }[] = [
-  { id: '3m', label: '3 Months' },
-  { id: '1y', label: '1 Year' },
-  { id: 'all', label: 'All Time' },
+  { id: '3m', label: '3 meses' },
+  { id: '1y', label: '1 ano' },
+  { id: 'all', label: 'Todo o período' },
 ]
 
 function Delta({ value }: { value: number | null }) {
@@ -31,7 +31,7 @@ function Axis({ buckets }: { buckets: Bucket[] }) {
   const idx = [...new Set([0, Math.floor(n / 3), Math.floor((2 * n) / 3), n - 1])]
   return (
     <div className={styles.axis}>
-      {idx.map((i) => <span key={i}>{i === n - 1 ? 'Now' : buckets[i].label}</span>)}
+      { idx.map((i) => <span key={i}>{i === n - 1 ? 'Agora' : buckets[i].label}</span>) }
     </div>
   )
 }
@@ -105,27 +105,27 @@ function Charts({ metrics }: { metrics: Metric[] }) {
       <section className={styles.overview}>
         <span className={styles.ovIcon}><Activity size={20} /></span>
         <div className={w.rText}>
-          <small className={styles.kicker}>PERIOD OVERVIEW</small>
-          <strong className={styles.ovTitle}>{s.workouts} {s.workouts === 1 ? 'workout' : 'workouts'} • {fmtNum(s.sets)} sets</strong>
+          <small className={styles.kicker}>VISÃO DO PERÍODO</small>
+          <strong className={styles.ovTitle}>{s.workouts} {s.workouts === 1 ? 'treino' : 'treinos'} • {fmtNum(s.sets)} séries</strong>
         </div>
-        <span className={styles.badgeGreen}><Zap size={11} /> {(s.workouts / d.spanWeeks).toFixed(1)}/week</span>
+        <span className={styles.badgeGreen}><Zap size={11} /> {(s.workouts / d.spanWeeks).toFixed(1)} por semana</span>
       </section>
 
       {s.workouts === 0 ? (
-        <p className={w.empty}>No workouts in this period yet. Finish a workout and your charts will show up here.</p>
+        <p className={w.empty}>Nenhum treino neste período. Finalize um treino para ver os gráficos aqui.</p>
       ) : (
         <>
           <section className={styles.card}>
             <div className={styles.cardHead}>
               <span className={styles.cardTitle}><i className={styles.cardIcon}><Maximize2 size={15} /></i> Volume</span>
-              <span className={styles.tag}>Total Tonnage</span>
+              <span className={styles.tag}>Tonelagem total</span>
             </div>
             <div className={styles.bigRow}>
               <b className={styles.big}>{fmtNum(s.volume)}</b><span className={styles.unit}>kg</span>
               <Delta value={delta(s.volume, p.volume)} />
             </div>
-            <small className={styles.avg}>Avg: {fmtNum(s.volume / n)} kg / workout • {s.weeks} active {s.weeks === 1 ? 'week' : 'weeks'}</small>
-            <p className={styles.hintStrip}><i /> {vb.workouts > 0 ? `${vb.long}: ${fmtNum(vb.volume)} kg • ${vb.workouts} ${vb.workouts === 1 ? 'workout' : 'workouts'}` : `${vb.long}: no workouts`}</p>
+            <small className={styles.avg}>Média: {fmtNum(s.volume / n)} kg por treino • {s.weeks} {s.weeks === 1 ? 'semana ativa' : 'semanas ativas'}</small>
+            <p className={styles.hintStrip}><i /> {vb.workouts > 0 ? `${vb.long}: ${fmtNum(vb.volume)} kg • ${vb.workouts} ${vb.workouts === 1 ? 'treino' : 'treinos'}` : `${vb.long}: nenhum treino`}</p>
             <div className={styles.bars}>
               {buckets.map((b, i) => (
                 <button
@@ -141,17 +141,17 @@ function Charts({ metrics }: { metrics: Metric[] }) {
 
           <section className={styles.card}>
             <div className={styles.cardHead}>
-              <span className={styles.cardTitle}><i className={styles.cardIcon}><Timer size={15} /></i> Duration</span>
-              <span className={styles.tag}>Time in Zone</span>
+              <span className={styles.cardTitle}><i className={styles.cardIcon}><Timer size={15} /></i> Duração</span>
+              <span className={styles.tag}>Tempo em atividade</span>
             </div>
             <div className={styles.bigRow}>
-              <b className={styles.big}>{fmtNum(s.minutes)}</b><span className={styles.unit}>mins</span>
-              <span className={styles.unit}>(~{(s.minutes / 60).toFixed(1)} hrs)</span>
+              <b className={styles.big}>{fmtNum(s.minutes)}</b><span className={styles.unit}>min</span>
+              <span className={styles.unit}>(~{(s.minutes / 60).toFixed(1)} h)</span>
               <Delta value={delta(s.minutes, p.minutes)} />
             </div>
-            <small className={styles.avg}>Avg: {mins(s.minutes * 60 / n)} mins / workout</small>
-            <p className={styles.hintStrip}><i /> {pts[ptIdx] ? `${pts[ptIdx].b.long}: ${Math.round(avgOf(pts[ptIdx].b))} min avg • ${pts[ptIdx].b.workouts} ${pts[ptIdx].b.workouts === 1 ? 'workout' : 'workouts'}` : 'Tap a point to see the pacing'}</p>
-            <svg viewBox={`0 0 ${W} ${H}`} className={styles.svg} role="img" aria-label="Average workout duration over time">
+            <small className={styles.avg}>Média: {mins(s.minutes * 60 / n)} min por treino</small>
+            <p className={styles.hintStrip}><i /> {pts[ptIdx] ? `${pts[ptIdx].b.long}: média de ${Math.round(avgOf(pts[ptIdx].b))} min • ${pts[ptIdx].b.workouts} ${pts[ptIdx].b.workouts === 1 ? 'treino' : 'treinos'}` : 'Selecione um ponto para ver o ritmo'}</p>
+            <svg viewBox={`0 0 ${W} ${H}`} className={styles.svg} role="img" aria-label="Duração média dos treinos ao longo do tempo">
               <defs>
                 <linearGradient id="durFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.45 }} />
@@ -176,21 +176,21 @@ function Charts({ metrics }: { metrics: Metric[] }) {
 
           <section className={styles.card}>
             <div className={styles.cardHead}>
-              <span className={styles.cardTitle}><i className={styles.cardIcon}><RotateCw size={15} /></i> Reps</span>
-              <select className={styles.select} value={mode} onChange={(e) => setMode(e.target.value as 'muscle' | 'exercise')} aria-label="Group reps by">
-                <option value="muscle">By muscle group</option>
-                <option value="exercise">By exercise</option>
+              <span className={styles.cardTitle}><i className={styles.cardIcon}><RotateCw size={15} /></i> Repetições</span>
+              <select className={styles.select} value={mode} onChange={(e) => setMode(e.target.value as 'muscle' | 'exercise')} aria-label="Agrupar repetições por">
+                <option value="muscle">Por grupo muscular</option>
+                <option value="exercise">Por exercício</option>
               </select>
             </div>
             <div className={styles.bigRow}>
-              <b className={styles.big}>{fmtNum(s.reps)}</b><span className={styles.unit}>reps</span>
+              <b className={styles.big}>{fmtNum(s.reps)}</b><span className={styles.unit}>repetições</span>
               <Delta value={delta(s.reps, p.reps)} />
             </div>
-            <small className={styles.avg}>Avg: {fmtNum(s.reps / n)} reps / workout</small>
+            <small className={styles.avg}>Média: {fmtNum(s.reps / n)} repetições por treino</small>
             <ul className={styles.repList}>
               {rows.map((r, i) => (
                 <li key={r.label}>
-                  <div className={styles.repHead}><span><i style={{ opacity: 1 - i * 0.15 }} /> {r.label}</span><b>{fmtNum(r.reps)} reps</b></div>
+                  <div className={styles.repHead}><span><i style={{ opacity: 1 - i * 0.15 }} /> {r.label}</span><b>{fmtNum(r.reps)} repetições</b></div>
                   <div className={styles.track}><div className={styles.fill} style={{ width: `${(r.reps / maxReps) * 100}%`, opacity: 1 - i * 0.12 }} /></div>
                 </li>
               ))}
@@ -209,15 +209,15 @@ function Logbook({ metrics }: { metrics: Metric[] }) {
   const [shown, setShown] = useState(PAGE)
   const list = metrics.slice(0, shown)
 
-  if (metrics.length === 0) return <p className={w.empty}>Your logbook is empty. Finish a workout and it will be saved here.</p>
+  if (metrics.length === 0) return <p className={w.empty}>Seu registro está vazio. Finalize um treino para salvá-lo aqui.</p>
 
   let last = ''
   return (
     <>
-      <p className={styles.count}>{metrics.length} {metrics.length === 1 ? 'workout' : 'workouts'} logged</p>
+      <p className={styles.count}>{metrics.length} {metrics.length === 1 ? 'treino registrado' : 'treinos registrados'}</p>
       <ul className={w.list}>
         {list.map((m) => {
-          const month = m.at.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          const month = m.at.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
           const head = month !== last
           last = month
           return (
@@ -226,16 +226,16 @@ function Logbook({ metrics }: { metrics: Metric[] }) {
               <button type="button" className={`${w.hItem} ${styles.itemBtn}`} onClick={() => navigate(`/workouts/view/${m.id}`)}>
                 <span className={w.hIcon}><Check size={14} /></span>
                 <div className={w.rText}>
-                  <strong>{m.name} <i className={w.hintTag}>{m.at.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}</i></strong>
-                  <small>{mins(m.minutes * 60)} mins • {fmtNum(m.volume)} kg volume • {m.sets} sets</small>
+                  <strong>{m.name} <i className={w.hintTag}>{m.at.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}</i></strong>
+                  <small>{mins(m.minutes * 60)} min • {fmtNum(m.volume)} kg de volume • {m.sets} séries</small>
                 </div>
-                <div className={w.hRight}><strong>{m.pct}%</strong><small>Completed</small></div>
+                <div className={w.hRight}><strong>{m.pct}%</strong><small>Concluído</small></div>
               </button>
             </li>
           )
         })}
       </ul>
-      {shown < metrics.length && <button type="button" className={styles.more} onClick={() => setShown(shown + PAGE)}>Show more</button>}
+      {shown < metrics.length && <button type="button" className={styles.more} onClick={() => setShown(shown + PAGE)}>Mostrar mais</button>}
     </>
   )
 }
@@ -249,11 +249,11 @@ export default function StatsPage() {
   return (
     <div className={styles.page}>
       <div className={styles.tabs} role="tablist">
-        <button type="button" role="tab" aria-selected={tab === 'history'} className={tab === 'history' ? styles.tabOn : styles.tab} onClick={() => setParams({ tab: 'history' }, { replace: true })}><History size={14} /> History</button>
-        <button type="button" role="tab" aria-selected={tab === 'charts'} className={tab === 'charts' ? styles.tabOn : styles.tab} onClick={() => setParams({ tab: 'charts' }, { replace: true })}><LineChart size={14} /> Charts</button>
+        <button type="button" role="tab" aria-selected={tab === 'history'} className={tab === 'history' ? styles.tabOn : styles.tab} onClick={() => setParams({ tab: 'history' }, { replace: true })}><History size={14} /> Histórico</button>
+        <button type="button" role="tab" aria-selected={tab === 'charts'} className={tab === 'charts' ? styles.tabOn : styles.tab} onClick={() => setParams({ tab: 'charts' }, { replace: true })}><LineChart size={14} /> Gráficos</button>
       </div>
-      {isLoading ? <p className={w.loading}>Loading…</p>
-        : isError ? <p className={w.error}>Could not load your workouts. Try again in a moment.</p>
+      {isLoading ? <p className={w.loading}>Carregando…</p>
+        : isError ? <p className={w.error}>Não foi possível carregar seus treinos. Tente novamente em alguns instantes.</p>
         : tab === 'history' ? <Logbook metrics={metrics} /> : <Charts metrics={metrics} />}
     </div>
   )

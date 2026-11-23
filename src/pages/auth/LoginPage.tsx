@@ -77,11 +77,11 @@ export default function LoginPage() {
 
     if (signup) {
       if (!strength.ok) {
-        setError('Password needs 6+ characters with uppercase, lowercase and a number.')
+        setError('A senha precisa de 6 ou mais caracteres, com maiúscula, minúscula e número.')
         return
       }
       if (userStatus !== 'available') {
-        setError('Choose an available username.')
+        setError('Escolha um nome de usuário disponível.')
         return
       }
     }
@@ -97,7 +97,7 @@ export default function LoginPage() {
         options: { data: { full_name: name, username } },
       })
       if (authError) setError(authError.message)
-      else if (!data.session) setInfo('Account created! Confirm your email to log in.')
+      else if (!data.session) setInfo('Conta criada! Confirme seu e-mail para entrar.')
     }
     setBusy(false)
   }
@@ -114,14 +114,14 @@ export default function LoginPage() {
     setError(null)
     setInfo(null)
     if (!emailOk) {
-      setError('Enter your email address first.')
+      setError('Informe seu endereço de e-mail primeiro.')
       return
     }
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
     if (authError) setError(authError.message)
-    else setInfo('Password reset link sent. Check your email.')
+    else setInfo('Link de redefinição enviado. Verifique seu e-mail.')
   }
 
   return (
@@ -134,16 +134,16 @@ export default function LoginPage() {
         </div>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Digital Brain</h1>
-          <span className={styles.badge}>PERSONAL OS</span>
+          <span className={styles.badge}>SISTEMA PESSOAL</span>
         </div>
-        <p className={styles.subtitle}>Synchronize your life, focus &amp; performance</p>
+        <p className={styles.subtitle}>Sincronize sua vida, foco e desempenho</p>
 
         <div className={styles.tabs}>
           <button type="button" className={`${styles.tab} ${!signup ? styles.tabOn : ''}`} onClick={() => switchMode('login')}>
-            <LogIn size={16} /> Log in
+            <LogIn size={16} /> Entrar
           </button>
           <button type="button" className={`${styles.tab} ${signup ? styles.tabOn : ''}`} onClick={() => switchMode('signup')}>
-            <UserPlus size={16} /> Sign up
+            <UserPlus size={16} /> Criar conta
           </button>
         </div>
 
@@ -152,8 +152,8 @@ export default function LoginPage() {
             <>
               <div className={styles.field}>
                 <div className={styles.labelRow}>
-                  <label htmlFor="name">Full Name</label>
-                  <span className={styles.hint}>Cognitive Key</span>
+                  <label htmlFor="name">Nome completo</label>
+                  <span className={styles.hint}>Identificação cognitiva</span>
                 </div>
                 <div className={styles.inputWrap}>
                   <User size={18} />
@@ -163,13 +163,13 @@ export default function LoginPage() {
 
               <div className={styles.field}>
                 <div className={styles.labelRow}>
-                  <label htmlFor="username">Username</label>
+                  <label htmlFor="username">Usuário</label>
                   <span className={userStatus === 'taken' ? styles.bad : styles.hint}>
-                    {userStatus === 'taken' && 'Already taken'}
-                    {userStatus === 'invalid' && '3–20 chars: a-z, 0-9, . _'}
-                    {userStatus === 'checking' && 'Checking…'}
-                    {userStatus === 'available' && 'Available'}
-                    {userStatus === 'idle' && 'Your @handle'}
+                    {userStatus === 'taken' && 'Já está em uso'}
+                    {userStatus === 'invalid' && '3–20 caracteres: a-z, 0-9, . _'}
+                    {userStatus === 'checking' && 'Verificando…'}
+                    {userStatus === 'available' && 'Disponível'}
+                    {userStatus === 'idle' && 'Seu @usuário'}
                   </span>
                 </div>
                 <div className={styles.inputWrap}>
@@ -193,8 +193,8 @@ export default function LoginPage() {
 
           <div className={styles.field}>
             <div className={styles.labelRow}>
-              <label htmlFor="email">{signup ? 'Email Address' : 'Email address'}</label>
-              {!signup && <span className={styles.hint}>Work or personal</span>}
+              <label htmlFor="email">{signup ? 'Endereço de e-mail' : 'Endereço de e-mail'}</label>
+              {!signup && <span className={styles.hint}>Profissional ou pessoal</span>}
             </div>
             <div className={styles.inputWrap}>
               <AtSign size={18} />
@@ -205,11 +205,11 @@ export default function LoginPage() {
 
           <div className={styles.field}>
             <div className={styles.labelRow}>
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">Senha</label>
               {signup ? (
-                <span className={styles.hint}>Medium or stronger</span>
+                <span className={styles.hint}>Média ou mais forte</span>
               ) : (
-                <button type="button" className={styles.link} onClick={handleForgot}>Forgot password?</button>
+                <button type="button" className={styles.link} onClick={handleForgot}>Esqueceu a senha?</button>
               )}
             </div>
             <div className={styles.inputWrap}>
@@ -223,7 +223,7 @@ export default function LoginPage() {
                 required
                 autoComplete={signup ? 'new-password' : 'current-password'}
               />
-              <button type="button" className={styles.eye} onClick={() => setShowPw((v) => !v)} aria-label="Show or hide password">
+              <button type="button" className={styles.eye} onClick={() => setShowPw((v) => !v)} aria-label="Mostrar ou ocultar senha">
                 {showPw ? <Eye size={18} /> : <EyeOff size={18} />}
               </button>
             </div>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                       <i /> {strength.label} · {password.length} chars
                     </span>
                     <span className={styles.hint}>
-                      Entropy · {strength.level >= 3 ? 'High' : strength.level === 2 ? 'Medium' : 'Low'}
+                      Segurança · {strength.level >= 3 ? 'Alta' : strength.level === 2 ? 'Média' : 'Baixa'}
                     </span>
                   </div>
                   <div className={styles.meter}>
@@ -265,38 +265,38 @@ export default function LoginPage() {
           {info && <p className={styles.info}>{info}</p>}
 
           <button className={styles.primary} type="submit" disabled={busy || (signup && !canSignup)}>
-            {busy ? 'Please wait…' : signup ? 'Create Account' : 'Log In'} <ArrowRight size={16} />
+            {busy ? 'Aguarde…' : signup ? 'Criar conta' : 'Entrar'} <ArrowRight size={16} />
           </button>
         </form>
 
-        <div className={styles.divider}><span>OR CONTINUE WITH</span></div>
+        <div className={styles.divider}><span>OU CONTINUE COM</span></div>
 
         <button type="button" className={styles.google} onClick={handleGoogle}>
           <GoogleG />
           <span className={styles.googleText}>
-            <strong>Continue with Google</strong>
-            {signup && <small>Name &amp; profile picture sync automatically</small>}
+            <strong>Continuar com Google</strong>
+            {signup && <small>Nome e foto sincronizados automaticamente</small>}
           </span>
           <ChevronRight size={16} />
         </button>
         {!signup && (
-          <p className={styles.sync}><RefreshCw size={12} /> Syncs Google account profile &amp; avatar automatically</p>
+          <p className={styles.sync}><RefreshCw size={12} /> Sincroniza perfil e foto da conta Google automaticamente</p>
         )}
 
         {signup ? (
           <>
             <p className={styles.already}>
               Already have an account?{' '}
-              <button type="button" className={styles.link} onClick={() => switchMode('login')}>Log in</button>
+              <button type="button" className={styles.link} onClick={() => switchMode('login')}>Entrar</button>
             </p>
-            <span className={styles.secure}><ShieldCheck size={12} /> Encrypted in transit &amp; at rest</span>
+            <span className={styles.secure}><ShieldCheck size={12} /> Criptografado em trânsito e em repouso</span>
             <p className={styles.terms}>
-              By signing up, you agree to our <u>Terms of Service</u> &amp; <u>Privacy Policy</u>.
+              Ao criar uma conta, você concorda com nossos <u>Termos de Uso</u> e <u>Política de Privacidade</u>.
             </p>
           </>
         ) : (
           <p className={styles.terms}>
-            By continuing, you agree to our <u>Terms of Service</u> and <u>Privacy Policy</u>. Encrypted in transit and at rest.
+            Ao continuar, você concorda com nossos <u>Termos de Uso</u> e <u>Política de Privacidade</u>. Criptografado em trânsito e em repouso.
           </p>
         )}
       </div>

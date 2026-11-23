@@ -7,30 +7,30 @@ import styles from './Tasks.module.css'
 type Filter = 'all' | 'high' | 'work' | 'personal' | 'fitness' | 'mindset'
 
 const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'high', label: '● High Priority' },
-  { id: 'work', label: 'Work' },
-  { id: 'personal', label: 'Personal' },
-  { id: 'fitness', label: 'Fitness' },
-  { id: 'mindset', label: 'Mindset' },
+  { id: 'all', label: 'Todas' },
+  { id: 'high', label: '● Alta prioridade' },
+  { id: 'work', label: 'Trabalho' },
+  { id: 'personal', label: 'Pessoal' },
+  { id: 'fitness', label: 'Condicionamento' },
+  { id: 'mindset', label: 'Mentalidade' },
 ]
-const CATEGORY_LABEL: Record<string, string> = { work: 'Work', personal: 'Personal', fitness: 'Fitness', mindset: 'Mindset' }
+const CATEGORY_LABEL: Record<string, string> = { work: 'Trabalho', personal: 'Pessoal', fitness: 'Condicionamento', mindset: 'Mentalidade' }
 
 const matches = (t: Task, f: Filter) => f === 'all' || (f === 'high' ? t.priority === 'high' : t.category === f)
 
 function timeLabel(iso: string | null) {
-  if (!iso) return 'No time'
+  if (!iso) return 'Sem horário'
   const d = new Date(iso)
-  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   if (d.toDateString() === new Date().toDateString()) return time
-  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`
+  return `${d.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })} · ${time}`
 }
 
 function detail(t: Task) {
   const parts: string[] = []
   if (t.remind_minutes_before && t.due_at) {
     const r = new Date(new Date(t.due_at).getTime() - t.remind_minutes_before * 60000)
-    parts.push(`Reminder alarm set at ${r.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`)
+    parts.push(`Alarme definido para ${r.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`)
   }
   const note = t.notes?.split('\n')[0]
   if (note) parts.push(note)
@@ -50,17 +50,17 @@ function TaskCard({ task, done, menuOpen, onMenu, onToggle, onDelete }: CardProp
   const text = detail(task)
   return (
     <li className={`${styles.card} ${done ? styles.cardDone : ''}`}>
-      <button type="button" className={`${styles.box} ${done ? styles.boxOn : ''}`} onClick={onToggle} aria-label={done ? 'Mark as pending' : 'Mark as done'}>
+      <button type="button" className={`${styles.box} ${done ? styles.boxOn : ''}`} onClick={onToggle} aria-label={done ? 'Marcar como pendente' : 'Marcar como concluída'}>
         {done && <Check size={14} />}
       </button>
       <div className={styles.body}>
         <div className={styles.metaRow}>
           <span className={styles.time}><Clock size={11} /> {timeLabel(task.due_at)}</span>
-          {!done && task.priority === 'high' && <span className={styles.high}>● High Priority</span>}
+          {!done && task.priority === 'high' && <span className={styles.high}>● Alta prioridade</span>}
           {task.category && (
             <span className={task.category === 'fitness' ? styles.chipFit : styles.chip}>{CATEGORY_LABEL[task.category]}</span>
           )}
-          {done && <span className={styles.doneTag}>✓ Done</span>}
+          {done && <span className={styles.doneTag}>✓ Concluída</span>}
         </div>
         <strong className={styles.title}>{task.title}</strong>
         {!done && text && (
@@ -70,11 +70,11 @@ function TaskCard({ task, done, menuOpen, onMenu, onToggle, onDelete }: CardProp
         )}
       </div>
       <div className={styles.menuWrap}>
-        <button type="button" className={styles.kebab} onClick={onMenu} aria-label="Task options"><MoreVertical size={16} /></button>
+        <button type="button" className={styles.kebab} onClick={onMenu} aria-label="Opções da tarefa"><MoreVertical size={16} /></button>
         {menuOpen && (
           <div className={styles.menu}>
-            <Link to={`/tasks/${task.id}/edit`}>Edit</Link>
-            <button type="button" onClick={onDelete}>Delete</button>
+            <Link to={`/tasks/${task.id}/edit`}>Editar</Link>
+            <button type="button" onClick={onDelete}>Excluir</button>
           </div>
         )}
       </div>
@@ -96,24 +96,24 @@ export default function TasksPage() {
   const pct = all.length ? Math.round((done.length / all.length) * 100) : 0
   const shownPending = pending.filter((t) => matches(t, filter))
   const shownDone = done.filter((t) => matches(t, filter))
-  const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
-  const message = all.length === 0 ? 'Add a task to get started' : pct >= 67 ? 'High mental clarity · Momentum rolling' : 'Warming up · Keep the loop going'
+  const dateLabel = new Date().toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }).toUpperCase()
+  const message = all.length === 0 ? 'Adicione uma tarefa para começar' : pct >= 67 ? 'Alta clareza mental · Impulso constante' : 'Aquecer · Continue o ciclo'
 
   return (
     <div className={styles.page}>
       <div className={styles.topRow}>
-        <span className={styles.today}><Calendar size={13} /> TODAY, {dateLabel}</span>
-        <span className={styles.countPill}><b>●</b> {pending.length} pending · {done.length} completed</span>
+        <span className={styles.today}><Calendar size={13} /> HOJE, {dateLabel}</span>
+        <span className={styles.countPill}><b>●</b> {pending.length} pendentes · {done.length} concluídas</span>
       </div>
       <div className={styles.titleRow}>
-        <h1 className={styles.h1}>Tasks &amp; Checklist</h1>
-        <Link to="/tasks/new" className={styles.newBtn}><Plus size={14} /> New</Link>
+        <h1 className={styles.h1}>Tarefas e checklist</h1>
+        <Link to="/tasks/new" className={styles.newBtn}><Plus size={14} /> Nova</Link>
       </div>
 
       <section className={styles.hero}>
         <div className={styles.heroText}>
-          <span className={styles.heroKicker}><CheckCircle2 size={11} /> COGNITIVE THROUGHPUT</span>
-          <span className={styles.heroPct}>{pct}%<small>{done.length} of {all.length} completed</small></span>
+          <span className={styles.heroKicker}><CheckCircle2 size={11} /> PRODUTIVIDADE COGNITIVA</span>
+          <span className={styles.heroPct}>{pct}%<small>{done.length} de {all.length} concluídas</small></span>
           <span className={styles.heroMsg}>{message}</span>
           <span className={styles.track}><i style={{ width: `${pct}%` }} /></span>
         </div>
@@ -135,7 +135,7 @@ export default function TasksPage() {
       </div>
 
       {shownPending.length === 0 && shownDone.length === 0 && (
-        <p className={styles.empty}>{all.length === 0 ? 'No tasks yet. Tap “New” to capture your first one.' : 'No tasks in this filter.'}</p>
+        <p className={styles.empty}>{all.length === 0 ? 'Nenhuma tarefa ainda. Toque em “Nova” para criar a primeira.' : 'Nenhuma tarefa neste filtro.'}</p>
       )}
 
       <ul className={styles.list}>
@@ -154,7 +154,7 @@ export default function TasksPage() {
       {shownDone.length > 0 && (
         <>
           <button type="button" className={styles.doneHead} onClick={() => setShowDone((v) => !v)}>
-            <span><CheckCircle2 size={15} /> Completed <i className={styles.count}>{shownDone.length}</i></span>
+            <span><CheckCircle2 size={15} /> Concluídas <i className={styles.count}>{shownDone.length}</i></span>
             <ChevronDown size={16} className={showDone ? '' : styles.rotated} />
           </button>
           {showDone && (

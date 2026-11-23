@@ -55,13 +55,13 @@ export default function OnboardingHabitsPage() {
 
   return (
     <>
-      <span className={styles.tag}><Zap size={12} /> NEURAL HABIT LOOPS</span>
-      <h1 className={styles.h1}>Engineer Your Daily Momentum</h1>
-      <p className={styles.lead}>Habits stick when tied to existing triggers. Configure your core identity habits, anchor cues, and streak protections.</p>
+      <span className={styles.tag}><Zap size={12} /> CICLOS NEURAIS DE HÁBITOS</span>
+      <h1 className={styles.h1}>Crie seu impulso diário</h1>
+      <p className={styles.lead}>Hábitos se tornam mais fortes quando ligados a gatilhos existentes. Configure seus hábitos, sinais e proteções de sequência.</p>
 
       <div className={styles.rowBetween}>
-        <span className={styles.sectionLabel}>Configured Identity Loops <span className={styles.badge}>{activeCount} Active</span></span>
-        <span className={styles.hint}>Tap card to edit cue</span>
+        <span className={styles.sectionLabel}>Ciclos de identidade configurados <span className={styles.badge}>{activeCount} ativos</span></span>
+        <span className={styles.hint}>Toque no cartão para editar</span>
       </div>
 
       <ul className={styles.list}>
@@ -76,29 +76,29 @@ export default function OnboardingHabitsPage() {
                   <strong>{h.name} <em className={styles.badge}>{h.tag}</em></strong>
                   <small>{h.loopSubtitle}</small>
                 </div>
-                <Toggle checked={h.active} onChange={(v) => patch(h.key, { active: v })} label={`Activate ${h.name}`} />
+                <Toggle checked={h.active} onChange={(v) => patch(h.key, { active: v })} label={`Ativar ${h.name}`} />
               </div>
               <button type="button" className={styles.loopBody} onClick={() => setOpenKey(open ? null : h.key)} aria-expanded={open}>
                 <span className={styles.strip}>
-                  <Link2 size={12} /> <span className={styles.cap}>ANCHOR CUE</span>
-                  <b>{h.anchorCue || 'Tap to set a cue'}</b>
+                  <Link2 size={12} /> <span className={styles.cap}>SINAL DE INÍCIO</span>
+                  <b>{h.anchorCue || 'Toque para definir um sinal'}</b>
                 </span>
                 <span className={styles.strip}>
                   <Clock size={12} /> {fmtTime(h.time)} · {weekdaysLabel(h.weekdays)}
-                  <span className={styles.primed}>{h.active ? '● Loop Primed' : 'Paused'}</span>
+                  <span className={styles.primed}>{h.active ? '● Ciclo ativo' : 'Pausado'}</span>
                 </span>
               </button>
               {open && (
                 <div className={styles.editor}>
                   <label className={styles.fieldLabel}>
-                    Anchor cue
-                    <input className={styles.input} value={h.anchorCue} onChange={(e) => patch(h.key, { anchorCue: e.target.value })} placeholder="When will you do this?" />
+                    Sinal de início
+                    <input className={styles.input} value={h.anchorCue} onChange={(e) => patch(h.key, { anchorCue: e.target.value })} placeholder="Quando você fará isso?" />
                   </label>
                   <label className={styles.fieldLabel}>
-                    Time
+                    Horário
                     <input className={styles.input} type="time" value={h.time} onChange={(e) => e.target.value && patch(h.key, { time: e.target.value })} />
                   </label>
-                  <span className={styles.fieldLabel}>Days of the week</span>
+                  <span className={styles.fieldLabel}>Dias da semana</span>
                   <div className={styles.days}>
                     {DAYS.map((d) => (
                       <button key={d.v} type="button" className={h.weekdays.includes(d.v) ? styles.dayOn : styles.day} onClick={() => toggleDay(h, d.v)} aria-label={d.label}>
@@ -106,7 +106,7 @@ export default function OnboardingHabitsPage() {
                       </button>
                     ))}
                   </div>
-                  <button type="button" className={styles.removeBtn} onClick={() => remove(h.key)}>Remove loop</button>
+                  <button type="button" className={styles.removeBtn} onClick={() => remove(h.key)}>Remover ciclo</button>
                 </div>
               )}
             </li>
@@ -116,52 +116,52 @@ export default function OnboardingHabitsPage() {
 
       {adding ? (
         <div className={styles.row}>
-          <input className={styles.input} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Habit name" autoFocus />
-          <button type="button" className={styles.smallBtn} onClick={addCustom}>Add</button>
+          <input className={styles.input} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do hábito" autoFocus />
+          <button type="button" className={styles.smallBtn} onClick={addCustom}>Adicionar</button>
         </div>
       ) : (
         data.habits.length < MAX_HABITS && (
           <button type="button" className={styles.addLoop} onClick={() => setAdding(true)}>
-            <Plus size={14} /> Add Another Identity Loop
+            <Plus size={14} /> Adicionar outro ciclo de identidade
           </button>
         )
       )}
 
-      <span className={styles.sectionLabel}><i className={styles.dot} /> Bio-Adaptive Streak Shield</span>
+      <span className={styles.sectionLabel}><i className={styles.dot} /> Proteção bioadaptativa da sequência</span>
       <ul className={styles.shield}>
         <li>
           <span className={styles.iconBox}><Shield size={16} /></span>
           <div className={styles.cardTitle}>
-            <strong>Streak Freeze Window <em className={styles.badge}>PROTECTED</em></strong>
-            <small>Allows 1 rest or sickness day per 14-day cycle without breaking your continuous momentum tally</small>
+            <strong>Janela de proteção da sequência <em className={styles.badge}>PROTEGIDA</em></strong>
+            <small>Permite 1 dia de descanso ou doença a cada 14 dias sem quebrar sua sequência</small>
           </div>
-          <span className={styles.badge}>1 Grace / 14d</span>
+          <span className={styles.badge}>1 folga / 14 dias</span>
         </li>
         <li>
           <span className={styles.iconBox}><Zap size={16} /></span>
           <div className={styles.cardTitle}>
-            <strong>MVH Protocol <em className={styles.muted}>Atomic</em></strong>
-            <small>On exhausted days, 2 minutes meditation or 2 pages keeps the neural connection firing.</small>
+            <strong>Protocolo mínimo vital <em className={styles.muted}>Essencial</em></strong>
+            <small>Nos dias difíceis, meditar por 2 minutos ou ler 2 páginas mantém o hábito ativo.</small>
           </div>
-          <button type="button" className={`${styles.check} ${data.mvhProtocol ? styles.checkOn : ''}`} onClick={() => setData((d) => ({ ...d, mvhProtocol: !d.mvhProtocol }))} aria-pressed={data.mvhProtocol} aria-label="MVH Protocol">
+          <button type="button" className={`${styles.check} ${data.mvhProtocol ? styles.checkOn : ''}`} onClick={() => setData((d) => ({ ...d, mvhProtocol: !d.mvhProtocol }))} aria-pressed={data.mvhProtocol} aria-label="Protocolo mínimo vital">
             {data.mvhProtocol && <Check size={14} />}
           </button>
         </li>
         <li>
           <span className={styles.iconBox}><Armchair size={16} /></span>
           <div className={styles.cardTitle}>
-            <strong>Weekend Elasticity</strong>
-            <small>Relaxed volume targets on Sat &amp; Sun</small>
+            <strong>Flexibilidade de fim de semana</strong>
+            <small>Metas mais leves aos sábados e domingos</small>
           </div>
-          <Toggle checked={data.weekendElasticity} onChange={(v) => setData((d) => ({ ...d, weekendElasticity: v }))} label="Weekend Elasticity" />
+          <Toggle checked={data.weekendElasticity} onChange={(v) => setData((d) => ({ ...d, weekendElasticity: v }))} label="Flexibilidade de fim de semana" />
         </li>
       </ul>
 
       <section className={styles.forecast}>
         <div className={styles.rowBetween}>
           <div>
-            <span className={styles.cap}>WEEK 1 TRAJECTORY FORECAST</span>
-            <div className={styles.forecastXp}>+{total} XP <small>/ projected weekly</small></div>
+            <span className={styles.cap}>PREVISÃO DA PRIMEIRA SEMANA</span>
+            <div className={styles.forecastXp}>+{total} XP <small>/ projeção semanal</small></div>
           </div>
           <span className={styles.iconBox}><TrendingUp size={16} /></span>
         </div>
@@ -178,14 +178,14 @@ export default function OnboardingHabitsPage() {
             </div>
           ))}
         </div>
-        <p className={styles.quote}>“Consistent micro-actions compound into an unstoppable cognitive system.”</p>
+        <p className={styles.quote}>“Pequenas ações consistentes formam um sistema cognitivo poderoso.”</p>
       </section>
 
       <button type="button" className={styles.primary} onClick={() => navigate('/onboarding/ready')}>
-        Continue to Final Review <ArrowRight size={16} />
+        Continuar para a revisão final <ArrowRight size={16} />
       </button>
       <button type="button" className={styles.ghost} onClick={() => navigate('/onboarding/setup')}>
-        <ArrowLeft size={14} /> Back to Module Parameters
+        <ArrowLeft size={14} /> Voltar aos parâmetros dos módulos
       </button>
     </>
   )

@@ -18,10 +18,10 @@ export default function OnboardingModulesPage() {
 
   return (
     <>
-      <span className={styles.tag}><Zap size={12} /> Bio-adaptive Neural Hub</span>
-      <h1 className={styles.h1}>What do you want to optimize?</h1>
+      <span className={styles.tag}><Zap size={12} /> Central Neural Bioadaptativa</span>
+      <h1 className={styles.h1}>O que você deseja otimizar?</h1>
       <p className={styles.lead}>
-        Select the engines for your operating system. Unselected modules sleep silently in background and can be activated anytime.
+        Selecione os módulos do seu sistema. Os módulos não selecionados ficam desativados e podem ser ativados a qualquer momento.
       </p>
       <ul className={styles.list}>
         {MODULES.map(({ id, title, desc, icon: Icon, badge }) => {
@@ -41,7 +41,7 @@ export default function OnboardingModulesPage() {
         })}
       </ul>
       <button type="button" className={styles.primary} onClick={() => navigate('/onboarding/setup')}>
-        Continue to Setup <ArrowRight size={16} />
+        Continuar para a configuração <ArrowRight size={16} />
       </button>
     </>
   )

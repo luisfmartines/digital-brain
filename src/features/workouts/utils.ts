@@ -1,6 +1,6 @@
 export const MUSCLES: Record<string, string> = {
-  chest: 'Chest', back: 'Back', shoulders: 'Shoulders', biceps: 'Biceps', triceps: 'Triceps',
-  quads: 'Quads', hamstrings: 'Hamstrings', glutes: 'Glutes', calves: 'Calves', core: 'Core',
+  chest: 'Peito', back: 'Costas', shoulders: 'Ombros', biceps: 'Bíceps', triceps: 'Tríceps',
+  quads: 'Quadríceps', hamstrings: 'Posteriores', glutes: 'Glúteos', calves: 'Panturrilhas', core: 'Core',
 }
 export const muscleLabel = (m: string) => MUSCLES[m] ?? m
 
@@ -9,7 +9,7 @@ export interface Timing { started_at: string; ended_at: string | null; paused_se
 
 export const volumeOf = (sets: SetLike[]) =>
   sets.reduce((a, s) => a + (s.completed && !s.is_warmup ? (s.weight_kg ?? 0) * (s.reps ?? 0) : 0), 0)
-export const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
+export const fmtNum = (n: number) => Math.round(n).toLocaleString('pt-BR')
 // Mesma fórmula do servidor
 export const xpFor = (volume: number) => Math.min(500, 50 + Math.round(volume / 100))
 
@@ -27,20 +27,20 @@ export const mins = (secs: number) => Math.max(1, Math.round(secs / 60))
 
 export function relDays(iso: string) {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
-  if (d <= 0) return 'Today'
-  if (d === 1) return 'Yesterday'
-  if (d < 7) return `${d} days ago`
+  if (d <= 0) return 'Hoje'
+  if (d === 1) return 'Ontem'
+  if (d < 7) return `há ${d} dias`
   const w = Math.floor(d / 7)
-  return `${w} week${w > 1 ? 's' : ''} ago`
+  return `há ${w} ${w > 1 ? 'semanas' : 'semana'}`
 }
 
 export function ago(iso: string) {
   const s = (Date.now() - new Date(iso).getTime()) / 1000
-  if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`
+  if (s < 60) return 'agora mesmo'
+  if (s < 3600) return `há ${Math.floor(s / 60)} min`
   if (s < 86400) {
     const h = Math.floor(s / 3600)
-    return `${h} hour${h > 1 ? 's' : ''} ago`
+    return `há ${h} ${h > 1 ? 'horas' : 'hora'}`
   }
   return relDays(iso)
 }
@@ -60,6 +60,6 @@ export async function resizeImage(file: File, max: number): Promise<Blob> {
   canvas.height = Math.round(bmp.height * scale)
   canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height)
   return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not process the image'))), 'image/jpeg', 0.82)
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Não foi possível processar a imagem'))), 'image/jpeg', 0.82)
   )
 }

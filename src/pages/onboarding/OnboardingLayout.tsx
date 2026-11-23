@@ -7,7 +7,7 @@ import { defaultOnboardingData, type OnboardingData } from '../../features/onboa
 import styles from './onboarding.module.css'
 
 const STEPS = ['modules', 'setup', 'habits', 'ready']
-const CHIPS = ['1. Modules', '2. Finance & Fitness', '3. Habits', '4. Ready']
+const CHIPS = ['1. Módulos', '2. Finanças e Treinos', '3. Hábitos', '4. Pronto']
 
 export default function OnboardingLayout() {
   const [data, setData] = useState<OnboardingData>(defaultOnboardingData)
@@ -17,7 +17,7 @@ export default function OnboardingLayout() {
   const step = Math.max(STEPS.findIndex((s) => pathname.endsWith(s)), 0) + 1
 
   const back = (
-    <button type="button" className={styles.iconBtn} onClick={() => navigate(-1)} disabled={step === 1} aria-label="Back">
+    <button type="button" className={styles.iconBtn} onClick={() => navigate(-1)} disabled={step === 1} aria-label="Voltar">
       <ArrowLeft size={20} />
     </button>
   )
@@ -32,12 +32,12 @@ export default function OnboardingLayout() {
             <div className={styles.topbar}>
               {back}
               <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
-              <span className={styles.topTitle}>Onboarding Welcome</span>
+              <span className={styles.topTitle}>Boas-vindas</span>
               {avatar}
             </div>
             <div className={styles.stepRow}>
-              <span className={styles.stepLabel}><i className={styles.dot} /> STEP 1 OF 4 • MODULES</span>
-              <button type="button" className={styles.skipPill} onClick={skip}>Skip Setup</button>
+              <span className={styles.stepLabel}><i className={styles.dot} /> ETAPA 1 DE 4 • MÓDULOS</span>
+              <button type="button" className={styles.skipPill} onClick={skip}>Pular configuração</button>
             </div>
             <div className={styles.bar}><div className={styles.barFill} style={{ width: '25%' }} /></div>
             <div className={styles.stepChips}>
@@ -51,10 +51,10 @@ export default function OnboardingLayout() {
             {back}
             <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
             <div className={styles.centerProgress}>
-              <span className={styles.miniLabel}>ONBOARDING STEP <b>{step} OF 4</b></span>
+              <span className={styles.miniLabel}>ETAPA <b>{step} DE 4</b></span>
               <div className={styles.bar}><div className={styles.barFill} style={{ width: `${step * 25}%` }} /></div>
             </div>
-            {step < 4 && <button type="button" className={styles.skipText} onClick={skip}>Skip</button>}
+            {step < 4 && <button type="button" className={styles.skipText} onClick={skip}>Pular</button>}
             {avatar}
           </div>
         )}

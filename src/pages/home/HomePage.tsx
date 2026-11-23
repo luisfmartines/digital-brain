@@ -19,20 +19,20 @@ import { formatBRL } from '../../features/onboarding/utils'
 import styles from './Home.module.css'
 
 const QUOTES = [
-  'Cognitive momentum is built on eliminating choice fatigue.',
-  'Small actions, repeated daily, become identity.',
-  'What gets scheduled gets done.',
-  'Consistency beats intensity when intensity is not sustainable.',
-  'Protect the streak, not the mood.',
+  'O impulso cognitivo nasce da eliminação da fadiga de escolher.',
+  'Pequenas ações, repetidas diariamente, tornam-se identidade.',
+  'O que é programado é feito.',
+  'Consistência supera intensidade quando ela não é sustentável.',
+  'Proteja a sequência, não o humor.',
 ]
 
 function taskLine(t: { due_at: string | null; notes: string | null } | null) {
-  if (!t) return 'Add your first task'
-  if (!t.due_at) return t.notes ?? 'No time set'
+  if (!t) return 'Adicione sua primeira tarefa'
+  if (!t.due_at) return t.notes ?? 'Sem horário definido'
   const d = new Date(t.due_at)
-  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  if (d.toDateString() === new Date().toDateString()) return `Scheduled at ${time}`
-  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`
+  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (d.toDateString() === new Date().toDateString()) return `Programada para ${time}`
+  return `${d.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })} · ${time}`
 }
 
 interface HeroRow { key: string; icon: LucideIcon; label: string; text: string; ratio: number; counts: boolean; action?: ReactNode; to?: string }
@@ -59,7 +59,7 @@ function Overview() {
   const today = tasks.data?.today ?? 0
 
   const now = new Date()
-  const dateLabel = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const dateLabel = now.toLocaleDateString('pt-BR', { weekday: 'short', month: 'short', day: 'numeric' })
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const elapsed = now.getDate() / daysInMonth
   const remainingDays = daysInMonth - now.getDate() + 1
@@ -78,14 +78,14 @@ function Overview() {
   const tasksTotal = (tasks.data?.doneToday ?? 0) + (tasks.data?.dueNow ?? 0)
 
   const rows: HeroRow[] = []
-  if (has('habits')) rows.push({ key: 'habits', icon: Flame, label: 'Habits', text: `${doneCount}/${habitList.length} habits`, ratio: habitList.length ? doneCount / habitList.length : 0, counts: habitList.length > 0 })
-  if (has('tasks')) rows.push({ key: 'tasks', icon: CheckCircle2, label: 'Tasks', text: `${tasks.data?.doneToday ?? 0}/${tasksTotal} tasks`, ratio: tasksTotal ? (tasks.data?.doneToday ?? 0) / tasksTotal : 0, counts: tasksTotal > 0 })
+  if (has('habits')) rows.push({ key: 'habits', icon: Flame, label: 'Hábitos', text: `${doneCount}/${habitList.length} hábitos`, ratio: habitList.length ? doneCount / habitList.length : 0, counts: habitList.length > 0 })
+  if (has('tasks')) rows.push({ key: 'tasks', icon: CheckCircle2, label: 'Tarefas', text: `${tasks.data?.doneToday ?? 0}/${tasksTotal} tarefas`, ratio: tasksTotal ? (tasks.data?.doneToday ?? 0) / tasksTotal : 0, counts: tasksTotal > 0 })
   rows.push({
-    key: 'water', icon: Droplet, label: 'Water', text: `${litersLabel(ml)} / ${litersLabel(goal)}`, ratio: goal ? ml / goal : 0, counts: true,
+    key: 'water', icon: Droplet, label: 'Água', text: `${litersLabel(ml)} / ${litersLabel(goal)}`, ratio: goal ? ml / goal : 0, counts: true,
     to: '/routine?tab=habits&edit=water', // toca no nome para ajustar a meta (de 500 em 500 ml)
-    action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(WATER_STEP)} disabled={addWater.isPending} aria-label={`Add ${WATER_STEP} ml of water`}>+{WATER_STEP}</button>,
+    action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(WATER_STEP)} disabled={addWater.isPending} aria-label={`Adicionar ${WATER_STEP} ml de água`}>+{WATER_STEP}</button>,
   })
-  if (has('workouts')) rows.push({ key: 'workout', icon: Maximize2, label: 'Workout', text: `${Math.min(workoutsToday, 1)}/1 workout`, ratio: Math.min(workoutsToday, 1), counts: true })
+  if (has('workouts')) rows.push({ key: 'workout', icon: Maximize2, label: 'Treino', text: `${Math.min(workoutsToday, 1)}/1 treino`, ratio: Math.min(workoutsToday, 1), counts: true })
   const lv = levelInfo(profile?.xp, profile?.level)
   const counted = rows.filter((r) => r.counts)
   const overall = counted.length ? Math.round((counted.reduce((a, r) => a + Math.min(1, r.ratio), 0) / counted.length) * 100) : 0
@@ -111,13 +111,13 @@ function Overview() {
       <div className={styles.topRow}>
         <span className={styles.pill}>
           <i className={online ? styles.dot : styles.dotOff} />
-          {online ? 'NEURAL SYNC OPTIMAL · 100%' : 'OFFLINE · SYNC PENDING'}
+          {online ? 'SINCRONIZAÇÃO NEURAL ÓTIMA · 100%' : 'OFFLINE · SINCRONIZAÇÃO PENDENTE'}
         </span>
         <span className={styles.date}>{dateLabel}</span>
       </div>
 
-      <h1 className={styles.hello}>Hello, <span>{firstName}</span></h1>
-      <p className={styles.sub}>Your mind is clear. {today} {today === 1 ? 'priority' : 'priorities'} scheduled today.</p>
+      <h1 className={styles.hello}>Olá, <span>{firstName}</span></h1>
+      <p className={styles.sub}>Sua mente está clara. {today} {today === 1 ? 'prioridade' : 'prioridades'} agendada(s) hoje.</p>
 
       <section className={styles.hero}>
         <ul className={styles.heroRows}>
@@ -138,19 +138,19 @@ function Overview() {
         </ul>
         <div className={styles.heroPct}>
           <strong>{overall}%</strong>
-          <small>completed today</small>
+          <small>concluído hoje</small>
         </div>
       </section>
 
-      <section className={styles.level} aria-label="Level">
+      <section className={styles.level} aria-label="Nível">
         <span className={styles.levelBadge}><Trophy size={14} /><b>LVL {lv.level}</b></span>
         <div className={styles.levelBody}>
           <div className={styles.levelTop}>
             <strong>{lv.rank}</strong>
-            <span>{lv.xp.toLocaleString('en-US')} XP</span>
+            <span>{lv.xp.toLocaleString('pt-BR')} XP</span>
           </div>
           <span className={styles.levelBar}><i style={{ width: `${lv.pct}%` }} /></span>
-          <small>{lv.toNext.toLocaleString('en-US')} XP to Level {lv.level + 1}</small>
+          <small>{lv.toNext.toLocaleString('pt-BR')} XP para o nível {lv.level + 1}</small>
         </div>
       </section>
 
@@ -158,20 +158,20 @@ function Overview() {
         <>
           <form className={styles.command} onSubmit={submit}>
             <Sparkles size={18} className={styles.cmdIcon} />
-            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask Digital Brain or log expense/task..." />
-            <button type="submit" className={styles.send} aria-label="Send"><ArrowUp size={18} /></button>
+            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Pergunte ao Digital Brain ou registre uma tarefa..." />
+            <button type="submit" className={styles.send} aria-label="Enviar"><ArrowUp size={18} /></button>
           </form>
           <div className={styles.chips}>
-            <button type="button" className={styles.chip} onClick={() => goAssistant('Meeting with Product at 3 PM')}><CheckCircle2 size={14} /> Meeting with Product at 3 PM</button>
-            <button type="button" className={styles.chip} onClick={() => goAssistant('Spent R$ 50 at McDonald’s')}><Banknote size={14} /> Spent R$ 50 at McDonald’s</button>
-            <button type="button" className={styles.chip} onClick={() => addWater.mutate(500)}><Droplet size={14} /> Log 500ml water</button>
+            <button type="button" className={styles.chip} onClick={() => goAssistant('Reunião com o Produto às 15h')}><CheckCircle2 size={14} /> Reunião às 15h</button>
+            <button type="button" className={styles.chip} onClick={() => goAssistant('Gastei R$ 50 no McDonald’s')}><Banknote size={14} /> Gastei R$ 50 no McDonald’s</button>
+            <button type="button" className={styles.chip} onClick={() => addWater.mutate(500)}><Droplet size={14} /> Registrar 500 ml de água</button>
           </div>
         </>
       )}
 
       <div className={styles.sectionRow}>
-        <span className={styles.label}>ACTIVE SYNAPSES</span>
-        <span className={styles.live}>Live overview</span>
+        <span className={styles.label}>SINAPSES ATIVAS</span>
+        <span className={styles.live}>Visão geral ao vivo</span>
       </div>
 
       {has('tasks') && (
@@ -179,10 +179,10 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><CheckCircle2 size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>UP NEXT · PRIORITY</span>
-              <strong>{tasks.data?.next?.title ?? 'No tasks yet'}</strong>
+              <span className={styles.cap}>A SEGUIR · PRIORIDADE</span>
+              <strong>{tasks.data?.next?.title ?? 'Nenhuma tarefa ainda'}</strong>
             </div>
-            <span className={styles.badge}>{tasks.data?.pending ?? 0} pending</span>
+            <span className={styles.badge}>{tasks.data?.pending ?? 0} pendentes</span>
           </div>
           <Link to="/routine?tab=tasks" className={styles.strip}>
             <Clock size={14} />
@@ -197,10 +197,10 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Flame size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>HABIT LOOP</span>
-              <strong>{streak > 0 ? `${streak}d streak active` : 'Start your streak today'}</strong>
+              <span className={styles.cap}>CICLO DE HÁBITOS</span>
+              <strong>{streak > 0 ? `Sequência ativa de ${streak} dias` : 'Comece sua sequência hoje'}</strong>
             </div>
-            <span className={styles.meta}>{doneCount} of {habitList.length} complete</span>
+            <span className={styles.meta}>{doneCount} de {habitList.length} concluídos</span>
           </div>
           {habitList.length > 0 ? (
             <div className={styles.habitGrid}>
@@ -213,7 +213,7 @@ function Overview() {
             </div>
           ) : (
             <Link to="/routine?tab=habits" className={styles.strip}>
-              <span className={styles.stripText}>No habits scheduled today</span>
+              <span className={styles.stripText}>Nenhum hábito programado hoje</span>
               <ArrowRight size={14} />
             </Link>
           )}
@@ -225,14 +225,14 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Maximize2 size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>PHYSICAL ENGINE</span>
-              <strong>{ready?.name ?? 'No routine yet'}</strong>
+              <span className={styles.cap}>MOTOR FÍSICO</span>
+              <strong>{ready?.name ?? 'Nenhuma rotina ainda'}</strong>
             </div>
-            <button type="button" className={styles.start} onClick={startReady} disabled={startWorkout.isPending}><Play size={11} /> {ready ? 'Start' : 'Create'}</button>
+            <button type="button" className={styles.start} onClick={startReady} disabled={startWorkout.isPending}><Play size={11} /> {ready ? 'Iniciar' : 'Criar'}</button>
           </div>
           <div className={styles.footRow}>
-            <span>{ready ? (ready.focus ?? (readyMuscles || 'Ready when you are')) : 'Create your first routine'}</span>
-            {ready && <span className={styles.accent}>{ready.routine_exercises.length} exercises • {estimateMinutes(ready.routine_exercises)}m</span>}
+            <span>{ready ? (ready.focus ?? (readyMuscles || 'Pronto quando você estiver')) : 'Crie sua primeira rotina'}</span>
+            {ready && <span className={styles.accent}>{ready.routine_exercises.length} exercícios • {estimateMinutes(ready.routine_exercises)} min</span>}
           </div>
         </section>
       )}
@@ -242,15 +242,15 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Wallet size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>CAPITAL MARGIN</span>
+              <span className={styles.cap}>MARGEM DE CAPITAL</span>
               <strong>{formatBRL(margin)}</strong>
             </div>
-            <span className={styles.badge}><TrendingUp size={10} /> {onTrack ? 'On Track' : 'Over Budget'}</span>
+            <span className={styles.badge}><TrendingUp size={10} /> {onTrack ? 'No orçamento' : 'Acima do orçamento'}</span>
           </div>
           <div className={styles.progress}><div style={{ width: `${Math.round(elapsed * 100)}%` }} /></div>
           <div className={styles.footRow}>
-            <span>Safe burn rate: {formatBRL(burn)} / day</span>
-            <span className={styles.accent}>{Math.round(elapsed * 100)}% month elapsed</span>
+            <span>Limite seguro: {formatBRL(burn)} / dia</span>
+            <span className={styles.accent}>{Math.round(elapsed * 100)}% do mês decorridos</span>
           </div>
         </section>
       )}
@@ -259,7 +259,7 @@ function Overview() {
         <Lightbulb size={16} />
         <div>
           <p>“{QUOTES[dayOfYear() % QUOTES.length]}”</p>
-          <small>Digital Brain Digest · Day {dayOfYear()}</small>
+          <small>Resumo do Digital Brain · Dia {dayOfYear()}</small>
         </div>
       </section>
     </>
@@ -282,7 +282,7 @@ export default function HomePage() {
             className={tab === t ? styles.tabOn : styles.tab}
             onClick={() => setParams(t === 'home' ? {} : { tab: t }, { replace: true })}
           >
-            {t === 'home' ? 'Home' : 'Feed'}
+            {t === 'home' ? 'Início' : 'Feed'}
           </button>
         ))}
       </div>

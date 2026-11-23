@@ -8,8 +8,8 @@ export const WATER_MIN = 500
 export const WATER_MAX = 6000
 export const WATER_DEFAULT = 2500
 
-export const litersLabel = (ml: number) => `${(ml / 1000).toFixed(1).replace(/\.0$/, '')}L`
-export const waterHabitName = (goalMl: number) => `Drink ${litersLabel(goalMl)} Water`
+export const litersLabel = (ml: number) => `${(ml / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} L`
+export const waterHabitName = (goalMl: number) => `Beber ${litersLabel(goalMl)} de água`
 
 /* ---------- Funções de apoio (sem React) ---------- */
 
@@ -143,7 +143,7 @@ export function useEnsureWaterHabit() {
         category: 'health',
         weekdays: [0, 1, 2, 3, 4, 5, 6],
         reminder_time: '09:00:00',
-        anchor_cue: 'Refill your flask with every work sprint',
+        anchor_cue: 'Reencher sua garrafa a cada bloco de trabalho',
       })
       if (error) throw error
       qc.invalidateQueries({ queryKey: ['habits'] })

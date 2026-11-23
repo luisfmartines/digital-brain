@@ -50,48 +50,48 @@ function RoutineForm({ routine }: { routine?: Routine }) {
     <div className={styles.screen}>
       <div className={styles.frame}>
         <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={() => navigate(-1)} aria-label="Back"><ChevronLeft size={22} /></button>
-          <h1 className={styles.headerTitle}>{routine ? 'Edit Routine' : 'New Routine'}</h1>
+          <button type="button" className={styles.back} onClick={() => navigate(-1)} aria-label="Voltar"><ChevronLeft size={22} /></button>
+          <h1 className={styles.headerTitle}>{routine ? 'Editar rotina' : 'Nova rotina'}</h1>
         </header>
 
-        <label className={styles.field}>Routine name
-          <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Push Day A" />
+        <label className={styles.field}>Nome da rotina
+          <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Treino A - Empurrar" />
         </label>
-        <label className={styles.field}>Focus <small>optional</small>
-          <input className={styles.input} value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="e.g., Hypertrophy & Upper Chest Focus" />
+        <label className={styles.field}>Foco <small>opcional</small>
+          <input className={styles.input} value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="Ex.: Hipertrofia e peito superior" />
         </label>
-        <label className={styles.field}>Tags <small>comma separated</small>
-          <input className={styles.input} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Warm-up, Working, Drop set" />
+        <label className={styles.field}>Etiquetas <small>separadas por vírgula</small>
+          <input className={styles.input} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Aquecer, Trabalhar, Série em drop" />
         </label>
 
-        <div className={styles.sectionHead}><span>Exercises <i className={styles.count}>{rows.length}</i></span></div>
+        <div className={styles.sectionHead}><span>Exercícios <i className={styles.count}>{rows.length}</i></span></div>
         <ul className={styles.list}>
           {rows.map((r, i) => (
             <li key={r.key} className={styles.exRow}>
               <div className={styles.rowBetween}>
                 <div className={styles.rText}><strong>{r.exercise.name}</strong><small>{muscleLabel(r.exercise.muscle_group)}</small></div>
                 <div className={styles.rowBtns}>
-                  <button type="button" className={styles.plainBtn} onClick={() => move(i, -1)} aria-label="Move up"><ArrowUp size={15} /></button>
-                  <button type="button" className={styles.plainBtn} onClick={() => move(i, 1)} aria-label="Move down"><ArrowDown size={15} /></button>
-                  <button type="button" className={styles.plainBtn} onClick={() => setRows((c) => c.filter((x) => x.key !== r.key))} aria-label="Remove"><Trash2 size={15} /></button>
+                  <button type="button" className={styles.plainBtn} onClick={() => move(i, -1)} aria-label="Mover para cima"><ArrowUp size={15} /></button>
+                  <button type="button" className={styles.plainBtn} onClick={() => move(i, 1)} aria-label="Mover para baixo"><ArrowDown size={15} /></button>
+                  <button type="button" className={styles.plainBtn} onClick={() => setRows((c) => c.filter((x) => x.key !== r.key))} aria-label="Remover"><Trash2 size={15} /></button>
                 </div>
               </div>
               <div className={styles.ctrlRow}>
-                <label>Sets<input className={styles.mini} inputMode="numeric" value={r.target_sets} onChange={(e) => patch(r.key, { target_sets: Math.min(10, Math.max(1, Number(e.target.value) || 1)) })} /></label>
-                <label>Reps min<input className={styles.mini} inputMode="numeric" value={r.reps_min ?? ''} onChange={(e) => patch(r.key, { reps_min: numOrNull(e.target.value) })} /></label>
-                <label>Reps max<input className={styles.mini} inputMode="numeric" value={r.reps_max ?? ''} onChange={(e) => patch(r.key, { reps_max: numOrNull(e.target.value) })} /></label>
-                <label>Rest<select className={styles.mini} value={r.rest_seconds} onChange={(e) => patch(r.key, { rest_seconds: Number(e.target.value) })}>
+                <label>Séries<input className={styles.mini} inputMode="numeric" value={r.target_sets} onChange={(e) => patch(r.key, { target_sets: Math.min(10, Math.max(1, Number(e.target.value) || 1)) })} /></label>
+                <label>Reps mín.<input className={styles.mini} inputMode="numeric" value={r.reps_min ?? ''} onChange={(e) => patch(r.key, { reps_min: numOrNull(e.target.value) })} /></label>
+                <label>Reps máx.<input className={styles.mini} inputMode="numeric" value={r.reps_max ?? ''} onChange={(e) => patch(r.key, { reps_max: numOrNull(e.target.value) })} /></label>
+                <label>Descanso<select className={styles.mini} value={r.rest_seconds} onChange={(e) => patch(r.key, { rest_seconds: Number(e.target.value) })}>
                   {REST.map((s) => <option key={s} value={s}>{s}s</option>)}
                 </select></label>
               </div>
             </li>
           ))}
         </ul>
-        <button type="button" className={styles.addExBtn} onClick={() => setPicker(true)}><Plus size={14} /> Add exercise</button>
+        <button type="button" className={styles.addExBtn} onClick={() => setPicker(true)}><Plus size={14} /> Adicionar exercício</button>
 
         {error && <p className={styles.error}>{error}</p>}
-        <button type="button" className={styles.primary} onClick={submit} disabled={!name.trim() || save.isPending}>{save.isPending ? 'Saving…' : 'Save routine'}</button>
-        <button type="button" className={styles.cancel} onClick={() => navigate(-1)}>Cancel</button>
+        <button type="button" className={styles.primary} onClick={submit} disabled={!name.trim() || save.isPending}>{save.isPending ? 'Salvando…' : 'Salvar rotina'}</button>
+        <button type="button" className={styles.cancel} onClick={() => navigate(-1)}>Cancelar</button>
       </div>
       {picker && (
         <ExercisePicker
@@ -106,6 +106,6 @@ function RoutineForm({ routine }: { routine?: Routine }) {
 export default function RoutineFormPage() {
   const { id } = useParams()
   const { data: routine, isLoading } = useRoutine(id)
-  if (id && isLoading) return <p style={{ padding: 24 }}>Loading…</p>
+  if (id && isLoading) return <p style={{ padding: 24 }}>Carregando…</p>
   return <RoutineForm key={routine?.id ?? 'new'} routine={routine ?? undefined} />
 }

@@ -17,7 +17,7 @@ export default function WorkoutSummaryPage() {
   const share = useSharePost()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  if (isLoading) return <p className={styles.loading}>Loading…</p>
+  if (isLoading) return <p className={styles.loading}>Carregando…</p>
   if (!session) return <Navigate to="/workouts" replace />
   if (!session.ended_at) return <Navigate to={`/workouts/active/${id}`} replace />
 
@@ -58,48 +58,48 @@ export default function WorkoutSummaryPage() {
     <div className={styles.screen}>
       <div className={styles.frame}>
         <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Back"><ArrowLeft size={20} /></button>
+          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Voltar"><ArrowLeft size={20} /></button>
           <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
-          <h1 className={styles.headerTitle}>Workout Summary</h1>
-          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Close"><X size={20} /></button>
+          <h1 className={styles.headerTitle}>Resumo do treino</h1>
+          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Fechar"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />
         </header>
 
         <section className={styles.sHero}>
           <span className={styles.trophy}><Trophy size={26} /></span>
-          <h2>Workout Completed!</h2>
-          <small>{session.name} • {end.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</small>
-          {xp !== null && <span className={styles.xpPill}><Sparkles size={13} /> +{xp} XP earned</span>}
+          <h2>Treino concluído!</h2>
+          <small>{session.name} • {end.toLocaleDateString('pt-BR', { weekday: 'long', month: 'short', day: 'numeric' })}</small>
+          {xp !== null && <span className={styles.xpPill}><Sparkles size={13} /> +{xp} XP ganhos</span>}
         </section>
 
         <div className={styles.statGrid}>
           <div className={styles.statCard}>
-            <span className={styles.cap}>Duration <Timer size={14} /></span>
-            <strong className={styles.statBig}>{mins(secs)} <small>mins</small></strong>
-            <small className={styles.accentSm}>{done.length} sets logged</small>
+            <span className={styles.cap}>Duração <Timer size={14} /></span>
+            <strong className={styles.statBig}>{mins(secs)} <small>min</small></strong>
+            <small className={styles.accentSm}>{done.length} séries registradas</small>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.cap}>Total Volume {prs.length > 0 && <i className={styles.prTag}>PR</i>}</span>
+            <span className={styles.cap}>Volume total {prs.length > 0 && <i className={styles.prTag}>REC</i>}</span>
             <strong className={styles.statBig}>{fmtNum(volume)} <small>kg</small></strong>
             <small className={styles.accentSm}>
-              {diff === null ? 'First session logged' : `${diff >= 0 ? '+' : '−'}${fmtNum(Math.abs(diff))} kg vs last ${session.name}`}
+              {diff === null ? 'Primeiro treino registrado' : `${diff >= 0 ? '+' : '−'}${fmtNum(Math.abs(diff))} kg vs. treino anterior de ${session.name}`}
             </small>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.cap}>Sets Completed <Maximize2 size={14} /></span>
-            <strong className={styles.statBig}>{done.length} <small>sets</small></strong>
-            <small className={styles.accentSm}>{pct}% of planned sets</small>
+            <span className={styles.cap}>Séries concluídas <Maximize2 size={14} /></span>
+            <strong className={styles.statBig}>{done.length} <small>séries</small></strong>
+            <small className={styles.accentSm}>{pct}% das séries planejadas</small>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.cap}>Exercises <Layers size={14} /></span>
-            <strong className={styles.statBig}>{exercises} <small>done</small></strong>
-            <small className={styles.accentSm}>{fmtNum(reps)} total reps</small>
+            <span className={styles.cap}>Exercícios <Layers size={14} /></span>
+            <strong className={styles.statBig}>{exercises} <small>concluídos</small></strong>
+            <small className={styles.accentSm}>{fmtNum(reps)} repetições no total</small>
           </div>
         </div>
 
         {muscles.length > 0 && (
           <section className={styles.panel}>
-            <div className={styles.sectionHead}><span><i className={styles.dot} /> Muscle Distribution</span><em className={styles.hintTag}>Relative load</em></div>
+            <div className={styles.sectionHead}><span><i className={styles.dot} /> Distribuição muscular</span><em className={styles.hintTag}>Carga relativa</em></div>
             <div className={styles.muscleBar}>
               {muscles.map((m, i) => <i key={m.m} style={{ width: `${m.pct}%`, opacity: 1 - i * 0.18 }} />)}
             </div>
@@ -107,18 +107,18 @@ export default function WorkoutSummaryPage() {
               {muscles.slice(0, 3).map((m) => <div key={m.m}><small>● {muscleLabel(m.m)}</small><strong>{m.pct}%</strong></div>)}
             </div>
             <p className={styles.vector}>
-              <b>Primary stimulus:</b> {muscles.slice(0, 2).map((m) => muscleLabel(m.m)).join(' & ')}.
+              <b>Estímulo principal:</b> {muscles.slice(0, 2).map((m) => muscleLabel(m.m)).join(' & ')}.
             </p>
           </section>
         )}
 
         {prs.length > 0 && (
           <section className={styles.panel}>
-            <div className={styles.sectionHead}><span><Trophy size={14} /> New PRs Locked In</span><em className={styles.badge}>{prs.length} {prs.length === 1 ? 'Milestone' : 'Milestones'}</em></div>
+            <div className={styles.sectionHead}><span><Trophy size={14} /> Novos recordes</span><em className={styles.badge}>{prs.length} {prs.length === 1 ? 'marca' : 'marcas'}</em></div>
             {prs.map((p) => (
               <div key={p.name} className={styles.prRow}>
                 <span className={styles.iconBox}><TrendingUp size={15} /></span>
-                <div className={styles.rText}><strong>{p.name}</strong><small>{p.reps} reps</small></div>
+                <div className={styles.rText}><strong>{p.name}</strong><small>{p.reps} repetições</small></div>
                 <div className={styles.prRight}><strong>{p.best} kg</strong><em>+{Number(p.diff.toFixed(2))} kg PR <Zap size={10} /></em></div>
               </div>
             ))}
@@ -126,18 +126,18 @@ export default function WorkoutSummaryPage() {
         )}
 
         <section className={styles.panel}>
-          <div className={styles.sectionHead}><span><Camera size={14} /> Workout Media</span><em className={styles.hintTag}>Proof of Work</em></div>
+          <div className={styles.sectionHead}><span><Camera size={14} /> Mídia do treino</span><em className={styles.hintTag}>Comprovante</em></div>
           <div className={styles.mediaGrid}>
             {session.photo_url && (
               <div className={styles.photoCard}>
-                <img src={session.photo_url} alt="Workout" />
-                <span>Today, {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                <img src={session.photo_url} alt="Treino" />
+                <span>Hoje, {end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             )}
             <button type="button" className={styles.addPhoto} onClick={() => fileRef.current?.click()} disabled={upload.isPending}>
               <Camera size={20} />
-              <b>{upload.isPending ? 'Uploading…' : session.photo_url ? 'Replace Photo' : '+ Add Photo'}</b>
-              <small>Sync pump photo or form clip</small>
+              <b>{upload.isPending ? 'Enviando…' : session.photo_url ? 'Substituir foto' : '+ Adicionar foto'}</b>
+              <small>Envie uma foto do treino</small>
             </button>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = '' }} />
           </div>
@@ -150,9 +150,9 @@ export default function WorkoutSummaryPage() {
           disabled={!!extras.data?.postId || share.isPending}
           onClick={() => share.mutate({ workoutId: id, photoUrl: session.photo_url }, { onSuccess: () => navigate('/workouts?tab=feed', { replace: true }) })}
         >
-          <Share2 size={15} /> {extras.data?.postId ? 'Shared to feed' : 'Share to Social Feed'}
+          <Share2 size={15} /> {extras.data?.postId ? 'Compartilhado no feed' : 'Compartilhar no feed'}
         </button>
-        <button type="button" className={styles.cancel} onClick={() => navigate('/workouts', { replace: true })}><BookOpen size={14} /> Save to Logbook</button>
+        <button type="button" className={styles.cancel} onClick={() => navigate('/workouts', { replace: true })}><BookOpen size={14} /> Salvar no registro</button>
       </div>
     </div>
   )

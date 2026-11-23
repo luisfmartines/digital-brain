@@ -18,13 +18,13 @@ export default function AppHeader({ subtitle }: { subtitle: string }) {
         </div>
       </div>
       <div className={styles.actions}>
-        <button type="button" className={styles.iconBtn} aria-label="Search">
+        <button type="button" className={styles.iconBtn} aria-label="Pesquisar">
           <Search size={20} />
         </button>
         <button type="button" className={styles.iconBtn} onClick={() => navigate('/friends/add')} aria-label="Adicionar amigos">
           <UserPlus size={20} />
         </button>
-        <button type="button" className={styles.avatarBtn} onClick={() => navigate('/profile')} aria-label="Profile">
+        <button type="button" className={styles.avatarBtn} onClick={() => navigate('/profile')} aria-label="Perfil">
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={34} ring />
         </button>
       </div>

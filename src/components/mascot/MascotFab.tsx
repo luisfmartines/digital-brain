@@ -237,7 +237,7 @@ export default function MascotFab({ hidden = false, lifted = false }: Props) {
       style={style}
       role="button"
       tabIndex={0}
-      aria-label="AI Assistant"
+      aria-label="Assistente de IA"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={(e) => finish(e, false)}

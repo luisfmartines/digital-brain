@@ -103,7 +103,7 @@ export function useFeed() {
         const w = p.workout
         let top: { name: string; weight: number } | null = null
         if (w) for (const s of w.workout_sets) {
-          if (s.completed && !s.is_warmup && (s.weight_kg ?? 0) > (top?.weight ?? 0)) top = { name: s.exercise?.name ?? 'Exercise', weight: s.weight_kg ?? 0 }
+          if (s.completed && !s.is_warmup && (s.weight_kg ?? 0) > (top?.weight ?? 0)) top = { name: s.exercise?.name ?? 'Exercício', weight: s.weight_kg ?? 0 }
         }
         return {
           id: p.id,

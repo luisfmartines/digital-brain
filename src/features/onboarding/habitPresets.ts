@@ -4,13 +4,13 @@ const ALL = [0, 1, 2, 3, 4, 5, 6]
 const WEEK = [1, 2, 3, 4, 5]
 
 export const DAYS = [
-  { label: 'Mon', letter: 'M', v: 1 },
-  { label: 'Tue', letter: 'T', v: 2 },
-  { label: 'Wed', letter: 'W', v: 3 },
-  { label: 'Thu', letter: 'T', v: 4 },
-  { label: 'Fri', letter: 'F', v: 5 },
-  { label: 'Sat', letter: 'S', v: 6 },
-  { label: 'Sun', letter: 'S', v: 0 },
+  { label: 'Seg', letter: 'S', v: 1 },
+  { label: 'Ter', letter: 'T', v: 2 },
+  { label: 'Qua', letter: 'Q', v: 3 },
+  { label: 'Qui', letter: 'Q', v: 4 },
+  { label: 'Sex', letter: 'S', v: 5 },
+  { label: 'Sáb', letter: 'S', v: 6 },
+  { label: 'Dom', letter: 'D', v: 0 },
 ]
 
 export interface HabitPreset {
@@ -26,11 +26,11 @@ export interface HabitPreset {
 }
 
 export const PRESETS: HabitPreset[] = [
-  { key: 'meditation', name: 'Morning Meditation', icon: 'meditation', subtitle: '15 min daily mindful focus', loopSubtitle: 'Mindful Focus • Grounding Ritual', tag: '15m', anchorCue: 'Immediately after waking & cold water', time: '07:15', weekdays: ALL },
-  { key: 'water', name: 'Drink 2.5L Water', icon: 'water', subtitle: 'Cellular hydration baseline', loopSubtitle: 'Bio-Performance • Cellular Drive', tag: '3 Milestones', anchorCue: 'Refill 800ml flask with every work sprint', time: '09:00', weekdays: ALL },
-  { key: 'read', name: 'Read 20 pages', icon: 'read', subtitle: 'Compound knowledge absorption', loopSubtitle: 'Knowledge Synthesis • Deep Mind', tag: 'Compound', anchorCue: 'Evening wind-down before screen curfew', time: '21:30', weekdays: WEEK },
-  { key: 'deepwork', name: 'Deep Work Block', icon: 'deepwork', subtitle: '90 min uninterrupted output', loopSubtitle: 'Flow State • Deep Output', tag: '90m', anchorCue: 'After breakfast, phone in another room', time: '09:30', weekdays: WEEK },
-  { key: 'cold', name: 'Cold Shower', icon: 'cold', subtitle: 'Vascular tone & dopamine reset', loopSubtitle: 'Resilience • Dopamine Reset', tag: '3m', anchorCue: 'Right after the gym', time: '18:30', weekdays: ALL },
+  { key: 'meditation', name: 'Meditação da manhã', icon: 'meditation', subtitle: '15 min de foco consciente por dia', loopSubtitle: 'Foco Consciente • Ritual de Aterramento', tag: '15 min', anchorCue: 'Logo após acordar e beber água', time: '07:15', weekdays: ALL },
+  { key: 'water', name: 'Beber 2,5 L de água', icon: 'water', subtitle: 'Hidratação corporal diária', loopSubtitle: 'Bioperformance • Energia Celular', tag: '3 marcos', anchorCue: 'Reencher a garrafa a cada bloco de trabalho', time: '09:00', weekdays: ALL },
+  { key: 'read', name: 'Ler 20 páginas', icon: 'read', subtitle: 'Aquisição contínua de conhecimento', loopSubtitle: 'Síntese do Conhecimento • Mente Profunda', tag: 'Constante', anchorCue: 'Ao relaxar à noite, antes de parar de usar telas', time: '21:30', weekdays: WEEK },
+  { key: 'deepwork', name: 'Bloco de trabalho profundo', icon: 'deepwork', subtitle: '90 min de produção sem interrupções', loopSubtitle: 'Fluxo • Produção Profunda', tag: '90 min', anchorCue: 'Depois do café da manhã, com o celular em outro lugar', time: '09:30', weekdays: WEEK },
+  { key: 'cold', name: 'Banho frio', icon: 'cold', subtitle: 'Revigorar o corpo e a disposição', loopSubtitle: 'Resiliência • Renovação da Energia', tag: '3 min', anchorCue: 'Logo depois do treino', time: '18:30', weekdays: ALL },
 ]
 
 export const toDraft = (p: HabitPreset): HabitDraft => ({
@@ -39,7 +39,7 @@ export const toDraft = (p: HabitPreset): HabitDraft => ({
 })
 
 export const customDraft = (name: string): HabitDraft => ({
-  key: `custom-${Date.now()}`, name, icon: 'custom', subtitle: 'Custom identity loop',
-  loopSubtitle: 'Custom • Identity Loop', tag: 'Custom', anchorCue: '', time: '09:00',
+  key: `custom-${Date.now()}`, name, icon: 'custom', subtitle: 'Ciclo personalizado de identidade',
+  loopSubtitle: 'Personalizado • Ciclo de Identidade', tag: 'Personalizado', anchorCue: '', time: '09:00',
   weekdays: [...ALL], active: true,
 })

@@ -5,9 +5,9 @@ import RankingView from './RankingView'
 import styles from './workouts.module.css'
 
 const TABS = [
-  { id: 'train', label: 'Training' },
-  { id: 'feed', label: 'Friends Feed' },
-  { id: 'ranking', label: 'Leaderboards' },
+  { id: 'train', label: 'Treinamento' },
+  { id: 'feed', label: 'Feed dos amigos' },
+  { id: 'ranking', label: 'Classificação' },
 ]
 
 export default function WorkoutsPage() {

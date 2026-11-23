@@ -55,8 +55,8 @@ function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle }: 
     <div className={`${styles.setRow} ${current ? styles.setCurrent : ''} ${set.completed ? styles.setDone : ''}`}>
       <button type="button" className={set.is_warmup ? styles.setNumW : styles.setNum} onClick={onCycle} aria-label="Toggle warm-up">{set.is_warmup ? 'W' : label}</button>
       <span className={styles.prev}>{previous ? `${previous.weight_kg ?? 0}kg × ${previous.reps ?? 0}` : '—'}</span>
-      <input className={styles.numInput} inputMode="decimal" value={w} onChange={(e) => setW(e.target.value)} onBlur={commit} aria-label="Weight in kg" />
-      <input className={styles.numInput} inputMode="numeric" value={r} onChange={(e) => setR(e.target.value)} onBlur={commit} aria-label="Reps" />
+      <input className={styles.numInput} inputMode="decimal" value={w} onChange={(e) => setW(e.target.value)} onBlur={commit} aria-label="Peso em kg" />
+      <input className={styles.numInput} inputMode="numeric" value={r} onChange={(e) => setR(e.target.value)} onBlur={commit} aria-label="Repetições" />
       <button type="button" className={set.completed ? styles.checkOn : styles.check} onClick={() => onToggle(num(w), num(r))} aria-label="Mark set as done"><Check size={14} /></button>
     </div>
   )
@@ -94,7 +94,7 @@ export default function ActiveWorkoutPage() {
     }
   }, [now, rest, vibrate, sound])
 
-  if (isLoading) return <p className={styles.loading}>Loading…</p>
+  if (isLoading) return <p className={styles.loading}>Carregando…</p>
   if (!session) return <Navigate to="/workouts" replace />
   if (session.ended_at) return <Navigate to={`/workouts/summary/${id}`} replace />
 
@@ -124,8 +124,8 @@ export default function ActiveWorkoutPage() {
       setRest({
         endsAt: Date.now() + restFor(g.exercise.id) * 1000,
         label: next
-          ? `Resting Set ${s.set_number} • Next: ${next.weight_kg ?? weight ?? 0} kg × ${next.reps ?? reps ?? 0} reps`
-          : `Resting after the last set of ${g.exercise.name}`,
+          ? `Descansando após a série ${s.set_number} • Próxima: ${next.weight_kg ?? weight ?? 0} kg × ${next.reps ?? reps ?? 0} repetições`
+          : `Descansando após a última série de ${g.exercise.name}`,
       })
     }
   }
@@ -140,10 +140,10 @@ export default function ActiveWorkoutPage() {
 
   function finish() {
     if (done.length === 0) {
-      window.alert('Complete at least one set, or discard the workout with the X button.')
+      window.alert('Complete pelo menos uma série ou descarte o treino com o botão X.')
       return
     }
-    if (!window.confirm('Finish this workout?')) return
+    if (!window.confirm('Finalizar este treino?')) return
     actions.finish.mutate(session!, { onSuccess: () => navigate(`/workouts/summary/${id}`, { replace: true }) })
   }
 
@@ -156,9 +156,9 @@ export default function ActiveWorkoutPage() {
     <div className={styles.screen}>
       <div className={styles.frame}>
         <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={() => navigate('/workouts')} aria-label="Back"><ArrowLeft size={20} /></button>
+          <button type="button" className={styles.back} onClick={() => navigate('/workouts')} aria-label="Voltar"><ArrowLeft size={20} /></button>
           <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
-          <h1 className={styles.headerTitle}>Active Workout</h1>
+          <h1 className={styles.headerTitle}>Treino ativo</h1>
           <button type="button" className={styles.back} onClick={discard} aria-label="Discard workout"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />
         </header>
@@ -172,17 +172,17 @@ export default function ActiveWorkoutPage() {
             <button type="button" className={styles.pauseBtn} onClick={() => actions.pause.mutate(session)} aria-label={session.paused_at ? 'Resume' : 'Pause'}>
               {session.paused_at ? <Play size={15} /> : <Pause size={15} />}
             </button>
-            <button type="button" className={styles.finishBtn} onClick={finish}>Finish <Flag size={14} /></button>
+            <button type="button" className={styles.finishBtn} onClick={finish}>Finalizar <Flag size={14} /></button>
           </div>
         </section>
 
         <section className={styles.statsBar}>
-          <div><span className={styles.cap}><Clock size={11} /> TIME</span><strong>{fmtClock(workoutSeconds(session, now))}</strong></div>
-          <div><span className={styles.cap}><Check size={11} /> SETS</span><strong>{done.length}<small>/{sets.length}</small></strong></div>
+          <div><span className={styles.cap}><Clock size={11} /> TEMPO</span><strong>{fmtClock(workoutSeconds(session, now))}</strong></div>
+          <div><span className={styles.cap}><Check size={11} /> SÉRIES</span><strong>{done.length}<small>/{sets.length}</small></strong></div>
           <div><span className={styles.cap}><Maximize2 size={11} /> VOLUME</span><strong>{fmtNum(volumeOf(sets))}<small>kg</small></strong></div>
         </section>
 
-        {groups.length === 0 && <p className={styles.empty}>Empty workout. Add your first exercise below.</p>}
+        {groups.length === 0 && <p className={styles.empty}>Treino vazio. Adicione seu primeiro exercício abaixo.</p>}
 
         {groups.map((g) => {
           const isOpen = open[g.exercise.id] ?? g.exercise.id === currentGroup?.exercise.id
@@ -195,18 +195,18 @@ export default function ActiveWorkoutPage() {
                 <div className={styles.rText}>
                   <div className={styles.tagRow}>
                     <span className={styles.muscleTag}>{muscleLabel(g.exercise.muscle_group).toUpperCase()}</span>
-                    {target && <small>Target: {target} Sets</small>}
+                    {target && <small>Meta: {target} séries</small>}
                   </div>
                   <strong>{g.exercise.name}</strong>
                 </div>
-                {!isOpen && <small className={styles.planned}>{g.sets.length} sets planned</small>}
+                {!isOpen && <small className={styles.planned}>{g.sets.length} séries planejadas</small>}
                 <div className={styles.menuWrap} onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className={styles.plainBtn} onClick={() => setMenuEx(menuEx === g.exercise.id ? null : g.exercise.id)} aria-label="Exercise options">
+                  <button type="button" className={styles.plainBtn} onClick={() => setMenuEx(menuEx === g.exercise.id ? null : g.exercise.id)} aria-label="Opções do exercício">
                     {isOpen ? <MoreVertical size={16} /> : <ChevronDown size={16} />}
                   </button>
                   {menuEx === g.exercise.id && (
                     <div className={styles.menu}>
-                      <button type="button" onClick={() => { setMenuEx(null); actions.removeExercise.mutate(g.exercise.id) }}>Remove exercise</button>
+                      <button type="button" onClick={() => { setMenuEx(null); actions.removeExercise.mutate(g.exercise.id) }}>Remover exercício</button>
                     </div>
                   )}
                 </div>
@@ -214,7 +214,7 @@ export default function ActiveWorkoutPage() {
 
               {isOpen && (
                 <>
-                  <div className={styles.setHead}><span>SET</span><span>PREVIOUS</span><span>KG</span><span>REPS</span><span>DONE</span></div>
+                  <div className={styles.setHead}><span>SÉRIE</span><span>ANTERIOR</span><span>KG</span><span>REPETIÇÕES</span><span>FEITO</span></div>
                   {g.sets.map((s) => {
                     if (!s.is_warmup) workingIndex++
                     return (
@@ -230,14 +230,14 @@ export default function ActiveWorkoutPage() {
                       />
                     )
                   })}
-                  <button type="button" className={styles.addSet} onClick={() => addSet(g)}><Plus size={14} /> Add Set</button>
+                  <button type="button" className={styles.addSet} onClick={() => addSet(g)}><Plus size={14} /> Adicionar série</button>
                 </>
               )}
             </section>
           )
         })}
 
-        <button type="button" className={styles.addExBtn} onClick={() => setPicker(true)}><Plus size={14} /> Add exercise</button>
+        <button type="button" className={styles.addExBtn} onClick={() => setPicker(true)}><Plus size={14} /> Adicionar exercício</button>
         <div style={{ height: rest ? 190 : 24 }} />
       </div>
 
@@ -257,7 +257,7 @@ export default function ActiveWorkoutPage() {
           <div className={styles.restBtns}>
             <button type="button" onClick={() => setRest({ ...rest, endsAt: rest.endsAt - 15000 })}>−15s</button>
             <button type="button" onClick={() => setRest({ ...rest, endsAt: rest.endsAt + 30000 })}>+30s</button>
-            <button type="button" className={styles.skip} onClick={() => setRest(null)}>Skip Rest <FastForward size={14} /></button>
+            <button type="button" className={styles.skip} onClick={() => setRest(null)}>Pular descanso <FastForward size={14} /></button>
           </div>
         </section>
       )}
