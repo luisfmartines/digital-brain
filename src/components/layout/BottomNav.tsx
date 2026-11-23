@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { CalendarDays, CheckCircle2, Flame, Home, Maximize2, Wallet } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Flame, Home, Wallet } from 'lucide-react'
 import { useProfile } from '../../features/profile/useProfile'
 import styles from './BottomNav.module.css'
 
@@ -7,7 +7,6 @@ const TABS = [
   { to: '/', label: 'Home', icon: Home, module: null },
   { to: '/tasks', label: 'Tasks', icon: CheckCircle2, module: 'tasks' },
   { to: '/habits', label: 'Habits', icon: Flame, module: 'habits' },
-  { to: '/workouts', label: 'Workouts', icon: Maximize2, module: 'workouts' },
   { to: '/finance', label: 'Finances', icon: Wallet, module: 'finance' },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays, module: 'calendar' },
 ]

@@ -1,8 +1,15 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, Clock, Flame, Lightbulb, Maximize2, Play, Sparkles, TrendingUp, Wallet } from 'lucide-react'
+import {
+  ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, Clock, Droplet, Flame, Lightbulb, Maximize2, Play, Plus, Sparkles, TrendingUp, Wallet,
+  type LucideIcon,
+} from 'lucide-react'
 import { useProfile } from '../../features/profile/useProfile'
-import { useMonthFinance, useNextRoutine, useTasksSummary, useTodayHabits, useToggleHabit } from '../../features/home/queries'
+import {
+  useAddWater, useMonthFinance, useTasksSummary, useTodayHabits, useToggleHabit, useWater, useWorkoutsToday,
+} from '../../features/home/queries'
+import { useLastPerformed, useRoutines, useStartWorkout } from '../../features/workouts/queries'
+import { estimateMinutes, muscleLabel } from '../../features/workouts/utils'
 import { useOnline } from '../../hooks/useOnline'
 import { dayOfYear } from '../../lib/date'
 import { formatBRL } from '../../features/onboarding/utils'
@@ -16,6 +23,8 @@ const QUOTES = [
   'Protect the streak, not the mood.',
 ]
 
+const liters = (ml: number) => `${(ml / 1000).toFixed(1).replace(/\.0$/, '')}L`
+
 function taskLine(t: { due_at: string | null; notes: string | null } | null) {
   if (!t) return 'Add your first task'
   if (!t.due_at) return t.notes ?? 'No time set'
@@ -25,13 +34,20 @@ function taskLine(t: { due_at: string | null; notes: string | null } | null) {
   return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`
 }
 
+interface HeroRow { key: string; icon: LucideIcon; label: string; text: string; ratio: number; counts: boolean; action?: ReactNode }
+
 export default function HomePage() {
   const { data: profile } = useProfile()
   const tasks = useTasksSummary()
   const habits = useTodayHabits()
   const toggle = useToggleHabit()
-  const routine = useNextRoutine()
   const finance = useMonthFinance()
+  const water = useWater()
+  const addWater = useAddWater()
+  const workoutsToday = useWorkoutsToday().data ?? 0
+  const routines = useRoutines().data ?? []
+  const last = useLastPerformed().data ?? {}
+  const startWorkout = useStartWorkout()
   const online = useOnline()
   const navigate = useNavigate()
   const [prompt, setPrompt] = useState('')
@@ -49,20 +65,42 @@ export default function HomePage() {
 
   const fin = finance.data
   const margin = fin?.margin ?? 0
-  const onTrack = !fin || margin >= 0 && (fin.income === 0 || fin.spent / fin.income <= elapsed + 0.05)
+  const onTrack = !fin || (margin >= 0 && (fin.income === 0 || fin.spent / fin.income <= elapsed + 0.05))
   const burn = Math.max(0, margin) / remainingDays
 
   const habitList = habits.data?.habits ?? []
   const doneCount = habitList.filter((h) => h.done).length
   const streak = habits.data?.streak ?? 0
 
+  const ml = water.data?.ml ?? 0
+  const goal = water.data?.goal ?? 2500
+  const tasksTotal = (tasks.data?.doneToday ?? 0) + (tasks.data?.dueNow ?? 0)
+
+  const rows: HeroRow[] = []
+  if (has('habits')) rows.push({ key: 'habits', icon: Flame, label: 'Habits', text: `${doneCount}/${habitList.length} habits`, ratio: habitList.length ? doneCount / habitList.length : 0, counts: habitList.length > 0 })
+  if (has('tasks')) rows.push({ key: 'tasks', icon: CheckCircle2, label: 'Tasks', text: `${tasks.data?.doneToday ?? 0}/${tasksTotal} tasks`, ratio: tasksTotal ? (tasks.data?.doneToday ?? 0) / tasksTotal : 0, counts: tasksTotal > 0 })
+  rows.push({
+    key: 'water', icon: Droplet, label: 'Water', text: `${liters(ml)} / ${liters(goal)}`, ratio: goal ? ml / goal : 0, counts: true,
+    action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(250)} aria-label="Add 250 ml of water">+250</button>,
+  })
+  if (has('workouts')) rows.push({ key: 'workout', icon: Maximize2, label: 'Workout', text: `${Math.min(workoutsToday, 1)}/1 workout`, ratio: Math.min(workoutsToday, 1), counts: true })
+  const counted = rows.filter((r) => r.counts)
+  const overall = counted.length ? Math.round((counted.reduce((a, r) => a + Math.min(1, r.ratio), 0) / counted.length) * 100) : 0
+
+  // Rotina "pronta hoje": a que você treinou há mais tempo
+  const ready = [...routines].sort((a, b) => (last[a.id] ?? '').localeCompare(last[b.id] ?? ''))[0]
+  const readyMuscles = ready ? [...new Set(ready.routine_exercises.map((x) => muscleLabel(x.exercise.muscle_group)))].slice(0, 2).join(' & ') : ''
+
   function goAssistant(text: string) {
     navigate('/assistant', { state: { prompt: text } })
   }
-
   function submit(e: FormEvent) {
     e.preventDefault()
     if (prompt.trim()) goAssistant(prompt.trim())
+  }
+  function startReady() {
+    if (!ready) return navigate('/workouts/routines/new')
+    startWorkout.mutate(ready, { onSuccess: (id) => navigate(`/workouts/active/${id}`) })
   }
 
   return (
@@ -76,24 +114,38 @@ export default function HomePage() {
       </div>
 
       <h1 className={styles.hello}>Hello, <span>{firstName}</span></h1>
-      <p className={styles.sub}>
-        Your mind is clear. {today} {today === 1 ? 'priority' : 'priorities'} scheduled today.
-      </p>
+      <p className={styles.sub}>Your mind is clear. {today} {today === 1 ? 'priority' : 'priorities'} scheduled today.</p>
+
+      <section className={styles.hero}>
+        <ul className={styles.heroRows}>
+          {rows.map((r) => (
+            <li key={r.key}>
+              <div className={styles.heroLine}>
+                <span><r.icon size={13} /> {r.label}</span>
+                <b>{r.text}</b>
+                {r.action}
+              </div>
+              <span className={styles.heroBar}><i style={{ width: `${Math.min(100, r.ratio * 100)}%` }} /></span>
+            </li>
+          ))}
+        </ul>
+        <div className={styles.heroPct}>
+          <strong>{overall}%</strong>
+          <small>completed today</small>
+        </div>
+      </section>
 
       {has('assistant') && (
         <>
           <form className={styles.command} onSubmit={submit}>
             <Sparkles size={18} className={styles.cmdIcon} />
-            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask Digital Brain or log expense/task" />
+            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask Digital Brain or log expense/task..." />
             <button type="submit" className={styles.send} aria-label="Send"><ArrowUp size={18} /></button>
           </form>
           <div className={styles.chips}>
-            <button type="button" className={styles.chip} onClick={() => goAssistant('Meeting with Product at 3 PM')}>
-              <CheckCircle2 size={14} /> Meeting with Product at 3 PM
-            </button>
-            <button type="button" className={styles.chip} onClick={() => goAssistant('Spent R$ 50 at McDonald’s')}>
-              <Banknote size={14} /> Spent R$ 50 at McDonald’s
-            </button>
+            <button type="button" className={styles.chip} onClick={() => goAssistant('Meeting with Product at 3 PM')}><CheckCircle2 size={14} /> Meeting with Product at 3 PM</button>
+            <button type="button" className={styles.chip} onClick={() => goAssistant('Spent R$ 50 at McDonald’s')}><Banknote size={14} /> Spent R$ 50 at McDonald’s</button>
+            <button type="button" className={styles.chip} onClick={() => addWater.mutate(500)}><Droplet size={14} /> Log 500ml water</button>
           </div>
         </>
       )}
@@ -155,13 +207,13 @@ export default function HomePage() {
             <span className={styles.iconBox}><Maximize2 size={18} /></span>
             <div className={styles.titleBox}>
               <span className={styles.cap}>PHYSICAL ENGINE</span>
-              <strong>{routine.data?.name ?? 'No routine yet'}</strong>
+              <strong>{ready?.name ?? 'No routine yet'}</strong>
             </div>
-            <Link to="/workouts" className={styles.start}><Play size={11} /> Start</Link>
+            <button type="button" className={styles.start} onClick={startReady} disabled={startWorkout.isPending}><Play size={11} /> {ready ? 'Start' : 'Create'}</button>
           </div>
           <div className={styles.footRow}>
-            <span>{routine.data?.notes ?? 'Create your first routine'}</span>
-            {routine.data && <span className={styles.accent}>{routine.data.exercises} exercises</span>}
+            <span>{ready ? (ready.focus ?? (readyMuscles || 'Ready when you are')) : 'Create your first routine'}</span>
+            {ready && <span className={styles.accent}>{ready.routine_exercises.length} exercises • {estimateMinutes(ready.routine_exercises)}m</span>}
           </div>
         </section>
       )}

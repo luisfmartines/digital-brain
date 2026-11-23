@@ -1,0 +1,2 @@
+export { estimateMinutes, fmtNum, mins, muscleLabel, relDays, repsText } from '../../features/workouts/utils'
+export const weekdayShort = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short' })

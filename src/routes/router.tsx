@@ -14,6 +14,10 @@ import OnboardingModulesPage from '../pages/onboarding/OnboardingModulesPage'
 import OnboardingSetupPage from '../pages/onboarding/OnboardingSetupPage'
 import OnboardingHabitsPage from '../pages/onboarding/OnboardingHabitsPage'
 import OnboardingReadyPage from '../pages/onboarding/OnboardingReadyPage'
+import WorkoutsPage from '../pages/workouts/WorkoutsPage'
+import RoutineFormPage from '../pages/workouts/RoutineFormPage'
+import ActiveWorkoutPage from '../pages/workouts/ActiveWorkoutPage'
+import WorkoutSummaryPage from '../pages/workouts/WorkoutSummaryPage'
 
 const Page = ({ title }: { title: string }) => <h1>{title}</h1>
 
@@ -43,13 +47,20 @@ export const router = createBrowserRouter([
           // Telas cheias, sem barra inferior
           { path: '/tasks/new', element: <TaskFormPage /> },
           { path: '/tasks/:id/edit', element: <TaskFormPage /> },
+
+          // Treino ativo
+          { path: '/workouts/active/:id', element: <ActiveWorkoutPage /> },
+          { path: '/workouts/summary/:id', element: <WorkoutSummaryPage /> },
+          { path: '/workouts/routines/new', element: <RoutineFormPage /> },
+          { path: '/workouts/routines/:id/edit', element: <RoutineFormPage /> },
+
           {
             element: <AppShell />,
             children: [
               { path: '/', element: <HomePage /> },
               { path: '/tasks', element: <TasksPage /> },
               { path: '/habits', element: <HabitsPage /> },
-              { path: '/workouts', element: <Page title="Workouts" /> },
+              { path: '/workouts', element: <WorkoutsPage /> },
               { path: '/finance', element: <Page title="Finances" /> },
               { path: '/calendar', element: <Page title="Calendar" /> },
               { path: '/assistant', element: <AssistantPage /> },

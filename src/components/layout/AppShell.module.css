@@ -11,3 +11,11 @@
   color: var(--color-secondary);
   box-shadow: 0 0 24px rgba(63, 166, 114, 0.45);
 }
+
+.fabStacked { bottom: calc(152px + env(safe-area-inset-bottom)); }
+.live {
+  position: absolute; top: 3px; right: 3px; width: 11px; height: 11px;
+  border-radius: 50%; background: #ff6b81; border: 2px solid var(--color-bg);
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse { 50% { opacity: 0.3; } }

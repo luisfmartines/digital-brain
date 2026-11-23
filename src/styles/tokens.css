@@ -1,5 +1,8 @@
 :root,
 [data-theme='dark'] {
+    --font-display: 'Playfair Display Variable', Georgia, serif;
+  --font-heading: 'Space Grotesk Variable', system-ui, sans-serif;
+  --font-body: 'Manrope Variable', system-ui, sans-serif;
   --color-primary: #3fa672;
   --color-secondary: #6fcf9a;
   --color-tertiary: #1b4d36;

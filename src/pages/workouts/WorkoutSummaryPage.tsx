@@ -1,0 +1,159 @@
+import { useRef } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, BookOpen, Camera, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
+import Avatar from '../../components/ui/Avatar'
+import { useProfile } from '../../features/profile/useProfile'
+import { useSession, useSharePost, useSummaryExtras, useUploadPhoto } from '../../features/workouts/queries'
+import { fmtNum, mins, muscleLabel, volumeOf, workoutSeconds } from '../../features/workouts/utils'
+import styles from './workouts.module.css'
+
+export default function WorkoutSummaryPage() {
+  const { id = '' } = useParams()
+  const navigate = useNavigate()
+  const { data: profile } = useProfile()
+  const { data: session, isLoading } = useSession(id)
+  const extras = useSummaryExtras(session)
+  const upload = useUploadPhoto(id)
+  const share = useSharePost()
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  if (isLoading) return <p className={styles.loading}>Loading…</p>
+  if (!session) return <Navigate to="/workouts" replace />
+  if (!session.ended_at) return <Navigate to={`/workouts/active/${id}`} replace />
+
+  const sets = session.workout_sets
+  const done = sets.filter((s) => s.completed)
+  const work = done.filter((s) => !s.is_warmup)
+  const volume = volumeOf(sets)
+  const secs = workoutSeconds(session, 0)
+  const pct = sets.length ? Math.round((done.length / sets.length) * 100) : 0
+  const exercises = new Set(done.map((s) => s.exercise_id)).size
+  const reps = work.reduce((a, s) => a + (s.reps ?? 0), 0)
+  const xp = extras.data?.xp ?? null
+  const prevVol = extras.data?.prevVolume ?? null
+  const diff = prevVol === null ? null : volume - prevVol
+
+  // Recordes de carga (só conta se já existia um registro anterior)
+  const prs = [...new Set(work.map((s) => s.exercise_id))]
+    .map((exId) => {
+      const own = work.filter((s) => s.exercise_id === exId)
+      const best = Math.max(...own.map((s) => s.weight_kg ?? 0))
+      const before = extras.data?.bests.get(exId)
+      if (before === undefined || best <= before || best <= 0) return null
+      const top = own.filter((s) => (s.weight_kg ?? 0) === best).sort((a, b) => (b.reps ?? 0) - (a.reps ?? 0))[0]
+      return { name: own[0].exercise.name, best, diff: best - before, reps: top.reps ?? 0 }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+
+  // Distribuição por músculo (por volume; sem carga, por número de séries)
+  const useVol = volume > 0
+  const byMuscle = new Map<string, number>()
+  for (const s of work) byMuscle.set(s.exercise.muscle_group, (byMuscle.get(s.exercise.muscle_group) ?? 0) + (useVol ? (s.weight_kg ?? 0) * (s.reps ?? 0) : 1))
+  const total = [...byMuscle.values()].reduce((a, b) => a + b, 0)
+  const muscles = [...byMuscle.entries()].sort((a, b) => b[1] - a[1]).map(([m, v]) => ({ m, pct: total ? Math.round((v / total) * 100) : 0 }))
+
+  const end = new Date(session.ended_at)
+
+  return (
+    <div className={styles.screen}>
+      <div className={styles.frame}>
+        <header className={styles.header}>
+          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Back"><ArrowLeft size={20} /></button>
+          <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
+          <h1 className={styles.headerTitle}>Workout Summary</h1>
+          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Close"><X size={20} /></button>
+          <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />
+        </header>
+
+        <section className={styles.sHero}>
+          <span className={styles.trophy}><Trophy size={26} /></span>
+          <h2>Workout Completed!</h2>
+          <small>{session.name} • {end.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</small>
+          {xp !== null && <span className={styles.xpPill}><Sparkles size={13} /> +{xp} XP earned</span>}
+        </section>
+
+        <div className={styles.statGrid}>
+          <div className={styles.statCard}>
+            <span className={styles.cap}>Duration <Timer size={14} /></span>
+            <strong className={styles.statBig}>{mins(secs)} <small>mins</small></strong>
+            <small className={styles.accentSm}>{done.length} sets logged</small>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.cap}>Total Volume {prs.length > 0 && <i className={styles.prTag}>PR</i>}</span>
+            <strong className={styles.statBig}>{fmtNum(volume)} <small>kg</small></strong>
+            <small className={styles.accentSm}>
+              {diff === null ? 'First session logged' : `${diff >= 0 ? '+' : '−'}${fmtNum(Math.abs(diff))} kg vs last ${session.name}`}
+            </small>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.cap}>Sets Completed <Maximize2 size={14} /></span>
+            <strong className={styles.statBig}>{done.length} <small>sets</small></strong>
+            <small className={styles.accentSm}>{pct}% of planned sets</small>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.cap}>Exercises <Layers size={14} /></span>
+            <strong className={styles.statBig}>{exercises} <small>done</small></strong>
+            <small className={styles.accentSm}>{fmtNum(reps)} total reps</small>
+          </div>
+        </div>
+
+        {muscles.length > 0 && (
+          <section className={styles.panel}>
+            <div className={styles.sectionHead}><span><i className={styles.dot} /> Muscle Distribution</span><em className={styles.hintTag}>Relative load</em></div>
+            <div className={styles.muscleBar}>
+              {muscles.map((m, i) => <i key={m.m} style={{ width: `${m.pct}%`, opacity: 1 - i * 0.18 }} />)}
+            </div>
+            <div className={styles.muscleChips}>
+              {muscles.slice(0, 3).map((m) => <div key={m.m}><small>● {muscleLabel(m.m)}</small><strong>{m.pct}%</strong></div>)}
+            </div>
+            <p className={styles.vector}>
+              <b>Primary stimulus:</b> {muscles.slice(0, 2).map((m) => muscleLabel(m.m)).join(' & ')}.
+            </p>
+          </section>
+        )}
+
+        {prs.length > 0 && (
+          <section className={styles.panel}>
+            <div className={styles.sectionHead}><span><Trophy size={14} /> New PRs Locked In</span><em className={styles.badge}>{prs.length} {prs.length === 1 ? 'Milestone' : 'Milestones'}</em></div>
+            {prs.map((p) => (
+              <div key={p.name} className={styles.prRow}>
+                <span className={styles.iconBox}><TrendingUp size={15} /></span>
+                <div className={styles.rText}><strong>{p.name}</strong><small>{p.reps} reps</small></div>
+                <div className={styles.prRight}><strong>{p.best} kg</strong><em>+{Number(p.diff.toFixed(2))} kg PR <Zap size={10} /></em></div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        <section className={styles.panel}>
+          <div className={styles.sectionHead}><span><Camera size={14} /> Workout Media</span><em className={styles.hintTag}>Proof of Work</em></div>
+          <div className={styles.mediaGrid}>
+            {session.photo_url && (
+              <div className={styles.photoCard}>
+                <img src={session.photo_url} alt="Workout" />
+                <span>Today, {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            )}
+            <button type="button" className={styles.addPhoto} onClick={() => fileRef.current?.click()} disabled={upload.isPending}>
+              <Camera size={20} />
+              <b>{upload.isPending ? 'Uploading…' : session.photo_url ? 'Replace Photo' : '+ Add Photo'}</b>
+              <small>Sync pump photo or form clip</small>
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = '' }} />
+          </div>
+          {upload.error && <p className={styles.error}>{upload.error.message}</p>}
+        </section>
+
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={!!extras.data?.postId || share.isPending}
+          onClick={() => share.mutate({ workoutId: id, photoUrl: session.photo_url }, { onSuccess: () => navigate('/workouts?tab=feed', { replace: true }) })}
+        >
+          <Share2 size={15} /> {extras.data?.postId ? 'Shared to feed' : 'Share to Social Feed'}
+        </button>
+        <button type="button" className={styles.cancel} onClick={() => navigate('/workouts', { replace: true })}><BookOpen size={14} /> Save to Logbook</button>
+      </div>
+    </div>
+  )
+}
