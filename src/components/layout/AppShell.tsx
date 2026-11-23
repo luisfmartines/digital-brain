@@ -13,6 +13,7 @@ const SUBTITLES: Record<string, string> = {
   '/': 'HOME',
   '/routine': 'ROUTINE',
   '/workouts': 'WORKOUTS',
+  '/workouts/stats': 'WORKOUTS',
   '/finance': 'FINANCES',
   '/calendar': 'CALENDAR',
   '/assistant': 'AI ASSISTANT',

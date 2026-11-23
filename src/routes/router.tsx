@@ -19,6 +19,7 @@ import ActiveWorkoutPage from '../pages/workouts/ActiveWorkoutPage'
 import WorkoutSummaryPage from '../pages/workouts/WorkoutSummaryPage'
 import WorkoutDetailPage from '../pages/workouts/WorkoutDetailPage'
 import AddFriendsPage from '../pages/social/AddFriendsPage'
+import StatsPage from '../pages/workouts/StatsPage'
 
 const Page = ({ title }: { title: string }) => <h1>{title}</h1>
 
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
               { path: '/tasks', element: <Navigate to="/routine?tab=tasks" replace /> },
               { path: '/habits', element: <Navigate to="/routine?tab=habits" replace /> },
               { path: '/workouts', element: <WorkoutsPage /> },
+              { path: '/workouts/stats', element: <StatsPage /> },
               { path: '/finance', element: <Page title="Finances" /> },
               { path: '/calendar', element: <Page title="Calendar" /> },
               { path: '/assistant', element: <AssistantPage /> },

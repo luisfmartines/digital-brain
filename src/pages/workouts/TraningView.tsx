@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, Clock, History, Maximize2, MoreVertical, Pencil, Play, PlayCircle, Plus, Timer, TrendingUp, Zap } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ArrowRight, Check, Clock, History, Maximize2, MoreVertical, Pencil, Play, PlayCircle, Plus, Timer, TrendingUp, Zap } from 'lucide-react'
 import {
   useActiveWorkout, useDeleteRoutine, useHistory, useLastPerformed, useRoutines, useStartWorkout, useWeekStats, type Routine,
 } from '../../features/workouts/queries'
@@ -15,7 +15,6 @@ const info = (r: Routine) => ({
 
 export default function TrainingView() {
   const navigate = useNavigate()
-  const [, setParams] = useSearchParams()
   const routines = useRoutines().data ?? []
   const last = useLastPerformed().data ?? {}
   const week = useWeekStats().data
@@ -39,17 +38,17 @@ export default function TrainingView() {
           <h1 className={styles.h1}>Workouts</h1>
           <span className={styles.sub}>Hypertrophy &amp; Performance Protocol</span>
         </div>
-        <button type="button" className={styles.iconBtn} onClick={() => setParams({ tab: 'ranking' })} aria-label="Leaderboards"><TrendingUp size={18} /></button>
+        <button type="button" className={styles.iconBtn} onClick={() => navigate('/workouts/stats?tab=charts')} aria-label="Charts &amp; analytics"><TrendingUp size={18} /></button>
       </div>
 
-      <section className={styles.traj}>
+      <Link to="/workouts/stats?tab=charts" className={`${styles.traj} ${styles.trajLink}`}>
         <span className={styles.iconBox}><Zap size={16} /></span>
         <div className={styles.trajText}>
           <strong>Weekly Trajectory</strong>
           <small>{week?.count ?? 0} workouts • {fmtNum(week?.volume ?? 0)} kg vol</small>
         </div>
         {delta !== null && <span className={styles.deltaPill}><TrendingUp size={11} /> {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%</span>}
-      </section>
+      </Link>
 
       {active && (
         <button type="button" className={styles.banner} onClick={() => navigate(`/workouts/active/${active.id}`)}>
@@ -126,6 +125,7 @@ export default function TrainingView() {
         <>
           <div className={styles.sectionHead}>
             <span>Recent History <i className={styles.hintTag}>Synaptic Sync</i></span>
+            <Link to="/workouts/stats?tab=history" className={`${styles.link} ${styles.linkIcon}`}>Logbook <ArrowRight size={13} /></Link>
           </div>
           <ul className={styles.list}>
             {history.map((h) => (

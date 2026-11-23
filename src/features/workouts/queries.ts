@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 import { addDays, startOfWeek } from '../../lib/date'
+import type { LogWorkout } from './stats'
 import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null }
@@ -408,6 +409,25 @@ export function useSharePost() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['social'] })
       qc.invalidateQueries({ queryKey: ['workouts', 'summary'] })
+    },
+  })
+}
+
+/* ---------- Estatísticas e logbook ---------- */
+
+export function useWorkoutLog() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['workouts', 'log', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('id, name, started_at, ended_at, paused_seconds, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name, muscle_group))')
+        .not('ended_at', 'is', null).is('deleted_at', null)
+        .order('ended_at', { ascending: false }).limit(1000)
+      if (error) throw error
+      return (data ?? []) as unknown as LogWorkout[]
     },
   })
 }
