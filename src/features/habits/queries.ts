@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
+import { toggleWaterHabit } from '../water/queries'
 import type { Habit, Log } from './stats'
 
 export function useHabitsData() {
@@ -30,28 +31,38 @@ export function useHabitsData() {
         logs.push(...((data ?? []) as Log[]))
         if (!data || data.length < 1000) break
       }
-      return { habits: (habits.data ?? []) as Habit[], logs }
+      // Ignora registros de hábitos excluídos
+      const list = (habits.data ?? []) as Habit[]
+      const ids = new Set(list.map((h) => h.id))
+      return { habits: list, logs: logs.filter((l) => ids.has(l.habit_id)) }
     },
   })
 }
 
-function useInvalidateHabits() {
+export function useInvalidateHabits() {
   const queryClient = useQueryClient()
   return () => {
     queryClient.invalidateQueries({ queryKey: ['habits'] })
     queryClient.invalidateQueries({ queryKey: ['home', 'habits'] })
+    queryClient.invalidateQueries({ queryKey: ['home', 'water'] })
   }
+}
+
+// `done` = estado atual (true => desmarcar). O hábito de água também move a água do dia.
+export async function toggleHabitLog(habitId: string, date: string, done: boolean) {
+  const { data } = await supabase.from('habits').select('icon').eq('id', habitId).maybeSingle()
+  if (data?.icon === 'water') return toggleWaterHabit(habitId, date, done)
+  const { error } = done
+    ? await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('log_date', date)
+    : await supabase.from('habit_logs').insert({ habit_id: habitId, log_date: date })
+  if (error) throw error
 }
 
 export function useToggleLog() {
   const invalidate = useInvalidateHabits()
   return useMutation({
-    mutationFn: async ({ habitId, date, done }: { habitId: string; date: string; done: boolean }) => {
-      const { error } = done
-        ? await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('log_date', date)
-        : await supabase.from('habit_logs').insert({ habit_id: habitId, log_date: date })
-      if (error) throw error
-    },
+    mutationFn: ({ habitId, date, done }: { habitId: string; date: string; done: boolean }) =>
+      toggleHabitLog(habitId, date, done),
     onSuccess: invalidate,
   })
 }
@@ -74,6 +85,32 @@ export function useCreateHabit() {
         reminder_time: `${h.time}:00`,
         category: h.category,
       })
+      if (error) throw error
+    },
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateHabit() {
+  const invalidate = useInvalidateHabits()
+  return useMutation({
+    mutationFn: async ({ id, ...h }: NewHabit & { id: string }) => {
+      const { error } = await supabase
+        .from('habits')
+        .update({ name: h.name, weekdays: h.weekdays, reminder_time: `${h.time}:00`, category: h.category })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: invalidate,
+  })
+}
+
+// Exclusão "suave" (igual às tarefas): some das telas, mas o histórico não é apagado do banco
+export function useDeleteHabit() {
+  const invalidate = useInvalidateHabits()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('habits').update({ deleted_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
     },
     onSuccess: invalidate,

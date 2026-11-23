@@ -1,21 +1,38 @@
 .shell { display: flex; justify-content: center; min-height: 100dvh; background: var(--color-bg); }
 .frame { width: 100%; max-width: 480px; min-height: 100dvh; }
-.content { padding: 8px 16px calc(100px + env(safe-area-inset-bottom)); }
-.fab {
-  position: fixed;
-  bottom: calc(84px + env(safe-area-inset-bottom));
+
+/* Espaço extra no fim da página para o último item nunca ficar atrás dos botões */
+.content { padding: 8px 16px calc(96px + env(safe-area-inset-bottom)); }
+.contentFab { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+.contentFab2 { padding-bottom: calc(210px + env(safe-area-inset-bottom)); }
+
+/* Botões flutuantes empilhados num único bloco (sem calcular posição de cada um) */
+.fabs {
+  position: fixed; z-index: 8;
+  bottom: calc(72px + env(safe-area-inset-bottom));
   right: max(16px, calc((100vw - 480px) / 2 + 16px));
-  width: 56px; height: 56px; display: grid; place-items: center;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.fabsHidden { transform: translateY(24px); opacity: 0; pointer-events: none; }
+.fab {
+  position: relative;
+  width: 52px; height: 52px; display: grid; place-items: center;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--color-primary), var(--color-tertiary));
   color: var(--color-secondary);
-  box-shadow: 0 0 24px rgba(63, 166, 114, 0.45);
+  box-shadow: 0 6px 20px rgba(63, 166, 114, 0.4);
 }
-
-.fabStacked { bottom: calc(152px + env(safe-area-inset-bottom)); }
+/* Treino: escuro, igual nos dois temas */
+.fabDark {
+  background: #0d0d10;
+  border: 1px solid #2f2f38;
+  color: var(--color-secondary);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
 .live {
   position: absolute; top: 3px; right: 3px; width: 11px; height: 11px;
-  border-radius: 50%; background: #ff6b81; border: 2px solid var(--color-bg);
+  border-radius: 50%; background: #ff6b81; border: 2px solid #0d0d10;
   animation: pulse 1.4s infinite;
 }
 @keyframes pulse { 50% { opacity: 0.3; } }

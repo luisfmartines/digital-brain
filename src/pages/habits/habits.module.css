@@ -173,3 +173,24 @@
 .exportBtn, .shareBtn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 8px; border: 0; border-radius: var(--radius-md); font-size: 11px; font-weight: 700; cursor: pointer; }
 .exportBtn { background: var(--color-surface); color: var(--color-text); }
 .shareBtn { background: var(--color-primary); color: var(--color-on-primary); }
+/* Editar / excluir hábito */
+.kebab { display: grid; place-items: center; flex-shrink: 0; padding: 4px; border: 0; background: transparent; color: var(--color-text-muted); cursor: pointer; }
+.mNameBtn { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.overlay { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, 0.6); }
+.sheet { width: 100%; max-width: 480px; max-height: 90dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 18px 16px calc(20px + env(safe-area-inset-bottom)); border: 1px solid var(--color-border); border-bottom: 0; border-radius: 24px 24px 0 0; background: var(--color-surface); }
+.sheetHead { display: flex; justify-content: space-between; align-items: center; }
+.sheetHead strong { font-family: var(--font-heading); font-size: 18px; }
+.sheetClose { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--color-surface-2); color: var(--color-text); cursor: pointer; }
+.sheetNote { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--color-primary-soft); color: var(--color-secondary); font-size: 12px; line-height: 1.4; }
+.sheetNote svg { flex-shrink: 0; margin-top: 1px; }
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-radius: var(--radius-lg); background: var(--color-surface-2); }
+.stepper > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.stepper strong { font-family: var(--font-heading); font-size: 28px; color: var(--color-secondary); }
+.stepper small { font-size: 11px; color: var(--color-text-muted); }
+.stepper button { width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--color-primary); color: var(--color-on-primary); cursor: pointer; }
+.stepper button:disabled { opacity: 0.35; cursor: default; }
+.confirmRow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ghostBtn, .dangerBtn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px; border: 0; border-radius: var(--radius-md); font-size: 13px; font-weight: 700; cursor: pointer; }
+.ghostBtn { background: var(--color-surface-2); color: var(--color-text); }
+.dangerBtn { background: rgba(186, 26, 26, 0.35); color: #ffb4ab; }
+.dangerLink { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 0; background: transparent; color: var(--color-danger); font-size: 13px; font-weight: 700; cursor: pointer; }

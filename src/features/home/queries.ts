@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 import { localDateStr } from '../../lib/date'
+import { toggleHabitLog, useInvalidateHabits } from '../habits/queries'
 
 export function useTasksSummary() {
   const { user } = useAuth()
@@ -52,7 +53,8 @@ export function useTodayHabits() {
       const logRows = (logs.data ?? []) as { habit_id: string; log_date: string }[]
       const habitRows = (habits.data ?? []) as { id: string; name: string; weekdays: number[] | null }[]
       const doneToday = new Set(logRows.filter((l) => l.log_date === today).map((l) => l.habit_id))
-      const days = new Set(logRows.map((l) => l.log_date))
+      const activeIds = new Set(habitRows.map((h) => h.id))
+      const days = new Set(logRows.filter((l) => activeIds.has(l.habit_id)).map((l) => l.log_date))
       let streak = 0
       const d = new Date()
       if (!days.has(localDateStr(d))) d.setDate(d.getDate() - 1)
@@ -69,19 +71,10 @@ export function useTodayHabits() {
 }
 
 export function useToggleHabit() {
-  const queryClient = useQueryClient()
+  const invalidate = useInvalidateHabits()
   return useMutation({
-    mutationFn: async ({ habitId, done }: { habitId: string; done: boolean }) => {
-      const today = localDateStr()
-      const { error } = done
-        ? await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('log_date', today)
-        : await supabase.from('habit_logs').insert({ habit_id: habitId, log_date: today })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['home', 'habits'] })
-      queryClient.invalidateQueries({ queryKey: ['habits'] })
-    },
+    mutationFn: ({ habitId, done }: { habitId: string; done: boolean }) => toggleHabitLog(habitId, localDateStr(), done),
+    onSuccess: invalidate,
   })
 }
 
@@ -112,33 +105,8 @@ export function useMonthFinance() {
   })
 }
 
-export function useWater() {
-  const { user } = useAuth()
-  return useQuery({
-    queryKey: ['home', 'water', user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const [logs, settings] = await Promise.all([
-        supabase.from('water_logs').select('ml').eq('log_date', localDateStr()),
-        supabase.from('user_settings').select('water_goal_ml').maybeSingle(),
-      ])
-      if (logs.error) throw logs.error
-      const ml = ((logs.data ?? []) as { ml: number }[]).reduce((a, l) => a + l.ml, 0)
-      return { ml, goal: Number(settings.data?.water_goal_ml ?? 2500) }
-    },
-  })
-}
-
-export function useAddWater() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (ml: number) => {
-      const { error } = await supabase.from('water_logs').insert({ log_date: localDateStr(), ml })
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['home', 'water'] }),
-  })
-}
+// Água agora é ligada ao hábito de água (ver features/water)
+export { useWater, useAddWater } from '../water/queries'
 
 export function useWorkoutsToday() {
   const { user } = useAuth()

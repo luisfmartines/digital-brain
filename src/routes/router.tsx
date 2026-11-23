@@ -4,9 +4,8 @@ import { PublicOnly, RequireAuth, RequireOnboarded } from './guards'
 import LoginPage from '../pages/auth/LoginPage'
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage'
 import HomePage from '../pages/home/HomePage'
-import TasksPage from '../pages/tasks/TasksPage'
 import TaskFormPage from '../pages/tasks/TaskFormPage'
-import HabitsPage from '../pages/habits/HabitsPage'
+import RoutinePage from '../pages/routine/RoutinePage'
 import AssistantPage from '../pages/assistant/AssistantPage'
 import ProfilePage from '../pages/profile/ProfilePage'
 import OnboardingLayout from '../pages/onboarding/OnboardingLayout'
@@ -58,8 +57,10 @@ export const router = createBrowserRouter([
             element: <AppShell />,
             children: [
               { path: '/', element: <HomePage /> },
-              { path: '/tasks', element: <TasksPage /> },
-              { path: '/habits', element: <HabitsPage /> },
+              { path: '/routine', element: <RoutinePage /> },
+              // Links antigos continuam funcionando
+              { path: '/tasks', element: <Navigate to="/routine?tab=tasks" replace /> },
+              { path: '/habits', element: <Navigate to="/routine?tab=habits" replace /> },
               { path: '/workouts', element: <WorkoutsPage /> },
               { path: '/finance', element: <Page title="Finances" /> },
               { path: '/calendar', element: <Page title="Calendar" /> },

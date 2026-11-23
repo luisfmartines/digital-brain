@@ -23,20 +23,24 @@ export async function saveOnboarding(userId: string, data: OnboardingData) {
   if (settingsError) throw settingsError
 
   const active = data.habits.filter((h) => h.active)
-  if (active.length > 0) {
-    const { error } = await supabase.from('habits').insert(
-      active.map((h) => ({
-        user_id: userId,
-        name: h.name,
-        icon: h.icon,
-        anchor_cue: h.anchorCue || null,
-        reminder_time: `${h.time}:00`,
-        weekdays: h.weekdays,
-        category: CATEGORY_BY_ICON[h.icon] ?? 'discipline',
-      }))
-    )
-    if (error) throw error
+  const rows = active.map((h) => ({
+    user_id: userId,
+    name: h.name,
+    icon: h.icon,
+    anchor_cue: h.anchorCue || null,
+    reminder_time: `${h.time}:00`,
+    weekdays: h.weekdays,
+    category: CATEGORY_BY_ICON[h.icon] ?? 'discipline',
+  }))
+  // O hábito de água sempre vem pronto (o usuário só ajusta a meta depois)
+  if (!rows.some((r) => r.icon === 'water')) {
+    rows.unshift({
+      user_id: userId, name: 'Drink 2.5L Water', icon: 'water', anchor_cue: 'Refill your flask with every work sprint',
+      reminder_time: '09:00:00', weekdays: [0, 1, 2, 3, 4, 5, 6], category: 'health',
+    })
   }
+  const { error } = await supabase.from('habits').insert(rows)
+  if (error) throw error
 
   const { error: xpError } = await supabase
     .from('xp_events')

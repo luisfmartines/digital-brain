@@ -17,6 +17,7 @@ interface Props {
   ix: Index
   view: View
   setView: (v: View) => void
+  onEdit: (h: Habit) => void
 }
 
 const CELL: Record<CellState, string> = {
@@ -30,7 +31,7 @@ const hourLabel = (h: number) => fmtTime(`${String(h % 24).padStart(2, '0')}:00`
 const slash = (h: Habit) => DAYS.filter((d) => h.weekdays.includes(d.v)).map((d) => d.label).join('/')
 const iconOf = (h: Habit) => HABIT_ICONS[h.icon ?? 'custom'] ?? HABIT_ICONS.custom
 
-export default function WeeklyView({ habits, ix, view, setView }: Props) {
+export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props) {
   const toggle = useToggleLog()
   const create = useCreateHabit()
   const today = startOfDay()
@@ -140,10 +141,10 @@ export default function WeeklyView({ habits, ix, view, setView }: Props) {
           </div>
           {rows.map(({ h, done, sched, cells }) => (
             <div key={h.id} className={styles.mRow}>
-              <div className={styles.mName}>
+              <button type="button" className={`${styles.mName} ${styles.mNameBtn}`} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}>
                 <strong>{h.name}</strong>
                 <small>{h.weekdays.length === 7 ? `${done}/${sched} so far` : slash(h)}</small>
-              </div>
+              </button>
               {cells.map((st, i) => (
                 <button
                   key={i}

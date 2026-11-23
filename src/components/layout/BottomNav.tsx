@@ -1,20 +1,21 @@
 import { NavLink } from 'react-router-dom'
-import { CalendarDays, CheckCircle2, Flame, Home, Wallet } from 'lucide-react'
+import { CalendarDays, Home, ListChecks, Maximize2, Wallet } from 'lucide-react'
 import { useProfile } from '../../features/profile/useProfile'
 import styles from './BottomNav.module.css'
 
+// `modules`: aparece se QUALQUER um dos módulos estiver ativo (null = sempre)
 const TABS = [
-  { to: '/', label: 'Home', icon: Home, module: null },
-  { to: '/tasks', label: 'Tasks', icon: CheckCircle2, module: 'tasks' },
-  { to: '/habits', label: 'Habits', icon: Flame, module: 'habits' },
-  { to: '/finance', label: 'Finances', icon: Wallet, module: 'finance' },
-  { to: '/calendar', label: 'Calendar', icon: CalendarDays, module: 'calendar' },
+  { to: '/', label: 'Home', icon: Home, modules: null },
+  { to: '/routine', label: 'Routine', icon: ListChecks, modules: ['tasks', 'habits'] },
+  { to: '/workouts', label: 'Workouts', icon: Maximize2, modules: ['workouts'] },
+  { to: '/finance', label: 'Finances', icon: Wallet, modules: ['finance'] },
+  { to: '/calendar', label: 'Calendar', icon: CalendarDays, modules: ['calendar'] },
 ]
 
 export default function BottomNav() {
   const { data: profile } = useProfile()
-  const modules: string[] = profile?.enabled_modules ?? []
-  const tabs = TABS.filter((t) => !t.module || modules.includes(t.module))
+  const enabled: string[] = profile?.enabled_modules ?? []
+  const tabs = TABS.filter((t) => !t.modules || t.modules.some((m) => enabled.includes(m)))
 
   return (
     <nav className={styles.nav}>

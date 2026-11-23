@@ -4,7 +4,7 @@ import { Check, Clock, History, Maximize2, MoreVertical, Pencil, Play, PlayCircl
 import {
   useActiveWorkout, useDeleteRoutine, useHistory, useLastPerformed, useRoutines, useStartWorkout, useWeekStats, type Routine,
 } from '../../features/workouts/queries'
-import { estimateMinutes, fmtNum, mins, muscleLabel, relDays, repsText, weekdayShort } from './helpers'
+import { estimateMinutes, fmtNum, mins, muscleLabel, relDays, repsText } from './helpers'
 import styles from './workouts.module.css'
 
 const info = (r: Routine) => ({

@@ -68,13 +68,13 @@ function TaskForm({ task }: { task?: Task }) {
           remind_minutes_before: alarm ? 10 : null,
         },
       },
-      { onSuccess: () => navigate('/tasks', { replace: true }), onError: (e) => setError(e.message) }
+      { onSuccess: () => navigate('/routine?tab=tasks', { replace: true }), onError: (e) => setError(e.message) }
     )
   }
 
   function destroy() {
     if (!task || !window.confirm('Delete this task?')) return
-    remove.mutate(task.id, { onSuccess: () => navigate('/tasks', { replace: true }) })
+    remove.mutate(task.id, { onSuccess: () => navigate('/routine?tab=tasks', { replace: true }) })
   }
 
   return (

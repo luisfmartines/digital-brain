@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, PlusCircle, Sprout, TrendingUp, Zap, Check } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, MoreVertical, PlusCircle, Sprout, TrendingUp, Zap, Check } from 'lucide-react'
 import { addDays, localDateStr, startOfDay, startOfWeek } from '../../lib/date'
 import {
   CATEGORIES, byTime, currentStreak, dayLevel, isDone, isScheduled, nextRun, rangeStats, rowSub,
@@ -17,12 +17,13 @@ interface Props {
   ix: Index
   view: View
   setView: (v: View) => void
+  onEdit: (h: Habit) => void
 }
 
 const iconOf = (h: Habit) => HABIT_ICONS[h.icon ?? 'custom'] ?? HABIT_ICONS.custom
 const dayList = (h: Habit) => DAYS.filter((d) => h.weekdays.includes(d.v)).map((d) => d.label).join(', ')
 
-export default function MonthlyView({ habits, ix, view, setView }: Props) {
+export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props) {
   const toggle = useToggleLog()
   const create = useCreateHabit()
   const today = startOfDay()
@@ -130,6 +131,7 @@ export default function MonthlyView({ habits, ix, view, setView }: Props) {
             <li key={h.id} className={styles.row}>
               <span className={styles.iconBox}><Icon size={16} /></span>
               <div className={styles.rowText}><strong>{h.name}</strong><small>{rowSub(h, currentStreak(h, ix, today))}</small></div>
+              <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}><MoreVertical size={16} /></button>
               <button type="button" className={styles.circle} onClick={() => toggle.mutate({ habitId: h.id, date: todayStr, done: false })} aria-label={`Complete ${h.name}`} />
             </li>
           )
@@ -156,6 +158,7 @@ export default function MonthlyView({ habits, ix, view, setView }: Props) {
                       <strong>{h.name}</strong>
                       <small className={styles.accentSm}>✓ +1 Streak ({ix.byHabit.get(h.id) ?? 0} days total)</small>
                     </div>
+                    <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}><MoreVertical size={16} /></button>
                     <button type="button" className={styles.doneCheck} onClick={() => toggle.mutate({ habitId: h.id, date: todayStr, done: true })} aria-label={`Undo ${h.name}`}><Check size={14} /></button>
                   </li>
                 )
@@ -179,6 +182,7 @@ export default function MonthlyView({ habits, ix, view, setView }: Props) {
                   <span className={styles.iconBox}><Icon size={16} /></span>
                   <div className={styles.rowText}><strong>{h.name}</strong><small>Schedule: {dayList(h)} only</small></div>
                   <span className={styles.nextTag}>{nextRun(h, today)}</span>
+                  <button type="button" className={styles.kebab} onClick={() => onEdit(h)} aria-label={`Edit ${h.name}`}><MoreVertical size={16} /></button>
                 </li>
               )
             })}

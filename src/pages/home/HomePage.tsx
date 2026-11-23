@@ -1,13 +1,16 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, Clock, Droplet, Flame, Lightbulb, Maximize2, Play, Plus, Sparkles, TrendingUp, Wallet,
+  ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, ChevronRight, Clock, Droplet, Flame, Lightbulb, Maximize2, Play, Sparkles, Trophy, TrendingUp, Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { useProfile } from '../../features/profile/useProfile'
 import {
-  useAddWater, useMonthFinance, useTasksSummary, useTodayHabits, useToggleHabit, useWater, useWorkoutsToday,
+  useMonthFinance, useTasksSummary, useTodayHabits, useToggleHabit, useWorkoutsToday,
 } from '../../features/home/queries'
+import { WATER_STEP, litersLabel, useAddWater, useWater } from '../../features/water/queries'
+import { levelInfo } from '../../features/profile/level'
+import FeedView from '../workouts/FeedView'
 import { useLastPerformed, useRoutines, useStartWorkout } from '../../features/workouts/queries'
 import { estimateMinutes, muscleLabel } from '../../features/workouts/utils'
 import { useOnline } from '../../hooks/useOnline'
@@ -23,8 +26,6 @@ const QUOTES = [
   'Protect the streak, not the mood.',
 ]
 
-const liters = (ml: number) => `${(ml / 1000).toFixed(1).replace(/\.0$/, '')}L`
-
 function taskLine(t: { due_at: string | null; notes: string | null } | null) {
   if (!t) return 'Add your first task'
   if (!t.due_at) return t.notes ?? 'No time set'
@@ -34,9 +35,9 @@ function taskLine(t: { due_at: string | null; notes: string | null } | null) {
   return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`
 }
 
-interface HeroRow { key: string; icon: LucideIcon; label: string; text: string; ratio: number; counts: boolean; action?: ReactNode }
+interface HeroRow { key: string; icon: LucideIcon; label: string; text: string; ratio: number; counts: boolean; action?: ReactNode; to?: string }
 
-export default function HomePage() {
+function Overview() {
   const { data: profile } = useProfile()
   const tasks = useTasksSummary()
   const habits = useTodayHabits()
@@ -80,10 +81,12 @@ export default function HomePage() {
   if (has('habits')) rows.push({ key: 'habits', icon: Flame, label: 'Habits', text: `${doneCount}/${habitList.length} habits`, ratio: habitList.length ? doneCount / habitList.length : 0, counts: habitList.length > 0 })
   if (has('tasks')) rows.push({ key: 'tasks', icon: CheckCircle2, label: 'Tasks', text: `${tasks.data?.doneToday ?? 0}/${tasksTotal} tasks`, ratio: tasksTotal ? (tasks.data?.doneToday ?? 0) / tasksTotal : 0, counts: tasksTotal > 0 })
   rows.push({
-    key: 'water', icon: Droplet, label: 'Water', text: `${liters(ml)} / ${liters(goal)}`, ratio: goal ? ml / goal : 0, counts: true,
-    action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(250)} aria-label="Add 250 ml of water">+250</button>,
+    key: 'water', icon: Droplet, label: 'Water', text: `${litersLabel(ml)} / ${litersLabel(goal)}`, ratio: goal ? ml / goal : 0, counts: true,
+    to: '/routine?tab=habits&edit=water', // toca no nome para ajustar a meta (de 500 em 500 ml)
+    action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(WATER_STEP)} disabled={addWater.isPending} aria-label={`Add ${WATER_STEP} ml of water`}>+{WATER_STEP}</button>,
   })
   if (has('workouts')) rows.push({ key: 'workout', icon: Maximize2, label: 'Workout', text: `${Math.min(workoutsToday, 1)}/1 workout`, ratio: Math.min(workoutsToday, 1), counts: true })
+  const lv = levelInfo(profile?.xp, profile?.level)
   const counted = rows.filter((r) => r.counts)
   const overall = counted.length ? Math.round((counted.reduce((a, r) => a + Math.min(1, r.ratio), 0) / counted.length) * 100) : 0
 
@@ -104,7 +107,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className={styles.page}>
+    <>
       <div className={styles.topRow}>
         <span className={styles.pill}>
           <i className={online ? styles.dot : styles.dotOff} />
@@ -121,7 +124,11 @@ export default function HomePage() {
           {rows.map((r) => (
             <li key={r.key}>
               <div className={styles.heroLine}>
-                <span><r.icon size={13} /> {r.label}</span>
+                {r.to ? (
+                  <Link to={r.to} className={styles.heroLink}><r.icon size={13} /> {r.label} <ChevronRight size={11} /></Link>
+                ) : (
+                  <span><r.icon size={13} /> {r.label}</span>
+                )}
                 <b>{r.text}</b>
                 {r.action}
               </div>
@@ -132,6 +139,18 @@ export default function HomePage() {
         <div className={styles.heroPct}>
           <strong>{overall}%</strong>
           <small>completed today</small>
+        </div>
+      </section>
+
+      <section className={styles.level} aria-label="Level">
+        <span className={styles.levelBadge}><Trophy size={14} /><b>LVL {lv.level}</b></span>
+        <div className={styles.levelBody}>
+          <div className={styles.levelTop}>
+            <strong>{lv.rank}</strong>
+            <span>{lv.xp.toLocaleString('en-US')} XP</span>
+          </div>
+          <span className={styles.levelBar}><i style={{ width: `${lv.pct}%` }} /></span>
+          <small>{lv.toNext.toLocaleString('en-US')} XP to Level {lv.level + 1}</small>
         </div>
       </section>
 
@@ -165,7 +184,7 @@ export default function HomePage() {
             </div>
             <span className={styles.badge}>{tasks.data?.pending ?? 0} pending</span>
           </div>
-          <Link to="/tasks" className={styles.strip}>
+          <Link to="/routine?tab=tasks" className={styles.strip}>
             <Clock size={14} />
             <span className={styles.stripText}>{taskLine(tasks.data?.next ?? null)}</span>
             <ArrowRight size={14} />
@@ -193,7 +212,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <Link to="/habits" className={styles.strip}>
+            <Link to="/routine?tab=habits" className={styles.strip}>
               <span className={styles.stripText}>No habits scheduled today</span>
               <ArrowRight size={14} />
             </Link>
@@ -243,6 +262,31 @@ export default function HomePage() {
           <small>Digital Brain Digest · Day {dayOfYear()}</small>
         </div>
       </section>
+    </>
+  )
+}
+
+export default function HomePage() {
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'feed' ? 'feed' : 'home'
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.tabs} role="tablist">
+        {(['home', 'feed'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={tab === t}
+            className={tab === t ? styles.tabOn : styles.tab}
+            onClick={() => setParams(t === 'home' ? {} : { tab: t }, { replace: true })}
+          >
+            {t === 'home' ? 'Home' : 'Feed'}
+          </button>
+        ))}
+      </div>
+      {tab === 'feed' ? <FeedView /> : <Overview />}
     </div>
   )
 }
