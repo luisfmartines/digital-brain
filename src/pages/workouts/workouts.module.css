@@ -195,7 +195,9 @@
 .postTag span { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #f2b84b; }
 .postTag b { color: var(--color-secondary); }
 .photo { width: 100%; max-height: 360px; object-fit: cover; border-radius: var(--radius-md); }
-.postSummary { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-md); background: var(--color-surface-3); }
+.postSummary { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 0; border-radius: var(--radius-md); background: var(--color-surface-3); color: inherit; text-align: left; cursor: pointer; }
+.postSummary:active { opacity: 0.8; }
+.chev { flex-shrink: 0; color: var(--color-text-muted); }
 .postActions { display: flex; align-items: center; gap: 16px; }
 .postActions button { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
 .postActions .likeOn { color: #ff6b81; }
@@ -230,3 +232,27 @@
 .youTag { padding: 1px 8px; border-radius: 999px; background: var(--color-primary); color: var(--color-on-primary); font-size: 8px; font-weight: 800; }
 .rankNum { width: 16px; text-align: center; font-size: 13px; color: var(--color-text-muted); }
 .yourRank { border: 1px solid rgba(63, 166, 114, 0.4); background: linear-gradient(120deg, var(--color-surface), rgba(27, 77, 54, 0.5)); }
+
+/* Detalhe completo do treino (somente leitura) */
+.detHead { display: flex; align-items: center; gap: 10px; }
+.detWho { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.detWho strong { overflow: hidden; font-family: var(--font-heading); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.detWho small { font-size: 11px; color: var(--color-text-muted); }
+.detStats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.detStat { display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; border-radius: var(--radius-md); background: var(--color-surface); }
+.detStat small { font-size: 10px; color: var(--color-text-muted); }
+.detStat strong { font-family: var(--font-heading); font-size: 18px; }
+.detStat strong i { font-size: 11px; font-style: normal; color: var(--color-text-muted); }
+.detPhoto { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--radius-lg); }
+.detEx { display: flex; flex-direction: column; gap: 4px; padding: 12px 0 4px; border-top: 1px solid var(--color-border); }
+.detEx:first-of-type { border-top: 0; }
+.detExHead { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.detExHead strong { flex: 1; min-width: 0; font-family: var(--font-heading); font-size: 15px; color: var(--color-secondary); }
+.detExHead small { flex-shrink: 0; font-size: 11px; color: var(--color-text-muted); }
+.detTable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.detTable th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--color-text-muted); }
+.detTable td { padding: 10px; }
+.detTable tbody tr:nth-child(even) { background: var(--color-surface-3); }
+.detTable td:first-child, .detTable th:first-child { width: 56px; text-align: center; }
+.detWarm { font-size: 11px; font-weight: 700; color: #f2b84b; }
+.detSkip { color: var(--color-text-muted); }

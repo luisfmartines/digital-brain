@@ -17,6 +17,7 @@ import WorkoutsPage from '../pages/workouts/WorkoutsPage'
 import RoutineFormPage from '../pages/workouts/RoutineFormPage'
 import ActiveWorkoutPage from '../pages/workouts/ActiveWorkoutPage'
 import WorkoutSummaryPage from '../pages/workouts/WorkoutSummaryPage'
+import WorkoutDetailPage from '../pages/workouts/WorkoutDetailPage'
 
 const Page = ({ title }: { title: string }) => <h1>{title}</h1>
 
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
           // Treino ativo
           { path: '/workouts/active/:id', element: <ActiveWorkoutPage /> },
           { path: '/workouts/summary/:id', element: <WorkoutSummaryPage /> },
+          { path: '/workouts/view/:id', element: <WorkoutDetailPage /> },
           { path: '/workouts/routines/new', element: <RoutineFormPage /> },
           { path: '/workouts/routines/:id/edit', element: <RoutineFormPage /> },
 

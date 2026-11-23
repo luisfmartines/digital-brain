@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Heart, MessageCircle, Plus, Search, Send, Trophy, UserCheck, UserPlus, Zap } from 'lucide-react'
+import { ChevronRight, Heart, MessageCircle, Plus, Search, Send, Trophy, UserCheck, UserPlus, Zap } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useAuth } from '../../features/auth/useAuth'
 import { useProfile } from '../../features/profile/useProfile'
@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom'
 import styles from './workouts.module.css'
 
 function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
+  const navigate = useNavigate()
   const like = useToggleLike()
   const add = useAddComment()
   const [open, setOpen] = useState(false)
@@ -47,14 +48,15 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
       {w && <div className={styles.postTag}><span><Trophy size={12} /> {w.name}</span><b>{fmtNum(w.volume)} kg volume</b></div>}
       {post.photo_url && <img className={styles.photo} src={post.photo_url} alt="" />}
       {w && (
-        <div className={styles.postSummary}>
+        <button type="button" className={styles.postSummary} onClick={() => navigate(`/workouts/view/${w.id}`)} aria-label={`View full workout: ${w.name}`}>
           <span className={styles.iconBox}><Zap size={15} /></span>
           <div className={styles.rText}>
             <strong>{w.top ? `${w.top.name} ${w.top.weight}kg` : w.name}</strong>
             <small>{w.minutes} mins duration</small>
           </div>
           <span className={styles.badge}>+{xpFor(w.volume)} XP</span>
-        </div>
+          <ChevronRight size={16} className={styles.chev} />
+        </button>
       )}
       <div className={styles.postActions}>
         <button type="button" className={post.liked ? styles.likeOn : ''} onClick={() => like.mutate({ postId: post.id, liked: post.liked, userId })} aria-label="Like"><Heart size={17} fill={post.liked ? 'currentColor' : 'none'} /> {post.likes}</button>

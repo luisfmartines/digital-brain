@@ -72,7 +72,7 @@ interface RawPost {
 export interface FeedComment { id: string; user_id: string; content: string; created_at: string; author?: Profile }
 export interface FeedPost {
   id: string; created_at: string; photo_url: string | null; author?: Profile
-  workout: { name: string; volume: number; minutes: number; top: { name: string; weight: number } | null } | null
+  workout: { id: string; name: string; volume: number; minutes: number; top: { name: string; weight: number } | null } | null
   likes: number; liked: boolean; comments: FeedComment[]
 }
 
@@ -111,7 +111,7 @@ export function useFeed() {
           photo_url: p.photo_url,
           author: people.get(p.user_id),
           workout: w
-            ? { name: w.name, volume: volumeOf(w.workout_sets), minutes: Math.max(1, Math.round(workoutSeconds({ ...w, paused_at: null }, 0) / 60)), top }
+            ? { id: w.id, name: w.name, volume: volumeOf(w.workout_sets), minutes: Math.max(1, Math.round(workoutSeconds({ ...w, paused_at: null }, 0) / 60)), top }
             : null,
           likes: likeRows.filter((l) => l.post_id === p.id).length,
           liked: likeRows.some((l) => l.post_id === p.id && l.user_id === user!.id),
@@ -165,6 +165,34 @@ export function useLeaderboard(weekStart: Date) {
       })
       if (error) throw error
       return ((data ?? []) as Rival[]).map((r) => ({ ...r, volume_kg: Number(r.volume_kg) }))
+    },
+  })
+}
+
+/* ---------- Detalhe completo de um treino (feed) ---------- */
+
+export interface WorkoutDetailSet { id: string; exercise_id: string; set_number: number; exercise_order: number; weight_kg: number | null; reps: number | null; is_warmup: boolean; completed: boolean; exercise: { name: string; muscle_group: string } | null }
+export interface WorkoutDetail {
+  id: string; name: string; started_at: string; ended_at: string | null; paused_seconds: number; photo_url: string | null
+  author?: Profile
+  sets: WorkoutDetailSet[]
+}
+
+export function useWorkoutDetail(id?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['social', 'workout-detail', id],
+    enabled: !!user && !!id,
+    queryFn: async (): Promise<WorkoutDetail | null> => {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('id, user_id, name, started_at, ended_at, paused_seconds, photo_url, workout_sets(id, exercise_id, set_number, exercise_order, weight_kg, reps, is_warmup, completed, exercise:exercises(name, muscle_group))')
+        .eq('id', id!).is('deleted_at', null).maybeSingle()
+      if (error) throw error
+      if (!data) return null
+      const { user_id, workout_sets, ...w } = data as unknown as Omit<WorkoutDetail, 'sets' | 'author'> & { user_id: string; workout_sets: WorkoutDetailSet[] }
+      const people = await profilesByIds([user_id])
+      return { ...w, author: people.get(user_id), sets: workout_sets ?? [] }
     },
   })
 }

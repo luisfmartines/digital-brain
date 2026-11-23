@@ -1,5 +1,5 @@
 .shell { display: flex; justify-content: center; min-height: 100dvh; background: var(--color-bg); }
-.frame { width: 100%; max-width: 480px; min-height: 100dvh; }
+.frame { width: 100%; max-width: 480px; min-width: 0; min-height: 100dvh; overflow-x: clip; }
 
 /* Espaço extra no fim da página para o último item nunca ficar atrás dos botões */
 .content { padding: 8px 16px calc(96px + env(safe-area-inset-bottom)); }
