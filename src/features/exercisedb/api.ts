@@ -1,6 +1,6 @@
 
 import type { ExerciseMedia } from './types'
-import { originalSearchTerm, translateName, translateText } from './translate'
+import { originalSearchTerm, translateName, translateText } from './translate.ts'
 
 const API_URL = (
   import.meta.env?.VITE_EXERCISEDB_URL ||

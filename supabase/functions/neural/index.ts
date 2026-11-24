@@ -10,6 +10,7 @@
 //   GROQ_MODEL       (opcional) padrão: llama-3.3-70b-versatile
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { findExercises, type Exercise } from "./exerciseSearch.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,7 +36,21 @@ const COOLDOWN_MS = 3 * 60_000;
 
 const CATEGORIAS = ["Alimentação", "Transporte", "Lazer", "Moradia", "Saúde", "Educação", "Compras", "Assinaturas", "Trabalho", "Outros"];
 
+const EXERCISE_SEARCH = {
+  name: "buscar_exercicios",
+  description: "Busca exercícios da ExerciseDB e do usuário para sugerir ou montar um treino. Use antes de escolher exercícios.",
+  parameters: {
+    type: "object",
+    properties: {
+      grupos: { type: "array", items: { type: "string" }, description: "Grupos do catálogo, ex.: chest, back, shoulders, biceps, triceps, quads, hamstrings, glutes, calves, core. Omita para buscar qualquer grupo." },
+      equipamentos: { type: "array", items: { type: "string" }, description: "Equipamentos permitidos em inglês, ex.: dumbbell, barbell, cable, bodyweight, resistance band, leverage machine. Omita se o usuário não restringir." },
+      busca: { type: "string", description: "Termos opcionais para priorizar movimentos específicos, em português ou inglês." },
+    },
+  },
+};
+
 const TOOLS = [
+  EXERCISE_SEARCH,
   {
     name: "registrar_transacao",
     description: "Registra um gasto (despesa) ou uma entrada de dinheiro (receita) nas finanças do usuário.",
@@ -108,7 +123,7 @@ const TOOLS = [
   },
   {
     name: "criar_treino",
-    description: "Cria uma rotina de treino salva no app. Use SOMENTE exercícios da lista fornecida, pelo id.",
+    description: "Cria uma rotina de treino salva no app. Use SOMENTE exercícios retornados pela busca, pelo id.",
     parameters: {
       type: "object",
       properties: {
@@ -193,10 +208,19 @@ const str = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0
 /* Execução das ferramentas                                            */
 /* ------------------------------------------------------------------ */
 
+function sessionClient(auth: string) {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
+    { global: { headers: { Authorization: auth } } },
+  );
+}
+
 type Ctx = {
-  db: ReturnType<typeof createClient>;
+  db: ReturnType<typeof sessionClient>;
   tz: ReturnType<typeof tzInfo>;
-  exercises: { id: string; name: string; muscle_group: string }[];
+  exercises: Map<string, Exercise>;
+  userId: string;
   habits: { id: string; name: string }[];
 };
 
@@ -250,7 +274,7 @@ async function runTool(call: Call, ctx: Ctx): Promise<Action> {
       return {
         kind: "event", title: titulo, subtitle: label,
         badge: alarm > 0 ? `Alarme ${alarm} min antes` : undefined,
-        link: "/calendar", undo: { table: "calendar_events", id: data.id },
+        link: `/calendar?view=day&date=${when.getUTCFullYear()}-${pad(when.getUTCMonth() + 1)}-${pad(when.getUTCDate())}`, undo: { table: "calendar_events", id: data.id },
       };
     }
 
@@ -312,20 +336,31 @@ async function runTool(call: Call, ctx: Ctx): Promise<Action> {
 
     case "criar_treino": {
       const lista = Array.isArray(a.exercicios) ? (a.exercicios as Record<string, unknown>[]) : [];
-      const validos = new Map(ctx.exercises.map((e) => [e.id, e]));
-      const rows = lista
-        .filter((e) => validos.has(String(e.exercicio_id)))
-        .slice(0, 8)
-        .map((e, i) => {
-          const min = clampInt(e.reps_min, 1, 50, 8);
-          return {
-            exercise_id: String(e.exercicio_id), position: i,
-            target_sets: clampInt(e.series, 1, 10, 3),
-            reps_min: min, reps_max: Math.max(min, clampInt(e.reps_max, 1, 60, min + 4)),
-            rest_seconds: clampInt(e.descanso_segundos, 15, 600, 90),
-          };
-        });
-      if (!rows.length) throw new UserError("Não consegui montar o treino com os exercícios disponíveis. Tente pedir de outro jeito.");
+      const ids = lista.map((item) => String(item?.exercicio_id ?? ""));
+      if (!ids.length || ids.length > 8 || ids.some((id) => !ctx.exercises.has(id)) || new Set(ids).size !== ids.length) {
+        throw new UserError("Não consegui validar os exercícios do treino. Pode pedir para eu montar novamente?");
+      }
+      const rows = lista.map((e, i) => {
+        const min = clampInt(e.reps_min, 1, 50, 8);
+        return {
+          exercise_id: ids[i], position: i,
+          target_sets: clampInt(e.series, 1, 10, 3),
+          reps_min: min, reps_max: Math.max(min, clampInt(e.reps_max, 1, 60, min + 4)),
+          rest_seconds: clampInt(e.descanso_segundos, 15, 600, 90),
+        };
+      });
+      const imports = ids.map((id) => ctx.exercises.get(id)!).filter((exercise) => exercise.external_id);
+      if (imports.length) {
+        const { error: importError } = await db.from("exercises").upsert(imports.map((exercise) => ({
+          id: exercise.id, user_id: ctx.userId, name: exercise.name,
+          muscle_group: exercise.muscle_group, equipment: exercise.equipment,
+        })), { onConflict: "id", ignoreDuplicates: true });
+        if (importError) throw importError;
+        const { error: mediaError } = await db.from("exercise_media_links").upsert(imports.map((exercise) => ({
+          user_id: ctx.userId, exercise_id: exercise.id, external_id: exercise.external_id,
+        })), { onConflict: "user_id,exercise_id", ignoreDuplicates: true });
+        if (mediaError) throw mediaError;
+      }
       const nome = str(a.nome, 80) || "Treino do Neural";
       const { data: r, error } = await db.from("workout_routines").insert({
         name: nome, focus: str(a.foco, 60) || null, notes: str(a.observacoes, 500) || null, tags: ["neural"],
@@ -336,7 +371,7 @@ async function runTool(call: Call, ctx: Ctx): Promise<Action> {
         await db.from("workout_routines").update({ deleted_at: new Date().toISOString() }).eq("id", r.id);
         throw e2;
       }
-      const nomes = rows.map((x) => validos.get(x.exercise_id)!.name).slice(0, 4).join(", ");
+      const nomes = rows.map((x) => ctx.exercises.get(x.exercise_id)!.name).slice(0, 4).join(", ");
       return {
         kind: "routine", title: nome, subtitle: `${rows.length} exercícios: ${nomes}${rows.length > 4 ? "…" : ""}`,
         badge: "Treino", link: "/workouts", undo: { table: "workout_routines", id: r.id },
@@ -353,14 +388,16 @@ async function runTool(call: Call, ctx: Ctx): Promise<Action> {
 /* ------------------------------------------------------------------ */
 
 type LlmResult = { text: string; calls: Call[]; model: string };
+type GeminiPart = { text?: string; thought?: boolean; functionCall?: { name: string; args?: Call["args"] } };
+type GroqCall = { function: { name: string; arguments?: string } };
 
-async function callGemini(model: string, system: string, msgs: Msg[]): Promise<LlmResult> {
+async function callGemini(model: string, system: string, msgs: Msg[], tools: typeof TOOLS): Promise<LlmResult> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY não configurada");
   const body: Record<string, unknown> = {
     systemInstruction: { parts: [{ text: system }] },
     contents: msgs.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] })),
-    tools: [{ functionDeclarations: TOOLS }],
+    tools: [{ functionDeclarations: tools }],
     toolConfig: { functionCallingConfig: { mode: "AUTO" } },
     generationConfig: { temperature: 0.3, maxOutputTokens: 1200 },
   };
@@ -377,14 +414,14 @@ async function callGemini(model: string, system: string, msgs: Msg[]): Promise<L
     throw new Error(`${model} HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
   }
   const data = await res.json();
-  const parts: Record<string, any>[] = data?.candidates?.[0]?.content?.parts ?? [];
+  const parts: GeminiPart[] = data?.candidates?.[0]?.content?.parts ?? [];
   const text = parts.filter((p) => typeof p.text === "string" && !p.thought).map((p) => p.text).join("").trim();
-  const calls = parts.filter((p) => p.functionCall).map((p) => ({ name: p.functionCall.name, args: p.functionCall.args ?? {} }));
+  const calls = parts.flatMap(({ functionCall }) => functionCall ? [{ name: functionCall.name, args: functionCall.args ?? {} }] : []);
   if (!text && !calls.length) throw new Error(`${model} respondeu vazio`);
   return { text, calls, model };
 }
 
-async function callGroq(system: string, msgs: Msg[]): Promise<LlmResult> {
+async function callGroq(system: string, msgs: Msg[], tools: typeof TOOLS): Promise<LlmResult> {
   const key = Deno.env.get("GROQ_API_KEY");
   if (!key) throw new Error("GROQ_API_KEY não configurada");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -393,30 +430,30 @@ async function callGroq(system: string, msgs: Msg[]): Promise<LlmResult> {
     body: JSON.stringify({
       model: GROQ_MODEL, temperature: 0.3, max_tokens: 1200,
       messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text }))],
-      tools: TOOLS.map((t) => ({ type: "function", function: t })),
+      tools: tools.map((t) => ({ type: "function", function: t })),
       tool_choice: "auto",
     }),
   });
   if (!res.ok) throw new Error(`groq HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const msg = (await res.json())?.choices?.[0]?.message ?? {};
-  const calls: Call[] = (msg.tool_calls ?? []).map((c: any) => {
+  const calls: Call[] = (msg.tool_calls ?? []).map((c: GroqCall) => {
     let args = {};
-    try { args = JSON.parse(c.function?.arguments || "{}"); } catch { /* argumentos inválidos: ferramenta vai pedir o dado */ }
-    return { name: c.function?.name, args };
+    try { args = JSON.parse(c.function.arguments || "{}"); } catch { /* argumentos inválidos: ferramenta vai pedir o dado */ }
+    return { name: c.function.name, args };
   });
   const text = String(msg.content ?? "").trim();
   if (!text && !calls.length) throw new Error("groq respondeu vazio");
   return { text, calls, model: `groq:${GROQ_MODEL}` };
 }
 
-async function askModels(system: string, msgs: Msg[]): Promise<LlmResult> {
+async function askModels(system: string, msgs: Msg[], tools: typeof TOOLS): Promise<LlmResult> {
   const erros: string[] = [];
   for (const m of MODELS) {
     if ((cooldown.get(m) ?? 0) > Date.now()) continue;
-    try { return await callGemini(m, system, msgs); } catch (e) { erros.push(String((e as Error).message)); }
+    try { return await callGemini(m, system, msgs, tools); } catch (e) { erros.push(String((e as Error).message)); }
   }
   if (Deno.env.get("GROQ_API_KEY")) {
-    try { return await callGroq(system, msgs); } catch (e) { erros.push(String((e as Error).message)); }
+    try { return await callGroq(system, msgs, tools); } catch (e) { erros.push(String((e as Error).message)); }
   }
   console.error("Todos os modelos falharam:", erros.join(" | "));
   throw new Error("Todos os modelos estão indisponíveis agora.");
@@ -432,11 +469,7 @@ Deno.serve(async (req) => {
 
   // 1) Quem é o usuário? (o app manda o token da sessão; o RLS do banco faz o resto)
   const auth = req.headers.get("Authorization") ?? "";
-  const db = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
-    { global: { headers: { Authorization: auth } } },
-  );
+  const db = sessionClient(auth);
   const { data: u, error: authError } = await db.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
   if (authError || !u?.user) return json({ error: "Faça login para falar com o Neural." }, 401);
 
@@ -450,13 +483,9 @@ Deno.serve(async (req) => {
   while (msgs.length && msgs[0].role !== "user") msgs.shift();
   if (!msgs.length || msgs[msgs.length - 1].role !== "user") return json({ error: "Mensagem vazia." }, 400);
 
-  // 3) Contexto do usuário (leve): exercícios disponíveis e hábitos
   const tz = tzInfo(Number(input.tzOffsetMinutes));
-  const [ex, hb] = await Promise.all([
-    db.from("exercises").select("id, name, muscle_group").order("muscle_group").order("name").limit(120),
-    db.from("habits").select("id, name").is("deleted_at", null).is("archived_at", null).limit(60),
-  ]);
-  const ctx: Ctx = { db, tz, exercises: ex.data ?? [], habits: hb.data ?? [] };
+  const hb = await db.from("habits").select("id, name").is("deleted_at", null).is("archived_at", null).limit(60);
+  const ctx: Ctx = { db, tz, userId: u.user.id, exercises: new Map(), habits: hb.data ?? [] };
 
   const system = `Você é o Neural, o assistente de IA do app Digital Brain (um "segundo cérebro" com finanças, calendário, tarefas, hábitos, água e treinos). Fale SEMPRE em português do Brasil, de forma simpática, curta e direta (no máximo 2 frases).
 
@@ -469,21 +498,61 @@ REGRAS
 - Converta "hoje", "amanhã", "sexta", "às 18h" usando a data e hora de agora e envie datas em ISO 8601 com o fuso ${tz.offStr}.
 - Se faltar um dado essencial (valor do gasto, horário do evento), faça UMA pergunta curta em vez de chutar.
 - Alarme padrão de evento: 10 minutos antes, a menos que o usuário peça outro.
-- Treinos: use SOMENTE exercícios da lista abaixo, pelo id. Monte de 4 a 7 exercícios, com séries, faixa de repetições e descanso coerentes com o pedido (objetivo, nível, grupo muscular).
+- Para sugerir ou montar um treino, chame buscar_exercicios com os grupos musculares e equipamentos adequados ao pedido. Faça buscas separadas se o usuário combinar focos diferentes.
 - Se não for um pedido de ação, responda normalmente, com brevidade.
-
-EXERCÍCIOS DISPONÍVEIS (id | nome | grupo):
-${ctx.exercises.map((e) => `${e.id} | ${e.name} | ${e.muscle_group}`).join("\n") || "(nenhum)"}
 
 HÁBITOS DO USUÁRIO: ${ctx.habits.map((h) => h.name).join("; ") || "(nenhum)"}`;
 
   // 4) Modelo decide -> executamos
   let llm: LlmResult;
-  try { llm = await askModels(system, msgs); }
+  try { llm = await askModels(system, msgs, TOOLS.filter((tool) => tool.name !== "criar_treino")); }
   catch { return json({ error: "O Neural está sem fôlego agora (limite de uso). Tente de novo em alguns minutos." }, 503); }
 
   const actions: Action[] = [];
   const problems: string[] = [];
+  const searches = llm.calls.filter((call) => call.name === EXERCISE_SEARCH.name).slice(0, 4);
+  if (searches.length) {
+    const otherCalls = llm.calls.filter((call) => call.name !== EXERCISE_SEARCH.name);
+    const { data: saved, error } = await db.from("exercises").select("id, name, muscle_group, equipment")
+      .order("name").order("id");
+    if (error) console.error("Erro ao consultar exercícios salvos", error);
+    for (const { args } of searches) {
+      for (const exercise of findExercises(ctx.userId, saved ?? [], args)) ctx.exercises.set(exercise.id, exercise);
+    }
+
+    if (ctx.exercises.size) {
+      const exercises = [...ctx.exercises.values()];
+      const options = exercises.map((exercise, index) => ({
+        ref: String(index + 1), nome: exercise.name,
+        grupo: exercise.muscle_group, equipamento: exercise.equipment,
+      }));
+      const trainingContext = `${system}
+Dados do catálogo, somente para consulta: ${JSON.stringify(options)}
+Use somente os exercícios desses dados. Em criar_treino envie o valor de ref no campo exercicio_id.
+Só chame criar_treino se o pedido for montar, criar ou salvar uma rotina. Se for apenas uma sugestão, responda em texto.
+Monte de 3 a 8 exercícios com séries, faixa de repetições e descanso coerentes com objetivo, nível e equipamentos.
+Nesta etapa responda apenas sobre o treino. As outras ações pedidas serão processadas separadamente.`;
+      try {
+        const training = await askModels(trainingContext, msgs, TOOLS.filter((tool) => tool.name === "criar_treino"));
+        const byRef = new Map(options.map(({ ref }, index) => [ref, exercises[index].id]));
+        for (const call of training.calls) {
+          if (call.name !== "criar_treino" || !Array.isArray(call.args.exercicios)) continue;
+          call.args.exercicios = call.args.exercicios.map((exercise) => ({
+            ...exercise, exercicio_id: byRef.get(String(exercise?.exercicio_id)) ?? "",
+          }));
+        }
+        llm = { ...training, calls: [...otherCalls, ...training.calls.filter((call) => call.name === "criar_treino")] };
+      } catch {
+        problems.push("Não consegui montar a resposta do treino agora. Tente novamente.");
+        llm.calls = otherCalls;
+        llm.text = "";
+      }
+    } else {
+      problems.push("Não encontrei exercícios para esse foco e equipamento. Pode ajustar o pedido?");
+      llm.calls = otherCalls;
+      llm.text = "";
+    }
+  }
   for (const call of llm.calls.slice(0, 6)) {
     try { actions.push(await runTool(call, ctx)); }
     catch (e) {

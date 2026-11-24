@@ -83,4 +83,5 @@ for (let i = 0; i < batches.length; i += 3) {
   await new Promise((resolve) => setTimeout(resolve, 300))
 }
 await writeFile(cacheFile, JSON.stringify(cache, null, 2) + '\n')
+await import('./build-neural-catalog.mjs')
 console.log('Translation complete')

@@ -1,5 +1,6 @@
 :root,
 [data-theme='dark'] {
+  color-scheme: dark;
     --font-display: 'Playfair Display Variable', Georgia, serif;
   --font-heading: 'Space Grotesk Variable', system-ui, sans-serif;
   --font-body: 'Manrope Variable', system-ui, sans-serif;
@@ -27,6 +28,9 @@
 }
 
 [data-theme='light'] {
+  color-scheme: light;
+  --color-secondary: #21734c;
+  --color-tertiary: #216343;
   --color-bg: #f6faf7;
   --color-surface: #ffffff;
   --color-surface-2: #edf3ef;

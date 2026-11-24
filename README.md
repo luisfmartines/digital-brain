@@ -38,8 +38,11 @@ o provedor não disponibiliza a imagem, exibe “Sem demonstração”.
 
 As traduções ficam em `src/features/exercisedb/locales/translation-cache.json`;
 `translate.ts` mantém os ajustes de terminologia. O snapshot `catalog-source.json`
-permite testar a cobertura de todos os nomes e instruções. Para atualizar o catálogo
-e traduzir textos novos, execute `node scripts/sync-exercise-translations.mjs`.
+permite testar a cobertura de todos os nomes e instruções. O Neural consulta um
+índice desse snapshot junto com os exercícios salvos na conta. Ao salvar uma
+rotina, ele importa os itens escolhidos e vincula suas demonstrações da ExerciseDB.
+Para atualizar o catálogo, traduzir textos novos e gerar o índice do Neural,
+execute `node scripts/sync-exercise-translations.mjs`.
 Esse script consulta serviços externos apenas durante a geração; o app usa a base
 local. `--cached` reutiliza o snapshot e `--inspect` apenas baixa e contabiliza textos.
 Exercícios futuros ainda não traduzidos preservam o texto original até essa atualização.

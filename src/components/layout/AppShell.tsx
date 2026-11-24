@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Maximize2 } from 'lucide-react'
+import { Dumbbell } from 'lucide-react'
 import AppHeader from './AppHeader'
 import BottomNav from './BottomNav'
 import MascotFab from '../mascot/MascotFab'
@@ -84,7 +84,7 @@ export default function AppShell() {
               className={`${styles.fab} ${styles.fabDark}`}
               aria-label={active ? 'Retomar treino' : 'Treinos'}
             >
-              <Maximize2 size={22} />
+              <Dumbbell size={22} />
               {active && <i className={styles.live} />}
             </Link>
           </div>

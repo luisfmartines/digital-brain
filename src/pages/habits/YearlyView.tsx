@@ -125,20 +125,21 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
         <span className={styles.pillBox}><Activity size={13} /> {period.pct}% de consistência anual</span>
       </div>
 
-      <ViewSwitch view={view} onChange={setView} />
-
-      <div className={styles.yearNav}>
-        <div className={styles.monthNav}>
-          <button type="button" onClick={() => setYear(year - 1)}           aria-label="Ano anterior"><ChevronLeft size={16} /></button>
-          <strong>{year}</strong>
-          <button type="button" disabled={isCurrentYear} onClick={() => setYear(year + 1)}           aria-label="Próximo ano"><ChevronRight size={16} /></button>
-        </div>
-        <div className={styles.quarters}>
-          {[1, 2, 3, 4].map((q) => (
-            <button key={q} type="button" className={quarter === q ? styles.qOn : styles.q} onClick={() => setQuarter(quarter === q ? 0 : q)}>
-              T{q}{isCurrentYear && q === currentQ ? ' (atual)' : ''}
-            </button>
-          ))}
+      <div className={`${styles.panel} ${styles.periodPanel}`}>
+        <ViewSwitch view={view} onChange={setView} />
+        <div className={styles.yearNav}>
+          <div className={styles.monthNav}>
+            <button type="button" onClick={() => setYear(year - 1)} aria-label="Ano anterior"><ChevronLeft size={16} /></button>
+            <strong>{year}</strong>
+            <button type="button" disabled={isCurrentYear} onClick={() => setYear(year + 1)} aria-label="Próximo ano"><ChevronRight size={16} /></button>
+          </div>
+          <div className={styles.quarters}>
+            {[1, 2, 3, 4].map((q) => (
+              <button key={q} type="button" className={quarter === q ? styles.qOn : styles.q} onClick={() => setQuarter(quarter === q ? 0 : q)}>
+                T{q}{isCurrentYear && q === currentQ ? ' (atual)' : ''}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

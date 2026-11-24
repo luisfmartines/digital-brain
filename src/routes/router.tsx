@@ -8,6 +8,8 @@ import TaskFormPage from '../pages/tasks/TaskFormPage'
 import RoutinePage from '../pages/routine/RoutinePage'
 import AssistantPage from '../pages/assistant/AssistantPage'
 import ProfilePage from '../pages/profile/ProfilePage'
+import CalendarPage from '../pages/calendar/CalendarPage'
+import CalendarEventPage from '../pages/calendar/CalendarEventPage'
 import OnboardingLayout from '../pages/onboarding/OnboardingLayout'
 import OnboardingModulesPage from '../pages/onboarding/OnboardingModulesPage'
 import OnboardingSetupPage from '../pages/onboarding/OnboardingSetupPage'
@@ -50,6 +52,9 @@ export const router = createBrowserRouter([
           { path: '/tasks/new', element: <TaskFormPage /> },
           { path: '/tasks/:id/edit', element: <TaskFormPage /> },
 
+          { path: '/calendar/new', element: <CalendarEventPage /> },
+          { path: '/calendar/:id/edit', element: <CalendarEventPage /> },
+
           // Amigos
           { path: '/friends/add', element: <AddFriendsPage /> },
 
@@ -72,7 +77,7 @@ export const router = createBrowserRouter([
               { path: '/workouts', element: <WorkoutsPage /> },
               { path: '/workouts/stats', element: <StatsPage /> },
               { path: '/finance', element: <FinancePage /> },
-              { path: '/calendar', element: <h1>Calendário</h1> },
+              { path: '/calendar', element: <CalendarPage /> },
               { path: '/assistant', element: <AssistantPage /> },
               { path: '/profile', element: <ProfilePage /> },
             ],

@@ -82,7 +82,7 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
 
       <section className={styles.panel}>
         <div className={styles.panelHead}>
-          <ViewSwitch view={view} onChange={setView} compact />
+          <ViewSwitch view={view} onChange={setView} />
           <div className={styles.monthNav}>
             <button type="button" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}             aria-label="Mês anterior"><ChevronLeft size={16} /></button>
             <strong>{cursor.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}</strong>

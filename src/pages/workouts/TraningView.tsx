@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, Clock, History, Maximize2, MoreVertical, Pencil, Play, PlayCircle, Plus, Timer, TrendingUp, Zap } from 'lucide-react'
+import { ArrowRight, Check, Clock, History, Dumbbell, MoreVertical, Pencil, Play, PlayCircle, Plus, Timer, TrendingUp, Zap } from 'lucide-react'
 import {
   useActiveWorkout, useDeleteRoutine, useHistory, useLastPerformed, useRoutines, useStartWorkout, useWeekStats, type Routine,
 } from '../../features/workouts/queries'
@@ -96,7 +96,7 @@ export default function TrainingView() {
           return (
             <li key={r.id} className={styles.routine}>
               <div className={styles.rHead}>
-                <span className={styles.iconBox}><Maximize2 size={16} /></span>
+                <span className={styles.iconBox}><Dumbbell size={16} /></span>
                 <div className={styles.rText}>
                   <strong>{r.name}</strong>
                   <small>{i.muscles.slice(0, 2).join(' & ') || 'Nenhum exercício'} • {i.n} exercícios • {i.sets} séries</small>

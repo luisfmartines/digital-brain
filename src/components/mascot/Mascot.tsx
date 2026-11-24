@@ -72,13 +72,13 @@ export default function Mascot({ mood, dragging = false, landing = false, celebr
       <div className={styles.float}>
         <svg ref={svgRef} className={styles.svg} viewBox="0 0 240 146" aria-hidden="true" focusable="false">
           <g className={styles.body}>
-            {/* corpo: nuvem/arbusto feita de formas sobrepostas, todas da mesma cor */}
-            <g className={styles.fill}>
-              <rect x="8" y="50" width="224" height="88" rx="36" />
-              <circle cx="52" cy="62" r="42" />
-              <circle cx="102" cy="44" r="38" />
-              <circle cx="152" cy="40" r="36" />
-              <circle cx="198" cy="60" r="34" />
+            <path
+              className={styles.fill}
+              d="M120 21 C106 5 80 5 66 20 C46 16 27 29 26 49 C9 57 7 81 18 94 C13 112 28 129 47 129 C59 145 86 147 102 135 C111 142 131 142 140 135 C157 147 181 144 193 130 C215 131 228 112 222 95 C234 80 231 57 214 48 C212 29 193 16 174 20 C160 5 134 5 120 21 Z"
+            />
+            <g className={styles.folds} fill="none" strokeWidth="7" strokeLinecap="round">
+              <path d="M120 23 C114 36 125 44 120 58 M65 23 C57 35 62 48 76 50 C86 51 91 57 90 66 M29 51 C43 48 52 58 49 70 M20 94 C33 82 53 88 56 102 C58 112 66 119 76 118" />
+              <path d="M175 23 C183 35 178 48 164 50 C154 51 149 57 150 66 M211 51 C197 48 188 58 191 70 M220 94 C207 82 187 88 184 102 C182 112 174 119 164 118 M120 117 Q117 127 121 136" />
             </g>
 
             <g className={styles.look}>

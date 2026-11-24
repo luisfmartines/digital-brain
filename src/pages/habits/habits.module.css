@@ -35,14 +35,14 @@
 .rotated { transform: rotate(-90deg); }
 
 /* Alternador Weekly / Monthly / Yearly */
-.switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: var(--radius-md); background: var(--color-surface); }
-.switch button { padding: 10px; border: 0; border-radius: 10px; background: transparent; color: var(--color-text-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 999px; background: var(--color-surface-3); }
+.switch button { padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--color-text-muted); font-size: 10px; font-weight: 700; cursor: pointer; }
 .switch .switchOn { background: var(--color-primary); color: var(--color-on-primary); }
-.switchCompact { padding: 3px; border-radius: 999px; background: var(--color-surface-3); }
-.switchCompact button { padding: 6px 10px; border-radius: 999px; font-size: 10px; }
+.periodPanel { align-items: flex-start; }
+.periodPanel > :is(.weekNav, .yearNav) { width: 100%; padding: 0; }
 
 /* Mensal */
-.panelHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.panelHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .monthNav, .weekNav { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .monthNav button, .weekNav button { display: grid; place-items: center; padding: 2px; border: 0; background: transparent; color: var(--color-text); cursor: pointer; }
 .monthNav button:disabled, .weekNav button:disabled { opacity: 0.3; }

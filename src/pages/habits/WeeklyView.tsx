@@ -29,7 +29,6 @@ const CELL: Record<CellState, string> = {
 }
 const hourLabel = (h: number) => fmtTime(`${String(h % 24).padStart(2, '0')}:00`)
 const slash = (h: Habit) => DAYS.filter((d) => h.weekdays.includes(d.v)).map((d) => d.label).join('/')
-const iconOf = (h: Habit) => HABIT_ICONS[h.icon ?? 'custom'] ?? HABIT_ICONS.custom
 
 export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props) {
   const toggle = useToggleLog()
@@ -66,7 +65,7 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
     ? habits.filter((h) => isScheduled(h, today) && !isDone(ix, h.id, todayStr)).sort(byTime)
     : []
   const next = pendingToday[0]
-  const NextIcon = next ? iconOf(next) : null
+  const NextIcon = HABIT_ICONS[next?.icon ?? 'custom'] ?? HABIT_ICONS.custom
 
   const hourStats = new Map<number, { s: number; d: number }>()
   for (const r of rows) {
@@ -104,14 +103,15 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
         <div className={styles.bigPct}><strong>{week.pct}%</strong><small>Consistência</small></div>
       </div>
 
-      <ViewSwitch view={view} onChange={setView} />
-
-      <div className={styles.weekNav}>
-        <button type="button" onClick={() => setWeekStart(addDays(weekStart, -7))}         aria-label="Semana anterior"><ChevronLeft size={16} /></button>
-        <strong>{range}</strong>
-        <button type="button" disabled={isCurrent} onClick={() => setWeekStart(addDays(weekStart, 7))}         aria-label="Próxima semana"><ChevronRight size={16} /></button>
-        <span className={styles.badge}>W{isoWeek(weekStart)}</span>
-        {isCurrent && <span className={styles.badgeSolid}>Atual</span>}
+      <div className={`${styles.panel} ${styles.periodPanel}`}>
+        <ViewSwitch view={view} onChange={setView} />
+        <div className={styles.weekNav}>
+          <button type="button" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Semana anterior"><ChevronLeft size={16} /></button>
+          <strong>{range}</strong>
+          <button type="button" disabled={isCurrent} onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Próxima semana"><ChevronRight size={16} /></button>
+          <span className={styles.badge}>W{isoWeek(weekStart)}</span>
+          {isCurrent && <span className={styles.badgeSolid}>Atual</span>}
+        </div>
       </div>
 
       <section className={styles.hero}>
@@ -189,7 +189,7 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
         </>
       )}
 
-      {next && NextIcon && (
+      {next && (
         <section className={styles.nextCard}>
           <span className={styles.iconBox}><NextIcon size={16} /></span>
           <div className={styles.rowText}>

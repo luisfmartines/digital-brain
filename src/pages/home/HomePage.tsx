@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, ChevronRight, Clock, Droplet, Flame, Lightbulb, Maximize2, Play, Sparkles, Trophy, TrendingUp, Wallet,
+  ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, ChevronRight, Clock, Droplet, Flame, Lightbulb, Dumbbell, Play, Sparkles, Trophy, TrendingUp, Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { useProfile } from '../../features/profile/useProfile'
@@ -85,7 +85,7 @@ function Overview() {
     to: '/routine?tab=habits&edit=water', // toca no nome para ajustar a meta (de 500 em 500 ml)
     action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(WATER_STEP)} disabled={addWater.isPending} aria-label={`Adicionar ${WATER_STEP} ml de água`}>+{WATER_STEP}</button>,
   })
-  if (has('workouts')) rows.push({ key: 'workout', icon: Maximize2, label: 'Treino', text: `${Math.min(workoutsToday, 1)}/1 treino`, ratio: Math.min(workoutsToday, 1), counts: true })
+  if (has('workouts')) rows.push({ key: 'workout', icon: Dumbbell, label: 'Treino', text: `${Math.min(workoutsToday, 1)}/1 treino`, ratio: Math.min(workoutsToday, 1), counts: true })
   const lv = levelInfo(profile?.xp, profile?.level)
   const counted = rows.filter((r) => r.counts)
   const overall = counted.length ? Math.round((counted.reduce((a, r) => a + Math.min(1, r.ratio), 0) / counted.length) * 100) : 0
@@ -223,7 +223,7 @@ function Overview() {
       {has('workouts') && (
         <section className={styles.card}>
           <div className={styles.cardHead}>
-            <span className={styles.iconBox}><Maximize2 size={18} /></span>
+            <span className={styles.iconBox}><Dumbbell size={18} /></span>
             <div className={styles.titleBox}>
               <span className={styles.cap}>MOTOR FÍSICO</span>
               <strong>{ready?.name ?? 'Nenhuma rotina ainda'}</strong>

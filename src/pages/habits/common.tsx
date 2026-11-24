@@ -8,9 +8,9 @@ const OPTIONS: { id: View; label: string }[] = [
   { id: 'yearly', label: 'Anual' },
 ]
 
-export function ViewSwitch({ view, onChange, compact }: { view: View; onChange: (v: View) => void; compact?: boolean }) {
+export function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => void }) {
   return (
-    <div className={`${styles.switch} ${compact ? styles.switchCompact : ''}`} role="tablist">
+    <div className={styles.switch} role="tablist" aria-label="Período dos hábitos">
       {OPTIONS.map((o) => (
         <button
           key={o.id}

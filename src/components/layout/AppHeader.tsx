@@ -1,4 +1,4 @@
-import { Search, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Avatar from '../ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
@@ -18,9 +18,6 @@ export default function AppHeader({ subtitle }: { subtitle: string }) {
         </div>
       </div>
       <div className={styles.actions}>
-        <button type="button" className={styles.iconBtn} aria-label="Pesquisar">
-          <Search size={20} />
-        </button>
         <button type="button" className={styles.iconBtn} onClick={() => navigate('/friends/add')} aria-label="Adicionar amigos">
           <UserPlus size={20} />
         </button>
