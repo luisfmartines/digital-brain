@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Info, Plus, Search, X } from 'lucide-react'
+import { ImagePlus, Info, Plus, Search, X } from 'lucide-react'
 import { useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
 import { MUSCLES, muscleLabel } from '../../features/workouts/utils'
 import ExerciseDetail from './ExerciseDetail'
@@ -24,7 +24,7 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
   const [creating, setCreating] = useState(false)
   const [info, setInfo] = useState<Exercise | null>(null)
   const [catalogInfo, setCatalogInfo] = useState<ExerciseMedia | null>(null)
-  const [photo, setPhoto] = useState<File | null>(null)
+  const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null)
   const photoInput = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [newMuscle, setNewMuscle] = useState('chest')
@@ -33,6 +33,8 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
     const timer = window.setTimeout(() => setTerm(q.trim()), 200)
     return () => window.clearTimeout(timer)
   }, [q])
+  const preview = photo?.preview
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
   const catalog = useExerciseCatalog(term, muscle)
   const importExercise = useImportExercise()
   const remote = catalog.data?.pages.flatMap((page) => page.exercises) ?? []
@@ -67,55 +69,59 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
 
   function createOne() {
     if (!name.trim() || busy) return
-    create.mutate({ name: name.trim(), muscle_group: newMuscle, photo }, { onSuccess: (e) => onPick(e) })
+    create.mutate({ name: name.trim(), muscle_group: newMuscle, photo: photo?.file ?? null }, { onSuccess: (e) => onPick(e) })
   }
 
   return (
     <div className={styles.overlay} onClick={close}>
       <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
         <div className={styles.sheetHead}>
-          <strong>{title}</strong>
+          <strong>{creating ? 'Criar exercício personalizado' : title}</strong>
           <button type="button" className={styles.plainBtn} onClick={close} disabled={create.isPending} aria-label="Fechar"><X size={18} /></button>
         </div>
-        <label className={styles.search}><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar exercícios" /></label>
-        <div className={styles.filterChips}>
-          <button type="button" className={muscle === '' ? styles.fOn : styles.f} onClick={() => setMuscle('')}>Todos</button>
-          {Object.entries(MUSCLES).map(([id, label]) => (
-            <button key={id} type="button" className={muscle === id ? styles.fOn : styles.f} onClick={() => setMuscle(id)}>{label}</button>
-          ))}
-        </div>
-        <ul className={styles.pickList}>
-          {waitingForSearch && <li className={styles.empty} role="status">Carregando exercícios…</li>}
-          {q.trim() === term && results.map((result) => {
-            if (result.source === 'saved') {
-              const exercise = result.exercise
-              return (
-                <li key={exercise.id} className={styles.pickRow}>
-                  <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => onPick(exercise)}>
-                    <SavedExerciseImage exercise={exercise} />
-                    <span><strong>{exercise.name}</strong><small>{muscleLabel(exercise.muscle_group)}{exercise.equipment ? ` • ${exercise.equipment}` : ''}</small></span>
-                  </button>
-                  <button type="button" className={styles.pickInfo} onClick={() => setInfo(exercise)} aria-label={`Ver detalhes de ${exercise.name}`}><Info size={18} /></button>
-                </li>
-              )
-            }
-            const exercise = result.exercise
-            return (
-              <li key={exercise.id} className={styles.pickRow}>
-                <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => importExercise.mutate(exercise, { onSuccess: onPick })}>
-                  <ExerciseImage src={exercise.imageUrl} externalId={exercise.id} name={exercise.name} />
-                  <span><strong>{exercise.name}</strong><small>{exercise.targets.map(muscleName).join(', ')}{exercise.equipments.length > 0 && ` • ${exercise.equipments.map(translateText).join(', ')}`}</small></span>
-                  <Plus size={18} aria-hidden="true" />
-                </button>
-                <button type="button" className={styles.pickInfo} onClick={() => { importExercise.reset(); setCatalogInfo(exercise) }} aria-label={`Ver detalhes de ${exercise.name}`}><Info size={18} /></button>
-              </li>
-            )
-          })}
-          {saved.isError && <li className={styles.empty}>Não foi possível carregar os exercícios salvos. <button type="button" onClick={() => saved.refetch()}>Tentar novamente</button></li>}
-          {catalog.isError && <li className={styles.empty}>Não foi possível carregar o catálogo. <button type="button" onClick={() => catalog.refetch()}>Tentar novamente</button></li>}
-          {!waitingForSearch && !catalog.isError && !catalog.hasNextPage && results.length === 0 && <li className={styles.empty}>Nenhum exercício encontrado.</li>}
-          {q.trim() === term && catalog.hasNextPage && <li><button type="button" className={styles.addExBtn} disabled={catalog.isFetching} onClick={() => catalog.fetchNextPage()}>{catalog.isFetchingNextPage ? 'Carregando…' : 'Carregar mais exercícios'}</button></li>}
-        </ul>
+        {!creating && (
+          <>
+            <label className={styles.search}><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar exercícios" /></label>
+            <div className={styles.filterChips}>
+              <button type="button" className={muscle === '' ? styles.fOn : styles.f} onClick={() => setMuscle('')}>Todos</button>
+              {Object.entries(MUSCLES).map(([id, label]) => (
+                <button key={id} type="button" className={muscle === id ? styles.fOn : styles.f} onClick={() => setMuscle(id)}>{label}</button>
+              ))}
+            </div>
+            <ul className={styles.pickList}>
+              {waitingForSearch && <li className={styles.empty} role="status">Carregando exercícios…</li>}
+              {q.trim() === term && results.map((result) => {
+                if (result.source === 'saved') {
+                  const exercise = result.exercise
+                  return (
+                    <li key={exercise.id} className={styles.pickRow}>
+                      <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => onPick(exercise)}>
+                        <SavedExerciseImage exercise={exercise} />
+                        <span><strong>{exercise.name}</strong><small>{muscleLabel(exercise.muscle_group)}{exercise.equipment ? ` • ${exercise.equipment}` : ''}</small></span>
+                      </button>
+                      <button type="button" className={styles.pickInfo} onClick={() => setInfo(exercise)} aria-label={`Ver detalhes de ${exercise.name}`}><Info size={18} /></button>
+                    </li>
+                  )
+                }
+                const exercise = result.exercise
+                return (
+                  <li key={exercise.id} className={styles.pickRow}>
+                    <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => importExercise.mutate(exercise, { onSuccess: onPick })}>
+                      <ExerciseImage src={exercise.imageUrl} externalId={exercise.id} name={exercise.name} />
+                      <span><strong>{exercise.name}</strong><small>{exercise.targets.map(muscleName).join(', ')}{exercise.equipments.length > 0 && ` • ${exercise.equipments.map(translateText).join(', ')}`}</small></span>
+                      <Plus size={18} aria-hidden="true" />
+                    </button>
+                    <button type="button" className={styles.pickInfo} onClick={() => { importExercise.reset(); setCatalogInfo(exercise) }} aria-label={`Ver detalhes de ${exercise.name}`}><Info size={18} /></button>
+                  </li>
+                )
+              })}
+              {saved.isError && <li className={styles.empty}>Não foi possível carregar os exercícios salvos. <button type="button" onClick={() => saved.refetch()}>Tentar novamente</button></li>}
+              {catalog.isError && <li className={styles.empty}>Não foi possível carregar o catálogo. <button type="button" onClick={() => catalog.refetch()}>Tentar novamente</button></li>}
+              {!waitingForSearch && !catalog.isError && !catalog.hasNextPage && results.length === 0 && <li className={styles.empty}>Nenhum exercício encontrado.</li>}
+              {q.trim() === term && catalog.hasNextPage && <li><button type="button" className={styles.addExBtn} disabled={catalog.isFetching} onClick={() => catalog.fetchNextPage()}>{catalog.isFetchingNextPage ? 'Carregando…' : 'Carregar mais exercícios'}</button></li>}
+            </ul>
+          </>
+        )}
         {error && <p role="alert">{error}</p>}
         {importExercise.isPending && <p role="status">Adicionando exercício…</p>}
         {importExercise.isError && <p role="alert">Não foi possível adicionar o exercício. Tente novamente.</p>}
@@ -126,10 +132,26 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
             <select className={styles.input} value={newMuscle} onChange={(e) => setNewMuscle(e.target.value)}>
               {Object.entries(MUSCLES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select>
-            <label className={styles.exercisePhotoField}>
-              <span>Foto do exercício (opcional)</span>
-              <input ref={photoInput} type="file" accept="image/*" disabled={busy}
-                onChange={(event) => { setPhoto(event.target.files?.[0] ?? null); create.reset() }} />
+            <label className={styles.exercisePhotoField} data-selected={!!photo}>
+              {photo ? (
+                <>
+                  <img src={photo.preview} alt="Prévia da foto do exercício" />
+                  <span>Trocar foto</span>
+                </>
+              ) : (
+                <>
+                  <ImagePlus size={26} aria-hidden="true" />
+                  <span>Adicionar foto</span>
+                  <small>Opcional</small>
+                </>
+              )}
+              <input ref={photoInput} type="file" accept="image/*" disabled={busy} aria-label="Foto do exercício (opcional)"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0]
+                  if (!file) return
+                  setPhoto({ file, preview: URL.createObjectURL(file) })
+                  create.reset()
+                }} />
             </label>
             {photo && <button type="button" className={styles.addSet} disabled={busy} onClick={() => {
               if (photoInput.current) photoInput.current.value = ''
@@ -137,6 +159,7 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
               create.reset()
             }}>Remover foto</button>}
             <button type="button" className={styles.primary} onClick={createOne} disabled={!name.trim() || busy}>{create.isPending ? 'Salvando…' : 'Criar e adicionar'}</button>
+            <button type="button" className={styles.cancel} disabled={busy} onClick={() => setCreating(false)}>Voltar aos exercícios</button>
           </div>
         ) : (
           <button type="button" className={styles.addExBtn} onClick={() => setCreating(true)}><Plus size={14} /> Criar exercício personalizado</button>

@@ -119,20 +119,22 @@
 .statsBar > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .statsBar strong { font-family: var(--font-heading); font-size: 17px; }
 .statsBar small { margin-left: 2px; font-size: 10px; color: var(--color-text-muted); }
-.exCard { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
-.exHead { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.tagRow { display: flex; align-items: center; gap: 8px; }
+.exCard { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.exHead { display: flex; align-items: flex-start; gap: 10px; }
+.tagRow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
 .muscleTag { padding: 3px 8px; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-secondary); font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
-.planned { font-size: 10px; color: var(--color-text-muted); white-space: nowrap; }
+.planned { font-size: 11px; color: var(--color-text-muted); }
 .setHead, .setRow { display: grid; grid-template-columns: 32px minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 36px 24px; align-items: center; gap: 8px; }
-.setHead { padding: 0 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--color-text-muted); }
+.setHead { padding: 0 8px; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--color-text-muted); }
 .setHead span:nth-child(n + 3) { text-align: center; }
-.setRow { position: relative; padding: 6px; border-radius: var(--radius-md); background: var(--color-surface-3); }
+.setFieldLabel { display: none; }
+.setWeight, .setReps { display: grid; gap: 4px; min-width: 0; }
+.setRow { position: relative; padding: 8px; border-radius: var(--radius-md); background: var(--color-surface-3); }
 .setCurrent { box-shadow: inset 3px 0 0 var(--color-secondary); background: rgba(63, 166, 114, 0.1); }
 .setDone .numInput { color: var(--color-text-muted); }
 .setNum, .setNumW { width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--color-surface-2); color: var(--color-text); font-size: 11px; font-weight: 700; cursor: pointer; }
 .setNumW { background: var(--color-tertiary); color: var(--color-secondary); }
-.prev { font-size: 11px; color: var(--color-text-muted); }
+.prev { min-width: 0; overflow-wrap: anywhere; font-size: 11px; color: var(--color-text-muted); }
 .numInput { width: 100%; padding: 8px 4px; border: 0; border-radius: 10px; background: var(--color-bg); color: var(--color-secondary); font-size: 15px; font-weight: 700; text-align: center; }
 .check, .checkOn { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--color-surface-2); color: var(--color-text-muted); cursor: pointer; }
 .checkOn { background: var(--color-primary); color: var(--color-on-primary); }
@@ -283,6 +285,7 @@
   padding: 0;
   cursor: pointer;
 }
+.exerciseToggle strong { overflow-wrap: anywhere; }
 .swipeSet {
   position: relative;
   touch-action: pan-y pinch-zoom;
@@ -316,6 +319,15 @@
   margin: 4px 0;
 }
 .activeThumbnail { overflow: hidden; }
+button.activeThumbnail {
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+}
+.activeThumbnail:focus-visible, .exercisePhotoField:focus-within {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 3px;
+}
 .activeThumbnail > img, .activeThumbnail > video {
   width: 100%;
   height: 100%;
@@ -335,26 +347,94 @@
 .finishDialog h2, .finishDialog p, .photoSourceDialog h2 { margin: 0; }
 .finishDialog::backdrop, .photoSourceDialog::backdrop { background: rgb(0 0 0 / 65%); }
 
-.exercisePhotoField {
-  display: grid;
-  gap: 6px;
-  font-size: 0.875rem;
-  min-width: 0;
+.demoPreview {
+  width: min(550px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
-.exercisePhotoField input { max-width: 100%; font: inherit; }
+.demoPreview[open] { display: grid; gap: 12px; }
+.demoPreview::backdrop { background: rgb(0 0 0 / 78%); }
+.demoPreviewHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.demoPreviewHeader h2 { font-size: 16px; overflow-wrap: anywhere; }
+.demoPreviewHeader button { flex: 0 0 38px; min-height: 38px; }
+.demoPreview .demoPreviewMedia { max-height: 72dvh; }
+
+.exercisePhotoField {
+  position: relative;
+  display: grid;
+  justify-self: start;
+  align-self: flex-start;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  width: min(100%, 140px);
+  aspect-ratio: 1;
+  border: 1px dashed var(--color-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  overflow: hidden;
+}
+.exercisePhotoField svg { color: var(--color-secondary); }
+.exercisePhotoField small { color: var(--color-text-muted); font-size: 0.7rem; }
+.exercisePhotoField[data-selected="true"] { border-style: solid; }
+.exercisePhotoField img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.exercisePhotoField[data-selected="true"] span {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 8px 4px;
+  background: rgb(0 0 0 / 70%);
+  color: #fff;
+  text-align: center;
+}
+.exercisePhotoField input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.exercisePhotoField:has(input:disabled) { opacity: 0.6; }
 
 .restDurationField {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem auto;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-3);
 }
 .restDurationField label {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: 0.8rem;
 }
-.restDurationField input { width: 4.5rem; }
+.restDurationField .smallBtn { min-height: 38px; justify-content: center; }
+.restDurationField .smallBtn:disabled { cursor: default; }
+
+@media (max-width: 380px) {
+  .restDurationField { grid-template-columns: 4.5rem minmax(0, 1fr); }
+  .restDurationField label { grid-column: 1 / -1; }
+  .restDurationField .smallBtn { justify-self: start; }
+  .setHead { display: none; }
+  .setRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px 36px;
+    grid-template-areas: "number previous previous previous" "weight reps done remove";
+    gap: 7px 8px;
+  }
+  .setIndex { grid-area: number; }
+  .prev {
+    grid-area: previous;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px 8px;
+  }
+  .setWeight { grid-area: weight; }
+  .setReps { grid-area: reps; }
+  .setComplete { grid-area: done; }
+  .removeSet { grid-area: remove; }
+  .setComplete, .removeSet { align-self: end; width: 36px; height: 36px; }
+  .setFieldLabel { display: inline; font-size: 11px; color: var(--color-text-muted); }
+  .numInput { min-height: 36px; }
+}

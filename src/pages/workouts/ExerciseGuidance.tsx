@@ -5,7 +5,7 @@ import { cleanInstruction } from '../../features/exercisedb/translate'
 import ExerciseImage from './ExerciseImage'
 import styles from './exerciseDetail.module.css'
 
-export function ExerciseDemo({ video, image, name, externalId }: { video: string | null; image: string | null; name: string; externalId: string }) {
+export function ExerciseDemo({ video, image, name, externalId, className = '' }: { video: string | null; image: string | null; name: string; externalId: string; className?: string }) {
   const [paused, setPaused] = useState(false)
   const [ref, setRef] = useState<HTMLVideoElement | null>(null)
 
@@ -14,7 +14,7 @@ export function ExerciseDemo({ video, image, name, externalId }: { video: string
     if (ref.paused) { void ref.play(); setPaused(false) } else { ref.pause(); setPaused(true) }
   }
   return (
-    <div className={styles.demo}>
+    <div className={styles.demo + ' ' + className}>
       {video ? (
         <>
           <video ref={setRef} src={video} poster={image ?? undefined} autoPlay loop muted playsInline aria-label={`Demonstração: ${name}`} />

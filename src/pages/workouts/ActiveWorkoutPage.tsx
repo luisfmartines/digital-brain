@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -9,7 +9,7 @@ import { useExerciseLink, useExerciseMedia } from '../../features/exercisedb/que
 import ExercisePicker from './ExercisePicker'
 import ExerciseDetail from './ExerciseDetail'
 import ExerciseImage, { CustomExercisePhoto } from './ExerciseImage'
-import { ExerciseInstructions } from './ExerciseGuidance'
+import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
 import styles from './workouts.module.css'
 
 interface Group { exercise: Exercise; order: number; sets: SessionSet[] }
@@ -37,6 +37,7 @@ function storeRestDurations(id: string, durations?: Record<string, number>) {
 
 function RestDurationField({ seconds, onApply }: { seconds: number; onApply: (value: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null)
+  const fieldId = useId()
   return (
     <form className={styles.restDurationField} onSubmit={(event) => {
       event.preventDefault()
@@ -45,10 +46,9 @@ function RestDurationField({ seconds, onApply }: { seconds: number; onApply: (va
       onApply(value)
       setDraft(null)
     }}>
-      <label>Descanso entre séries (segundos)
-        <input className={styles.mini} type="number" min={0} max={REST_LIMIT} step={1} required
-          value={draft ?? seconds} onChange={(event) => setDraft(event.currentTarget.value)} />
-      </label>
+      <label htmlFor={fieldId}>Descanso entre séries (segundos)</label>
+      <input id={fieldId} className={styles.mini} type="number" inputMode="numeric" min={0} max={REST_LIMIT} step={1} required
+        value={draft ?? seconds} onChange={(event) => setDraft(event.currentTarget.value)} />
       <button type="submit" className={styles.smallBtn} disabled={draft === null || Number(draft) === seconds}>Aplicar</button>
     </form>
   )
@@ -57,17 +57,34 @@ function RestDurationField({ seconds, onApply }: { seconds: number; onApply: (va
 function ActiveExerciseThumbnail({ exercise }: { exercise: Exercise }) {
   const link = useExerciseLink(exercise.id)
   const media = useExerciseMedia(link.data)
-  const icon = <Maximize2 size={16} aria-hidden="true" />
+  const dialog = useRef<HTMLDialogElement>(null)
+  const [open, setOpen] = useState(false)
   const demo = media.data
+  const thumbnail = styles.iconBox + ' ' + styles.activeThumbnail
+  const icon = <Maximize2 size={16} aria-hidden="true" />
+  if (!link.data || !demo || (!demo.imageUrl && !demo.videoUrl)) return <span className={thumbnail}>{icon}</span>
+
   return (
-    <span className={styles.iconBox + ' ' + styles.activeThumbnail}>
-      {demo?.videoUrl && !demo.imageUrl ? (
-        <video src={demo.videoUrl} autoPlay loop muted playsInline aria-label={`Demonstração: ${exercise.name}`} />
-      ) : (
-        <ExerciseImage src={demo?.imageUrl} externalId={link.data} name={exercise.name}
-          loading={link.isLoading || media.isLoading} fallback={icon} />
-      )}
-    </span>
+    <>
+      <button type="button" className={thumbnail} aria-haspopup="dialog" aria-label={'Ampliar demonstração de ' + exercise.name}
+        onClick={() => { dialog.current?.showModal(); setOpen(true) }}>
+        {demo.imageUrl ? (
+          <ExerciseImage src={demo.imageUrl} externalId={link.data} name={exercise.name} fallback={icon} />
+        ) : <video src={demo.videoUrl ?? undefined} autoPlay loop muted playsInline aria-hidden="true" />}
+      </button>
+      <dialog ref={dialog} className={styles.demoPreview} aria-label={'Demonstração de ' + exercise.name}
+        onClose={() => setOpen(false)} onClick={(event) => {
+          if (event.target === event.currentTarget) dialog.current?.close()
+        }}>
+        <div className={styles.demoPreviewHeader}>
+          <h2>{exercise.name}</h2>
+          <button type="button" className={styles.plainBtn} aria-label="Fechar demonstração"
+            onClick={() => dialog.current?.close()}><X size={22} /></button>
+        </div>
+        {open && <ExerciseDemo video={demo.imageUrl ? null : demo.videoUrl} image={demo.imageUrl}
+          name={exercise.name} externalId={link.data} className={styles.demoPreviewMedia} />}
+      </dialog>
+    </>
   )
 }
 
@@ -199,11 +216,17 @@ function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle, on
       <span hidden={offset === 0} className={styles.swipeDelete} aria-hidden="true"><Trash2 size={16} /></span>
       <div style={{ transform: offset ? `translateX(${offset}px)` : undefined }}
         className={`${styles.setRow} ${current ? styles.setCurrent : ''} ${set.completed ? styles.setDone : ''}`}>
-        <button type="button" className={set.is_warmup ? styles.setNumW : styles.setNum} onClick={onCycle} aria-label="Alternar aquecimento">{set.is_warmup ? 'W' : label}</button>
-        <span className={styles.prev}>{previous ? `${previous.weight_kg ?? 0}kg × ${previous.reps ?? 0}` : '—'}</span>
-        <input className={styles.numInput} inputMode="decimal" value={w} onChange={(e) => setW(e.target.value)} onBlur={commit} aria-label="Peso em kg" />
-        <input className={styles.numInput} inputMode="numeric" value={r} onChange={(e) => setR(e.target.value)} onBlur={commit} aria-label="Repetições" />
-        <button type="button" className={set.completed ? styles.checkOn : styles.check} onClick={() => onToggle(num(w), num(r))} aria-label={set.completed ? 'Desmarcar série concluída' : 'Marcar série como concluída'}><Check size={14} /></button>
+        <button type="button" className={styles.setIndex + ' ' + (set.is_warmup ? styles.setNumW : styles.setNum)} onClick={onCycle} aria-label="Alternar aquecimento">{set.is_warmup ? 'W' : label}</button>
+        <span className={styles.prev}><span className={styles.setFieldLabel}>Anterior</span>{previous ? `${previous.weight_kg ?? 0}kg × ${previous.reps ?? 0}` : '—'}</span>
+        <label className={styles.setWeight}>
+          <span className={styles.setFieldLabel}>Peso (kg)</span>
+          <input className={styles.numInput} inputMode="decimal" value={w} onChange={(e) => setW(e.target.value)} onBlur={commit} aria-label="Peso em kg" />
+        </label>
+        <label className={styles.setReps}>
+          <span className={styles.setFieldLabel}>Repetições</span>
+          <input className={styles.numInput} inputMode="numeric" value={r} onChange={(e) => setR(e.target.value)} onBlur={commit} aria-label="Repetições" />
+        </label>
+        <button type="button" className={styles.setComplete + ' ' + (set.completed ? styles.checkOn : styles.check)} onClick={() => onToggle(num(w), num(r))} aria-label={set.completed ? 'Desmarcar série concluída' : 'Marcar série como concluída'}><Check size={14} /></button>
         <button type="button" className={styles.removeSet} aria-label={`Remover série ${set.set_number}`} disabled={busy} onClick={onRemove}><Trash2 size={13} /></button>
       </div>
     </div>
@@ -432,16 +455,16 @@ function ActiveWorkoutSession({ id }: { id: string }) {
           return (
             <section key={key} className={styles.exCard}>
               <div className={styles.exHead}>
+                <ActiveExerciseThumbnail exercise={g.exercise} />
                 <button type="button" className={styles.exerciseToggle} aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [key]: !isOpen }))}>
-                  <ActiveExerciseThumbnail exercise={g.exercise} />
                   <div className={styles.rText}>
                     <div className={styles.tagRow}>
                       <span className={styles.muscleTag}>{muscleLabel(g.exercise.muscle_group).toUpperCase()}</span>
                       {target && <small>Meta: {target} séries</small>}
                     </div>
                     <strong>{g.exercise.name}</strong>
+                    {!isOpen && <small className={styles.planned}>{g.sets.length} séries planejadas</small>}
                   </div>
-                  {!isOpen && <small className={styles.planned}>{g.sets.length} séries planejadas</small>}
                 </button>
                 <div className={styles.menuWrap}>
                   <button type="button" className={styles.plainBtn} onClick={() => setMenuEx(menuEx === key ? null : key)} aria-label="Opções do exercício" aria-expanded={menuEx === key} disabled={busy}>
@@ -459,7 +482,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
               {isOpen && (
                 <>
                   <RestDurationField seconds={restFor(g)} onApply={(seconds) => changeRest(g, seconds)} />
-                  <div className={styles.setHead}><span>SÉRIE</span><span>ANTERIOR</span><span>KG</span><span>REPETIÇÕES</span><span>FEITO</span><span /></div>
+                  <div className={styles.setHead}><span>SÉRIE</span><span>ANTERIOR</span><span>KG</span><span>REPS</span><span>FEITO</span><span /></div>
                   {g.sets.map((s) => {
                     if (!s.is_warmup) workingIndex++
                     return (
