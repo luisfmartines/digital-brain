@@ -290,7 +290,7 @@ export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia,
             </>
           )}
           {tab === 'history' && (histQ.isLoading ? <p className={styles.empty}>Carregando…</p> : histQ.isError ? <p className={styles.err}>Não foi possível carregar o histórico. <button type="button" onClick={() => histQ.refetch()}>Tentar novamente</button></p> : <History history={history} />)}
-          {tab === 'instructions' && <Instructions media={media} linked={!!externalId} loading={mediaQ.isLoading} failed={mediaQ.isError} />}
+          {tab === 'instructions' && <Instructions media={media} linked={!!externalId} loading={mediaQ.isLoading && !media} failed={mediaQ.isError && !media} />}
         </div>
 
         {onAdd && <div className={styles.footer}>{addError && <p role="alert" className={styles.err}>Não foi possível adicionar o exercício. Tente novamente.</p>}<button type="button" onClick={onAdd} disabled={adding}>{adding ? 'Adicionando…' : 'Adicionar exercício'}</button></div>}

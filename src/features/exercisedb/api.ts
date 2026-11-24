@@ -1,6 +1,6 @@
 
 import type { ExerciseMedia } from './types'
-import { originalSearchTerm, translateText } from './translate'
+import { originalSearchTerm, translateName, translateText } from './translate'
 
 const API_URL = (
   import.meta.env?.VITE_EXERCISEDB_URL ||
@@ -27,7 +27,7 @@ const list = (value: unknown): string[] =>
 export function normalize(r: Raw): ExerciseMedia {
   return {
     id: String(r.exerciseId ?? r.id ?? ''),
-    name: translateText(str(r.name) ?? 'Exercício'),
+    name: translateName(str(r.name) ?? 'Exercício'),
     originalName: str(r.name) ?? undefined,
     originalInstructions: list(r.instructions),
     videoUrl: str(r.videoUrl),

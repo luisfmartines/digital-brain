@@ -26,11 +26,23 @@ busca por nome, filtros musculares e paginação de 25 itens. Ao selecionar um i
 o app salva um cadastro individual em `exercises` e seu vínculo de demonstração,
 reutilizando o mesmo cadastro nas próximas seleções. Exercícios personalizados
 continuam disponíveis. Nos exercícios salvos, o botão de informações abre os detalhes.
-As buscas sugerem termos em inglês a partir do nome em português; as instruções
-fornecidas pela API permanecem em inglês. O catálogo público fornece GIFs.
+Os 1.500 exercícios do catálogo capturado têm nomes e instruções traduzidos para
+português em uma base local. As traduções são automáticas, com ajustes de terminologia
+de musculação; os originais continuam disponíveis na aba Instruções. A busca converte
+nomes traduzidos para os termos originais da API. O catálogo público fornece GIFs.
+Todos os itens têm botão de informações. Abrir os detalhes de um item do catálogo
+não grava dados: a importação acontece somente ao tocar em “Adicionar exercício”.
 As miniaturas também aparecem nos exercícios salvos. Se um link de mídia falhar,
 o app consulta o detalhe novamente para recuperar um endereço atualizado; quando
 o provedor não disponibiliza a imagem, exibe “Sem demonstração”.
+
+As traduções ficam em `src/features/exercisedb/locales/translation-cache.json`;
+`translate.ts` mantém os ajustes de terminologia. O snapshot `catalog-source.json`
+permite testar a cobertura de todos os nomes e instruções. Para atualizar o catálogo
+e traduzir textos novos, execute `node scripts/sync-exercise-translations.mjs`.
+Esse script consulta serviços externos apenas durante a geração; o app usa a base
+local. `--cached` reutiliza o snapshot e `--inspect` apenas baixa e contabiliza textos.
+Exercícios futuros ainda não traduzidos preservam o texto original até essa atualização.
 
 Os vínculos são individuais e persistidos em `exercise_media_links`. A migração
 `supabase/migrations/20261123000000_exercise_media_links.sql` já foi aplicada ao

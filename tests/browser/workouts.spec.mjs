@@ -19,7 +19,7 @@ test.beforeEach(async ({ page }) => {
     let body = []
     if (path.endsWith('/profiles')) body = { id: userId, onboarding_completed: true, enabled_modules: ['workouts'] }
     if (path.endsWith('/workout_routines')) body = routine
-    if (path.endsWith('/exercises')) body = [exercise]
+    if (path.endsWith('/exercises')) body = route.request().method() === 'POST' ? route.request().postDataJSON() : [exercise]
     if (path.endsWith('/exercise_media_links')) body = { external_id: 'saved-media' }
     await route.fulfill({ json: body })
   })
@@ -28,7 +28,8 @@ test.beforeEach(async ({ page }) => {
     const data = path.endsWith('/exercises') ? [
       { exerciseId: 'broken', name: 'Mídia indisponível', gifUrl: 'https://media.test/broken.gif' },
       { exerciseId: 'recoverable', name: 'Mídia atualizada', gifUrl: 'https://media.test/old.gif' },
-    ] : { exerciseId: path.split('/').pop(), name: 'Supino', gifUrl: path.endsWith('/broken') ? 'https://media.test/broken.gif' : 'https://media.test/good.gif' }
+      { exerciseId: 'EIeI8Vf', name: 'barbell bench press', gifUrl: 'https://media.test/good.gif', targetMuscles: ['pectorals'], equipments: ['barbell'], instructions: ['Step:3 Brace the torso and align the wrists with the forearms.'] },
+    ] : { exerciseId: path.split('/').pop(), name: 'barbell bench press', gifUrl: path.endsWith('/broken') ? 'https://media.test/broken.gif' : 'https://media.test/good.gif', instructions: ['Step:3 Brace the torso and align the wrists with the forearms.'] }
     await route.fulfill({ json: { success: true, data, meta: { hasNextPage: false } } })
   })
   await page.route('https://media.test/**', (route) => route.request().url().endsWith('/good.gif')
@@ -69,4 +70,25 @@ test('saved exercises show GIFs and broken URLs recover or show an explicit fall
   const recovered = page.getByRole('img', { name: 'Demonstração: Mídia atualizada', exact: true })
   await expect(recovered).toHaveAttribute('src', 'https://media.test/good.gif')
   await expect(page.getByRole('img', { name: 'Demonstração indisponível: Mídia indisponível', exact: true })).toBeVisible()
+})
+
+test('every exercise has details; preview shows Portuguese instructions without saving', async ({ page }) => {
+  const writes = []
+  page.on('request', (request) => {
+    if (request.url().includes('.supabase.co/') && request.method() === 'POST') writes.push(request)
+  })
+  await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Ver detalhes de / })).toHaveCount(4)
+  await page.getByRole('button', { name: 'Ver detalhes de Supino reto com barra', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Supino reto com barra', exact: true })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('tab', { name: 'Instruções' }).click()
+  await expect(dialog.getByText('Contraia o tronco e alinhe os punhos com os antebraços.', { exact: true })).toBeVisible()
+  expect(writes).toHaveLength(0)
+  await dialog.getByText('Ver instruções originais em inglês', { exact: true }).click()
+  await expect(dialog.getByText('Brace the torso and align the wrists with the forearms.', { exact: true })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText('Supino reto com barra', { exact: true })).toBeVisible()
+  expect(writes.some((request) => request.url().includes('/exercises'))).toBe(true)
 })

@@ -4,6 +4,9 @@ import { totals, monthRange, dailyPace, buildSummary } from '../src/features/fin
 import { exerciseGroup, getExercise, listExercises, searchExercises, suggestQuery } from '../src/features/exercisedb/api.ts'
 import { records, metricValue } from '../src/features/workouts/exerciseStats.ts'
 import { parseSetCount } from '../src/features/workouts/routineInput.ts'
+import { translateExercise, translateName, translateText, cleanInstruction } from '../src/features/exercisedb/translate.ts'
+import catalogSource from '../src/features/exercisedb/locales/catalog-source.json' with { type: 'json' }
+import translations from '../src/features/exercisedb/locales/translation-cache.json' with { type: 'json' }
 
 test('salary is not counted twice and cents remain exact', () => {
   assert.deepEqual(totals(1000, [
@@ -108,4 +111,23 @@ test('sets accept replacement values without coercing empty, fractional or overs
   for (const invalid of ['14', '0', '-1', '2.5', 'abc', 'Infinity']) {
     assert.equal(parseSetCount(invalid), null)
   }
+})
+
+test('all 1500 catalogue names and every instruction have a bundled translation', () => {
+  assert.equal(catalogSource.length, 1500)
+  assert.equal(new Set(catalogSource.map((exercise) => exercise.exerciseId)).size, 1500)
+  for (const exercise of catalogSource) {
+    for (const source of [exercise.name, ...exercise.instructions]) {
+      assert.ok(translations[cleanInstruction(source)]?.trim(), `Missing translation: ${source}`)
+    }
+  }
+})
+
+test('fitness terminology and saved English exercise names are localized', () => {
+  assert.equal(translateName('barbell bench press'), 'Supino reto com barra')
+  assert.equal(translateName('band underhand pulldown'), 'Puxada com elástico e pegada supinada')
+  assert.equal(translateName('weighted sissy squat'), 'Agachamento sissy com carga')
+  assert.equal(translateText('Step:3 Brace the torso and align the wrists with the forearms.'), 'Contraia o tronco e alinhe os punhos com os antebraços.')
+  assert.equal(translateExercise({ name: 'barbell bench press', equipment: 'barbell' }).equipment, 'Barra')
+  assert.equal(suggestQuery('Supino reto com barra'), 'barbell bench press')
 })
