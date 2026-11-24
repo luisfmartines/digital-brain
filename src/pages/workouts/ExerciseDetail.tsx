@@ -9,6 +9,7 @@ import {
 } from '../../features/workouts/exerciseStats'
 import { fmtNum, muscleLabel } from '../../features/workouts/utils'
 import styles from './exerciseDetail.module.css'
+import ExerciseImage from './ExerciseImage'
 
 type Tab = 'summary' | 'history' | 'instructions'
 const TABS: { id: Tab; label: string }[] = [
@@ -23,11 +24,10 @@ const kg = (n: number) => `${Number(n.toFixed(1)).toLocaleString('pt-BR')} kg`
 
 /* ---------- Animação do exercício ---------- */
 
-function Demo({ video, image, name }: { video: string | null; image: string | null; name: string }) {
+function Demo({ video, image, name, externalId }: { video: string | null; image: string | null; name: string; externalId: string }) {
   const [paused, setPaused] = useState(false)
   const [ref, setRef] = useState<HTMLVideoElement | null>(null)
 
-  if (!video && !image) return null
   function toggle() {
     if (!ref) return
     if (ref.paused) { void ref.play(); setPaused(false) } else { ref.pause(); setPaused(true) }
@@ -42,7 +42,7 @@ function Demo({ video, image, name }: { video: string | null; image: string | nu
           </button>
         </>
       ) : (
-        <img src={image!} alt={`Demonstração: ${name}`} />
+        <ExerciseImage key={externalId} src={image} externalId={externalId} name={name} />
       )}
     </div>
   )
@@ -72,7 +72,7 @@ function LinkPanel({ exercise }: { exercise: Exercise }) {
         {search.data?.map((r) => (
           <li key={r.id}>
             <button type="button" disabled={link.isPending} onClick={() => link.mutate(r.id)}>
-              {r.imageUrl ? <img src={r.imageUrl} alt="" loading="lazy" /> : <span className={styles.thumbEmpty} />}
+              <ExerciseImage key={r.id} src={r.imageUrl} externalId={r.id} name={r.name} />
               <span><strong>{r.name}</strong><small>{[...r.targets.map(muscleName), ...r.equipments].slice(0, 2).join(' • ')}</small></span>
             </button>
           </li>
@@ -273,7 +273,7 @@ export default function ExerciseDetail({ exercise, onClose, onAdd }: { exercise:
           {tab === 'summary' && (
             <>
               {externalId ? (
-                mediaQ.isLoading ? <div className={styles.demoSkeleton} /> : media && <Demo video={media.videoUrl} image={media.imageUrl} name={exercise.name} />
+                mediaQ.isLoading ? <div className={styles.demoSkeleton} /> : media && <Demo video={media.videoUrl} image={media.imageUrl} name={exercise.name} externalId={externalId} />
               ) : linkQ.isLoading ? <div className={styles.demoSkeleton} /> : linkQ.isError ? (
                 <p className={styles.err}>Não foi possível carregar o vínculo da demonstração. <button type="button" onClick={() => linkQ.refetch()}>Tentar novamente</button></p>
               ) : (

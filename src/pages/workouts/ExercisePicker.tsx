@@ -6,6 +6,7 @@ import ExerciseDetail from './ExerciseDetail'
 import styles from './workouts.module.css'
 import { useExerciseCatalog, useImportExercise } from '../../features/exercisedb/queries'
 import { muscleName } from '../../features/exercisedb/api'
+import ExerciseImage, { SavedExerciseImage } from './ExerciseImage'
 
 export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exercise) => void; onClose: () => void }) {
   const saved = useExercises()
@@ -51,8 +52,9 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
         <ul className={styles.pickList}>
           {list.map((e) => (
             <li key={e.id} className={styles.pickRow}>
-              <button type="button" className={styles.pickMain} disabled={busy} onClick={() => onPick(e)}>
-                <strong>{e.name}</strong><small>{muscleLabel(e.muscle_group)}{e.equipment ? ` • ${e.equipment}` : ''}</small>
+              <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => onPick(e)}>
+                <SavedExerciseImage exerciseId={e.id} name={e.name} />
+                <span><strong>{e.name}</strong><small>{muscleLabel(e.muscle_group)}{e.equipment ? ` • ${e.equipment}` : ''}</small></span>
               </button>
               <button type="button" className={styles.pickInfo} onClick={() => setInfo(e)} aria-label={`Ver detalhes de ${e.name}`}><Info size={18} /></button>
             </li>
@@ -63,7 +65,7 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
           {remote.map((exercise) => (
             <li key={exercise.id} className={styles.pickRow}>
               <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => importExercise.mutate(exercise, { onSuccess: onPick })}>
-                {exercise.imageUrl && <img src={exercise.imageUrl} alt="" loading="lazy" />}
+                <ExerciseImage key={exercise.id} src={exercise.imageUrl} externalId={exercise.id} name={exercise.name} />
                 <span><strong>{exercise.name}</strong><small>{exercise.targets.map(muscleName).join(', ')}{exercise.equipments.length > 0 && ` • ${exercise.equipments.join(', ')}`}</small></span>
                 <Plus size={18} aria-hidden="true" />
               </button>

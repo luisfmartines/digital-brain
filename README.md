@@ -14,6 +14,8 @@ VITE_EXERCISEDB_URL=https://oss.exercisedb.dev/api/v1
 
 Execute `npm run dev` (porta 5190), `npm test` para os testes de regressão e
 `npm run build` para compilar o app e o PWA. `npm run lint` verifica o projeto inteiro.
+`npm run test:browser` testa séries e imagens na tela real usando Edge headless
+(Microsoft Edge instalado), com API e sessão simuladas, sem alterar dados reais.
 
 ## Exercícios
 
@@ -26,6 +28,9 @@ reutilizando o mesmo cadastro nas próximas seleções. Exercícios personalizad
 continuam disponíveis. Nos exercícios salvos, o botão de informações abre os detalhes.
 As buscas sugerem termos em inglês a partir do nome em português; as instruções
 fornecidas pela API permanecem em inglês. O catálogo público fornece GIFs.
+As miniaturas também aparecem nos exercícios salvos. Se um link de mídia falhar,
+o app consulta o detalhe novamente para recuperar um endereço atualizado; quando
+o provedor não disponibiliza a imagem, exibe “Sem demonstração”.
 
 Os vínculos são individuais e persistidos em `exercise_media_links`. A migração
 `supabase/migrations/20261123000000_exercise_media_links.sql` já foi aplicada ao

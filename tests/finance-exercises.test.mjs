@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { totals, monthRange, dailyPace, buildSummary } from '../src/features/finance/summary.ts'
 import { exerciseGroup, getExercise, listExercises, searchExercises, suggestQuery } from '../src/features/exercisedb/api.ts'
 import { records, metricValue } from '../src/features/workouts/exerciseStats.ts'
+import { parseSetCount } from '../src/features/workouts/routineInput.ts'
 
 test('salary is not counted twice and cents remain exact', () => {
   assert.deepEqual(totals(1000, [
@@ -97,4 +98,14 @@ test('catalogue muscle names map to local routine filters', () => {
   assert.equal(exerciseGroup({ targets: ['quadriceps'], bodyParts: ['upper legs'] }), 'quads')
   assert.equal(exerciseGroup({ targets: ['deltoids'], bodyParts: ['shoulders'] }), 'shoulders')
   assert.equal(exerciseGroup({ targets: ['abdominals'], bodyParts: ['waist'] }), 'core')
+})
+
+test('sets accept replacement values without coercing empty, fractional or oversized input', () => {
+  assert.equal(parseSetCount(''), null)
+  assert.equal(parseSetCount('4'), 4)
+  assert.equal(parseSetCount('1'), 1)
+  assert.equal(parseSetCount('10'), 10)
+  for (const invalid of ['14', '0', '-1', '2.5', 'abc', 'Infinity']) {
+    assert.equal(parseSetCount(invalid), null)
+  }
 })
