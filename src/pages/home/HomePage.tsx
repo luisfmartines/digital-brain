@@ -119,7 +119,11 @@ function Overview() {
       <h1 className={styles.hello}>Olá, <span>{firstName}</span></h1>
       <p className={styles.sub}>Sua mente está clara. {today} {today === 1 ? 'prioridade' : 'prioridades'} agendada(s) hoje.</p>
 
-      <section className={styles.hero}>
+      <section className={styles.hero} aria-label="Progresso de hoje">
+        <div className={styles.heroPct}>
+          <strong>{overall}%</strong>
+          <small>concluído hoje</small>
+        </div>
         <ul className={styles.heroRows}>
           {rows.map((r) => (
             <li key={r.key}>
@@ -136,10 +140,6 @@ function Overview() {
             </li>
           ))}
         </ul>
-        <div className={styles.heroPct}>
-          <strong>{overall}%</strong>
-          <small>concluído hoje</small>
-        </div>
       </section>
 
       <section className={styles.level} aria-label="Nível">

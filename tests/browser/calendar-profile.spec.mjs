@@ -215,3 +215,32 @@ test('another profile shows shared details and copies a workout routine', async 
   await expect(page.getByRole('link', { name: 'Abrir rotina copiada' })).toHaveAttribute('href', '/workouts/routines/copied-routine/edit')
   expect(calls).toEqual([{ action: 'read', id: otherId }, { action: 'copy', id: 'test-routine' }])
 })
+
+test('home progress is left-aligned and the workout tabs share the full bar', async ({ page }) => {
+  await page.goto('/')
+  const card = page.getByRole('region', { name: 'Progresso de hoje' })
+  const percentage = card.getByText(/^\d+%$/)
+  const caption = card.getByText('concluído hoje', { exact: true })
+  await expect(card).toHaveCSS('text-align', 'left')
+  await expect(percentage).toHaveCSS('font-style', 'normal')
+  await expect(percentage).toHaveCSS('font-family', /Space Grotesk/)
+  await expect(caption).toHaveCSS('font-style', 'normal')
+  await expect(page.getByRole('heading', { name: /Olá, Ana/ })).toHaveCSS('font-style', 'italic')
+  const [numberBox, captionBox] = await Promise.all([percentage.boundingBox(), caption.boundingBox()])
+  expect(numberBox.x).toBeCloseTo(captionBox.x, 0)
+
+  await page.goto('/workouts')
+  const tabs = page.getByRole('tablist')
+  const training = tabs.getByRole('tab', { name: 'Treinamento' })
+  const ranking = tabs.getByRole('tab', { name: 'Classificação' })
+  await expect(training).toHaveAttribute('aria-selected', 'true')
+  for (const width of [320, 390, 1024]) {
+    await page.setViewportSize({ width, height: 844 })
+    const [barBox, trainingBox, rankingBox] = await Promise.all([tabs.boundingBox(), training.boundingBox(), ranking.boundingBox()])
+    expect(trainingBox.width).toBeCloseTo(rankingBox.width, 0)
+    expect(trainingBox.y).toBeCloseTo(rankingBox.y, 0)
+    expect(trainingBox.x - barBox.x).toBeCloseTo(barBox.x + barBox.width - rankingBox.x - rankingBox.width, 0)
+  }
+  await ranking.click()
+  await expect(ranking).toHaveAttribute('aria-selected', 'true')
+})
