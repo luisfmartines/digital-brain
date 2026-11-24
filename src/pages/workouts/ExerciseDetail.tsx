@@ -10,6 +10,8 @@ import {
 import { fmtNum, muscleLabel } from '../../features/workouts/utils'
 import styles from './exerciseDetail.module.css'
 import ExerciseImage from './ExerciseImage'
+import type { ExerciseMedia } from '../../features/exercisedb/types'
+import { cleanInstruction, translateText } from '../../features/exercisedb/translate'
 
 type Tab = 'summary' | 'history' | 'instructions'
 const TABS: { id: Tab; label: string }[] = [
@@ -73,7 +75,7 @@ function LinkPanel({ exercise }: { exercise: Exercise }) {
           <li key={r.id}>
             <button type="button" disabled={link.isPending} onClick={() => link.mutate(r.id)}>
               <ExerciseImage key={r.id} src={r.imageUrl} externalId={r.id} name={r.name} />
-              <span><strong>{r.name}</strong><small>{[...r.targets.map(muscleName), ...r.equipments].slice(0, 2).join(' • ')}</small></span>
+              <span><strong>{r.name}</strong><small>{[...r.targets.map(muscleName), ...r.equipments.map(translateText)].slice(0, 2).join(' • ')}</small></span>
             </button>
           </li>
         ))}
@@ -232,22 +234,25 @@ function Instructions({ media, linked, loading, failed }: { media: ReturnType<ty
         <section className={styles.block}><h3>Variações</h3><ul className={styles.bullets}>{media.variations.map((t, i) => <li key={i}>{t}</li>)}</ul></section>
       )}
       {none && <p className={styles.empty}>Este exercício não tem instruções na base.</p>}
-      <p className={styles.note}>Conteúdo da ExerciseDB, em inglês.</p>
+      <p className={styles.note}>Conteúdo da ExerciseDB traduzido automaticamente para português, com ajustes de terminologia.</p>
+      {!!media.originalInstructions?.length && <details className={styles.block}><summary>Ver instruções originais em inglês</summary><ol className={styles.steps}>{media.originalInstructions.map((text, i) => <li key={i}>{cleanInstruction(text)}</li>)}</ol></details>}
     </>
   )
 }
 
 /* ---------- Tela ---------- */
 
-export default function ExerciseDetail({ exercise, onClose, onAdd }: { exercise: Exercise; onClose: () => void; onAdd?: () => void }) {
+export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia, adding, addError }: {
+  exercise: Exercise; onClose: () => void; onAdd?: () => void; previewMedia?: ExerciseMedia; adding?: boolean; addError?: boolean
+}) {
   const [tab, setTab] = useState<Tab>('summary')
-  const linkQ = useExerciseLink(exercise.id)
-  const externalId = linkQ.data ?? null
+  const linkQ = useExerciseLink(previewMedia ? undefined : exercise.id)
+  const externalId = previewMedia?.id ?? linkQ.data ?? null
   const mediaQ = useExerciseMedia(externalId)
   const unlink = useUnlinkExercise(exercise.id)
-  const histQ = useExerciseHistory(exercise.id)
+  const histQ = useExerciseHistory(previewMedia ? undefined : exercise.id)
   const history = histQ.data ?? []
-  const media = mediaQ.data
+  const media = mediaQ.data ?? previewMedia
 
   const primary = media?.targets.map(muscleName) ?? []
   const secondary = media?.secondary.map(muscleName) ?? []
@@ -258,7 +263,7 @@ export default function ExerciseDetail({ exercise, onClose, onAdd }: { exercise:
         <header className={styles.head}>
           <button type="button" className={styles.iconBtn} onClick={onClose} aria-label="Voltar"><ArrowLeft size={22} /></button>
           <strong>{exercise.name}</strong>
-          {externalId ? (
+          {externalId && !previewMedia ? (
             <button type="button" className={styles.iconBtn} onClick={() => unlink.mutate()} disabled={unlink.isPending} aria-label="Trocar demonstração" title="Trocar demonstração"><Unlink size={18} /></button>
           ) : <span className={styles.iconBtn} />}
         </header>
@@ -288,7 +293,7 @@ export default function ExerciseDetail({ exercise, onClose, onAdd }: { exercise:
           {tab === 'instructions' && <Instructions media={media} linked={!!externalId} loading={mediaQ.isLoading} failed={mediaQ.isError} />}
         </div>
 
-        {onAdd && <div className={styles.footer}><button type="button" onClick={onAdd}>Adicionar exercício</button></div>}
+        {onAdd && <div className={styles.footer}>{addError && <p role="alert" className={styles.err}>Não foi possível adicionar o exercício. Tente novamente.</p>}<button type="button" onClick={onAdd} disabled={adding}>{adding ? 'Adicionando…' : 'Adicionar exercício'}</button></div>}
       </div>
     </div>
   )

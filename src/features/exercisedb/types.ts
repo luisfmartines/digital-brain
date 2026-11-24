@@ -2,6 +2,8 @@
 export interface ExerciseMedia {
   id: string
   name: string
+  originalName?: string
+  originalInstructions?: string[]
   videoUrl: string | null
   imageUrl: string | null
   targets: string[]

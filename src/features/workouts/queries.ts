@@ -5,6 +5,7 @@ import { addDays, startOfWeek } from '../../lib/date'
 import type { LogWorkout } from './stats'
 import type { HistSession, HistSet } from './exerciseStats'
 import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
+import { translateExercise } from '../exercisedb/translate'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null }
 export interface RoutineExercise { id: string; position: number; target_sets: number; reps_min: number | null; reps_max: number | null; rest_seconds: number; exercise: Exercise }
@@ -17,7 +18,7 @@ const EX = 'id, name, muscle_group, equipment, user_id'
 const ROUTINE = `id, name, focus, notes, tags, created_at, routine_exercises(id, position, target_sets, reps_min, reps_max, rest_seconds, exercise:exercises(${EX}))`
 const sortRoutine = (r: Routine): Routine => ({
   ...r,
-  routine_exercises: [...(r.routine_exercises ?? [])].sort((a, b) => a.position - b.position),
+  routine_exercises: [...(r.routine_exercises ?? [])].map((row) => ({ ...row, exercise: translateExercise(row.exercise) })).sort((a, b) => a.position - b.position),
 })
 
 /* ---------- Rotinas e hub ---------- */
@@ -139,7 +140,7 @@ export function useExercises() {
     queryFn: async () => {
       const { data, error } = await supabase.from('exercises').select(EX).order('name')
       if (error) throw error
-      return (data ?? []) as Exercise[]
+      return ((data ?? []) as Exercise[]).map(translateExercise)
     },
   })
 }
@@ -247,7 +248,8 @@ export function useSession(id?: string) {
         .select(`id, name, routine_id, started_at, ended_at, paused_seconds, paused_at, photo_url, workout_sets(id, exercise_id, set_number, exercise_order, weight_kg, reps, is_warmup, completed, exercise:exercises(${EX}))`)
         .eq('id', id!).is('deleted_at', null).maybeSingle()
       if (error) throw error
-      return (data ?? null) as Session | null
+      const session = data as Session | null
+      return session ? { ...session, workout_sets: session.workout_sets.map((row) => ({ ...row, exercise: translateExercise(row.exercise) })) } : null
     },
   })
 }
@@ -428,7 +430,7 @@ export function useWorkoutLog() {
         .not('ended_at', 'is', null).is('deleted_at', null)
         .order('ended_at', { ascending: false }).limit(1000)
       if (error) throw error
-      return (data ?? []) as unknown as LogWorkout[]
+      return ((data ?? []) as unknown as LogWorkout[]).map((workout) => ({ ...workout, workout_sets: workout.workout_sets.map((set) => ({ ...set, exercise: set.exercise ? translateExercise(set.exercise) : null })) }))
     },
   })
 }

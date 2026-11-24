@@ -1,5 +1,6 @@
 
 import type { ExerciseMedia } from './types'
+import { originalSearchTerm, translateText } from './translate'
 
 const API_URL = (
   import.meta.env?.VITE_EXERCISEDB_URL ||
@@ -26,17 +27,19 @@ const list = (value: unknown): string[] =>
 export function normalize(r: Raw): ExerciseMedia {
   return {
     id: String(r.exerciseId ?? r.id ?? ''),
-    name: str(r.name) ?? 'Exercício',
+    name: translateText(str(r.name) ?? 'Exercício'),
+    originalName: str(r.name) ?? undefined,
+    originalInstructions: list(r.instructions),
     videoUrl: str(r.videoUrl),
     imageUrl: str(r.gifUrl) ?? str(r.imageUrl),
     targets: list(r.targetMuscles ?? r.target),
     secondary: list(r.secondaryMuscles),
     equipments: list(r.equipments ?? r.equipment),
     bodyParts: list(r.bodyParts ?? r.bodyPart),
-    overview: str(r.overview),
-    instructions: list(r.instructions),
-    tips: list(r.exerciseTips),
-    variations: list(r.variations),
+    overview: str(r.overview) ? translateText(str(r.overview)!) : null,
+    instructions: list(r.instructions).map(translateText),
+    tips: list(r.exerciseTips).map(translateText),
+    variations: list(r.variations).map(translateText),
   }
 }
 
@@ -179,6 +182,8 @@ const PT_EN: [string, string][] = [
 ]
 
 export function suggestQuery(name: string) {
+  const original = originalSearchTerm(name)
+  if (original) return original
   let query = name.toLowerCase().replace(/[()]/g, ' ')
   const output: string[] = []
 
@@ -219,4 +224,4 @@ const MUSCLE_PT: Record<string, string> = {
 }
 
 export const muscleName = (muscle: string) =>
-  MUSCLE_PT[muscle.toLowerCase()] ?? muscle
+  MUSCLE_PT[muscle.toLowerCase()] ?? translateText(muscle)

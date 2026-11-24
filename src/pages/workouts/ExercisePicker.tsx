@@ -5,8 +5,10 @@ import { MUSCLES, muscleLabel } from '../../features/workouts/utils'
 import ExerciseDetail from './ExerciseDetail'
 import styles from './workouts.module.css'
 import { useExerciseCatalog, useImportExercise } from '../../features/exercisedb/queries'
-import { muscleName } from '../../features/exercisedb/api'
+import { exerciseGroup, muscleName } from '../../features/exercisedb/api'
+import type { ExerciseMedia } from '../../features/exercisedb/types'
 import ExerciseImage, { SavedExerciseImage } from './ExerciseImage'
+import { translateText } from '../../features/exercisedb/translate'
 
 export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exercise) => void; onClose: () => void }) {
   const saved = useExercises()
@@ -16,6 +18,7 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
   const [muscle, setMuscle] = useState('')
   const [creating, setCreating] = useState(false)
   const [info, setInfo] = useState<Exercise | null>(null)
+  const [catalogInfo, setCatalogInfo] = useState<ExerciseMedia | null>(null)
   const [name, setName] = useState('')
   const [newMuscle, setNewMuscle] = useState('chest')
   const [term, setTerm] = useState('')
@@ -66,9 +69,10 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
             <li key={exercise.id} className={styles.pickRow}>
               <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => importExercise.mutate(exercise, { onSuccess: onPick })}>
                 <ExerciseImage key={exercise.id} src={exercise.imageUrl} externalId={exercise.id} name={exercise.name} />
-                <span><strong>{exercise.name}</strong><small>{exercise.targets.map(muscleName).join(', ')}{exercise.equipments.length > 0 && ` • ${exercise.equipments.join(', ')}`}</small></span>
+                <span><strong>{exercise.name}</strong><small>{exercise.targets.map(muscleName).join(', ')}{exercise.equipments.length > 0 && ` • ${exercise.equipments.map(translateText).join(', ')}`}</small></span>
                 <Plus size={18} aria-hidden="true" />
               </button>
+              <button type="button" className={styles.pickInfo} onClick={() => { importExercise.reset(); setCatalogInfo(exercise) }} aria-label={`Ver detalhes de ${exercise.name}`}><Info size={18} /></button>
             </li>
           ))}
           {catalog.isError && <li className={styles.empty}>Não foi possível carregar o catálogo. <button type="button" onClick={() => catalog.refetch()}>Tentar novamente</button></li>}
@@ -91,6 +95,15 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
         )}
       </div>
       {info && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail key={info.id} exercise={info} onClose={() => setInfo(null)} onAdd={() => onPick(info)} /></div>}
+      {catalogInfo && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail
+        key={catalogInfo.id}
+        exercise={{ id: catalogInfo.id, name: catalogInfo.name, muscle_group: exerciseGroup(catalogInfo), equipment: catalogInfo.equipments.map(translateText).join(', ') || null, user_id: null }}
+        previewMedia={catalogInfo}
+        onClose={() => setCatalogInfo(null)}
+        onAdd={() => importExercise.mutate(catalogInfo, { onSuccess: onPick })}
+        adding={importExercise.isPending}
+        addError={importExercise.isError}
+      /></div>}
     </div>
   )
 }
