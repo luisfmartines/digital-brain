@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 import { localDateStr } from '../../lib/date'
 import { toggleHabitLog, useInvalidateHabits } from '../habits/queries'
+import { monthKey, monthRange, totals } from '../finance/summary'
 
 export function useTasksSummary() {
   const { user } = useAuth()
@@ -78,29 +79,22 @@ export function useToggleHabit() {
   })
 }
 
+// A sobra (margin) vem da MESMA conta usada na página de Finanças (features/finance/summary.ts)
 export function useMonthFinance() {
   const { user } = useAuth()
   return useQuery({
     queryKey: ['home', 'finance', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const now = new Date()
-      const first = new Date(now.getFullYear(), now.getMonth(), 1)
+      const { from, to } = monthRange(monthKey())
       const [settings, tx] = await Promise.all([
         supabase.from('user_settings').select('monthly_income').maybeSingle(),
-        supabase.from('transactions').select('type, kind, amount').gte('occurred_on', localDateStr(first)).is('deleted_at', null),
+        supabase.from('transactions').select('type, kind, amount').gte('occurred_on', from).lt('occurred_on', to).is('deleted_at', null),
       ])
       if (settings.error) throw settings.error
       if (tx.error) throw tx.error
       const income = Number(settings.data?.monthly_income ?? 0)
-      let extra = 0
-      let spent = 0
-      for (const t of (tx.data ?? []) as { type: string; kind: string; amount: number }[]) {
-        const amount = Number(t.amount)
-        if (t.type === 'expense') spent += amount
-        else if (t.kind !== 'salary') extra += amount
-      }
-      return { income, spent, margin: income + extra - spent }
+      return { income, ...totals(income, (tx.data ?? []) as { type: 'expense' | 'income'; kind: string | null; amount: number }[]) }
     },
   })
 }

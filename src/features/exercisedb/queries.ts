@@ -1,0 +1,67 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../auth/useAuth'
+import { getExercise, searchExercises } from './api'
+
+const DAY = 24 * 60 * 60 * 1000
+
+// Qual exercício da ExerciseDB representa este exercício do usuário
+export function useExerciseLink(exerciseId?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['exercisedb', 'link', user?.id, exerciseId],
+    enabled: !!user && !!exerciseId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('exercise_media_links').select('external_id').eq('exercise_id', exerciseId!).maybeSingle()
+      if (error) throw error
+      return (data?.external_id ?? null) as string | null
+    },
+  })
+}
+
+export function useLinkExercise(exerciseId: string) {
+  const { user } = useAuth()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (externalId: string) => {
+      const { error } = await supabase
+        .from('exercise_media_links')
+        .upsert({ user_id: user!.id, exercise_id: exerciseId, external_id: externalId, updated_at: new Date().toISOString() }, { onConflict: 'user_id,exercise_id' })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercisedb', 'link'] }),
+  })
+}
+
+export function useUnlinkExercise(exerciseId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('exercise_media_links').delete().eq('exercise_id', exerciseId)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercisedb', 'link'] }),
+  })
+}
+
+export function useExerciseMedia(externalId?: string | null) {
+  return useQuery({
+    queryKey: ['exercisedb', 'detail', externalId],
+    enabled: !!externalId,
+    staleTime: 7 * DAY,
+    gcTime: 7 * DAY,
+    retry: 1,
+    queryFn: () => getExercise(externalId!),
+  })
+}
+
+export function useExerciseSearch(term: string) {
+  const t = term.trim()
+  return useQuery({
+    queryKey: ['exercisedb', 'search', t.toLowerCase()],
+    enabled: t.length >= 2,
+    staleTime: DAY,
+    retry: 1,
+    queryFn: () => searchExercises(t),
+  })
+}

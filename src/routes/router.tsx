@@ -20,8 +20,8 @@ import WorkoutSummaryPage from '../pages/workouts/WorkoutSummaryPage'
 import WorkoutDetailPage from '../pages/workouts/WorkoutDetailPage'
 import AddFriendsPage from '../pages/social/AddFriendsPage'
 import StatsPage from '../pages/workouts/StatsPage'
-
-const Page = ({ title }: { title: string }) => <h1>{title}</h1>
+import ExerciseDetailPage from '../pages/workouts/ExerciseDetailPage'
+import FinancePage from '../pages/finance/FinancePage'
 
 export const router = createBrowserRouter([
   { path: '/reset-password', element: <ResetPasswordPage /> },
@@ -57,6 +57,7 @@ export const router = createBrowserRouter([
           { path: '/workouts/active/:id', element: <ActiveWorkoutPage /> },
           { path: '/workouts/summary/:id', element: <WorkoutSummaryPage /> },
           { path: '/workouts/view/:id', element: <WorkoutDetailPage /> },
+          { path: '/workouts/exercises/:id', element: <ExerciseDetailPage /> },
           { path: '/workouts/routines/new', element: <RoutineFormPage /> },
           { path: '/workouts/routines/:id/edit', element: <RoutineFormPage /> },
 
@@ -70,8 +71,8 @@ export const router = createBrowserRouter([
               { path: '/habits', element: <Navigate to="/routine?tab=habits" replace /> },
               { path: '/workouts', element: <WorkoutsPage /> },
               { path: '/workouts/stats', element: <StatsPage /> },
-              { path: '/finance', element: <Page title="Finanças" /> },
-              { path: '/calendar', element: <Page title="Calendário" /> },
+              { path: '/finance', element: <FinancePage /> },
+              { path: '/calendar', element: <h1>Calendário</h1> },
               { path: '/assistant', element: <AssistantPage /> },
               { path: '/profile', element: <ProfilePage /> },
             ],

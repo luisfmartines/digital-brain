@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 import { addDays, startOfWeek } from '../../lib/date'
 import type { LogWorkout } from './stats'
+import type { HistSession, HistSet } from './exerciseStats'
 import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null }
@@ -428,6 +429,37 @@ export function useWorkoutLog() {
         .order('ended_at', { ascending: false }).limit(1000)
       if (error) throw error
       return (data ?? []) as unknown as LogWorkout[]
+    },
+  })
+}
+
+/* ---------- Histórico de um exercício ---------- */
+
+export function useExerciseHistory(exerciseId?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['workouts', 'exercise-history', user?.id, exerciseId],
+    enabled: !!user && !!exerciseId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workout_sets')
+        .select('id, set_number, weight_kg, reps, is_warmup, workout:workouts(id, name, ended_at, deleted_at)')
+        .eq('exercise_id', exerciseId!).eq('completed', true)
+        .limit(3000)
+      if (error) throw error
+      type Row = HistSet & { workout: { id: string; name: string; ended_at: string | null; deleted_at: string | null } | null }
+      const by = new Map<string, HistSession>()
+      for (const r of (data ?? []) as unknown as Row[]) {
+        const w = r.workout
+        if (!w || !w.ended_at || w.deleted_at) continue
+        const cur = by.get(w.id) ?? { id: w.id, name: w.name, at: new Date(w.ended_at), sets: [] }
+        cur.sets.push({ id: r.id, set_number: r.set_number, weight_kg: r.weight_kg, reps: r.reps, is_warmup: r.is_warmup })
+        by.set(w.id, cur)
+      }
+      // Do mais antigo para o mais recente
+      return [...by.values()]
+        .map((s) => ({ ...s, sets: s.sets.sort((a, b) => a.set_number - b.set_number) }))
+        .sort((a, b) => a.at.getTime() - b.at.getTime())
     },
   })
 }

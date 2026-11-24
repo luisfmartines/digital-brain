@@ -1,4 +1,50 @@
-# React + TypeScript + Vite
+# Digital Brain
+
+Aplicação React, TypeScript e Vite com autenticação e dados no Supabase.
+
+## Desenvolvimento
+
+Use Node.js 24 e `npm ci`. Crie `.env.local` com:
+
+```dotenv
+VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICAVEL
+VITE_EXERCISEDB_URL=https://oss.exercisedb.dev/api/v1
+```
+
+Execute `npm run dev` (porta 5190), `npm test` para os testes de regressão e
+`npm run build` para compilar o app e o PWA. `npm run lint` verifica o projeto inteiro.
+
+## Exercícios
+
+O app usa a [ExerciseDB pública v1](https://oss.exercisedb.dev/docs), sem chave:
+busca em `/exercises/search?search=...` e detalhes em `/exercises/:id`.
+No seletor de exercícios, abra o botão de informações e escolha uma demonstração.
+As buscas sugerem termos em inglês a partir do nome em português; as instruções
+fornecidas pela API permanecem em inglês. O catálogo público fornece GIFs.
+
+Os vínculos são individuais e persistidos em `exercise_media_links`. A migração
+`supabase/migrations/20261123000000_exercise_media_links.sql` já foi aplicada ao
+projeto Supabase configurado durante esta integração. Em outro ambiente, aplique
+essa migração antes de usar os vínculos. Ela inclui RLS e permissões de acesso.
+
+Não coloque chaves privadas em variáveis `VITE_*`: elas são incluídas no navegador.
+O proxy do pacote de referência era destinado à versão paga e não é necessário
+para a API pública configurada neste projeto.
+
+## Finanças
+
+Disponível em `/finance`, com lançamentos de despesas e receitas extras, categorias,
+seleção de mês, ajuste de renda e exclusão lógica. A Home e a página compartilham
+o cálculo `renda mensal + receitas extras − despesas`, sem duplicar salário.
+
+A integração preserva o esquema existente: `description` é apresentada como título,
+`source = app` identifica lançamentos manuais e despesas variáveis usam `kind = other`.
+`category` determina o grupo visual. A migração de finanças do pacote de referência
+não é necessária e não foi aplicada. Meses anteriores usam a renda configurada
+atualmente; ainda não há histórico mensal de alterações de renda.
+
+## Referência do template React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

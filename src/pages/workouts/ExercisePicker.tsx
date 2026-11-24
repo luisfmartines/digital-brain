@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plus, Search, X } from 'lucide-react'
+import { Info, Plus, Search, X } from 'lucide-react'
 import { useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
 import { MUSCLES, muscleLabel } from '../../features/workouts/utils'
+import ExerciseDetail from './ExerciseDetail'
 import styles from './workouts.module.css'
 
 export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exercise) => void; onClose: () => void }) {
@@ -10,6 +11,7 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState('')
   const [creating, setCreating] = useState(false)
+  const [info, setInfo] = useState<Exercise | null>(null)
   const [name, setName] = useState('')
   const [newMuscle, setNewMuscle] = useState('chest')
 
@@ -36,10 +38,11 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
         </div>
         <ul className={styles.pickList}>
           {list.map((e) => (
-            <li key={e.id}>
-              <button type="button" onClick={() => onPick(e)}>
+            <li key={e.id} className={styles.pickRow}>
+              <button type="button" className={styles.pickMain} onClick={() => onPick(e)}>
                 <strong>{e.name}</strong><small>{muscleLabel(e.muscle_group)}{e.equipment ? ` • ${e.equipment}` : ''}</small>
               </button>
+              <button type="button" className={styles.pickInfo} onClick={() => setInfo(e)} aria-label={`Ver detalhes de ${e.name}`}><Info size={18} /></button>
             </li>
           ))}
           {list.length === 0 && <li className={styles.empty}>Nenhum exercício encontrado.</li>}
@@ -56,6 +59,7 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
           <button type="button" className={styles.addExBtn} onClick={() => setCreating(true)}><Plus size={14} /> Criar exercício personalizado</button>
         )}
       </div>
+      {info && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail key={info.id} exercise={info} onClose={() => setInfo(null)} onAdd={() => onPick(info)} /></div>}
     </div>
   )
 }

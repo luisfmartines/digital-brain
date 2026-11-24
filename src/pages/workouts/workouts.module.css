@@ -259,3 +259,6 @@
 
 .trajLink { text-decoration: none; color: inherit; cursor: pointer; }
 .linkIcon { display: inline-flex; align-items: center; gap: 4px; }
+.pickList .pickRow { display: flex; gap: 6px; }
+.pickList .pickMain { flex: 1; min-width: 0; }
+.pickList .pickInfo { width: 46px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--color-text-muted); }
