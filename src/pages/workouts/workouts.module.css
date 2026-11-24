@@ -324,7 +324,7 @@ button.activeThumbnail {
   padding: 0;
   cursor: zoom-in;
 }
-.activeThumbnail:focus-visible, .exercisePhotoField:focus-within {
+.activeThumbnail:focus-visible, .exercisePhotoField:focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 3px;
 }
@@ -335,7 +335,7 @@ button.activeThumbnail {
   border-radius: inherit;
 }
 .activeGuidance summary { cursor: pointer; padding: 6px 0; font-weight: 700; }
-.finishDialog, .photoSourceDialog {
+.finishDialog {
   width: min(440px, calc(100vw - 32px));
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -343,9 +343,9 @@ button.activeThumbnail {
   background: var(--color-surface);
   color: var(--color-text);
 }
-.finishDialog[open], .photoSourceDialog[open] { display: grid; gap: 12px; }
-.finishDialog h2, .finishDialog p, .photoSourceDialog h2 { margin: 0; }
-.finishDialog::backdrop, .photoSourceDialog::backdrop { background: rgb(0 0 0 / 65%); }
+.finishDialog[open] { display: grid; gap: 12px; }
+.finishDialog h2, .finishDialog p { margin: 0; }
+.finishDialog::backdrop { background: rgb(0 0 0 / 65%); }
 
 .demoPreview {
   width: min(550px, calc(100% - 24px));
@@ -380,6 +380,7 @@ button.activeThumbnail {
   font-size: 0.8rem;
   font-weight: 700;
   overflow: hidden;
+  cursor: pointer;
 }
 .exercisePhotoField svg { color: var(--color-secondary); }
 .exercisePhotoField small { color: var(--color-text-muted); font-size: 0.7rem; }
@@ -393,8 +394,7 @@ button.activeThumbnail {
   color: #fff;
   text-align: center;
 }
-.exercisePhotoField input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.exercisePhotoField:has(input:disabled) { opacity: 0.6; }
+.exercisePhotoField:disabled { opacity: 0.6; cursor: default; }
 
 .restDurationField {
   display: grid;

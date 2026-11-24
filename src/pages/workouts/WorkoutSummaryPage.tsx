@@ -1,7 +1,7 @@
-import { useRef, type ChangeEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BookOpen, Camera, Image, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
+import { ArrowLeft, BookOpen, Camera, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
+import PhotoPicker from '../../components/ui/PhotoPicker'
 import { useProfile } from '../../features/profile/useProfile'
 import { useSession, useSharePost, useSummaryExtras, useUploadPhoto } from '../../features/workouts/queries'
 import { fmtNum, mins, muscleLabel, volumeOf, workoutSeconds } from '../../features/workouts/utils'
@@ -15,21 +15,6 @@ export default function WorkoutSummaryPage() {
   const extras = useSummaryExtras(session)
   const upload = useUploadPhoto(id)
   const share = useSharePost()
-  const photoDialog = useRef<HTMLDialogElement>(null)
-  const cameraInput = useRef<HTMLInputElement>(null)
-  const galleryInput = useRef<HTMLInputElement>(null)
-
-  function choosePhoto(input: HTMLInputElement | null) {
-    photoDialog.current?.close()
-    input?.click()
-  }
-
-  function uploadSelectedPhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0]
-    if (file) upload.mutate(file)
-    event.currentTarget.value = ''
-  }
-
   if (isLoading) return <p className={styles.loading}>Carregando…</p>
   if (!session) return <Navigate to="/workouts" replace />
   if (!session.ended_at) return <Navigate to={`/workouts/active/${id}`} replace />
@@ -147,19 +132,15 @@ export default function WorkoutSummaryPage() {
                 <span>Hoje, {end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             )}
-            <button type="button" className={styles.addPhoto} onClick={() => photoDialog.current?.showModal()} disabled={upload.isPending}>
-              <Camera size={20} />
-              <b>{upload.isPending ? 'Enviando…' : session.photo_url ? 'Substituir foto' : '+ Adicionar foto'}</b>
-              <small>Envie uma foto do treino</small>
-            </button>
-            <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={uploadSelectedPhoto} />
-            <input ref={galleryInput} type="file" accept="image/*" hidden onChange={uploadSelectedPhoto} />
-            <dialog ref={photoDialog} className={styles.photoSourceDialog} aria-labelledby="photo-source-title">
-              <h2 id="photo-source-title">Adicionar foto do treino</h2>
-              <button type="button" className={styles.addExBtn} onClick={() => choosePhoto(cameraInput.current)}><Camera size={18} /> Usar câmera</button>
-              <button type="button" className={styles.addExBtn} onClick={() => choosePhoto(galleryInput.current)}><Image size={18} /> Escolher da galeria</button>
-              <button type="button" className={styles.addSet} onClick={() => photoDialog.current?.close()}>Cancelar</button>
-            </dialog>
+            <PhotoPicker title="Adicionar foto do treino" onPhoto={(file) => upload.mutate(file)}>
+              {(open) => (
+                <button type="button" className={styles.addPhoto} aria-haspopup="dialog" onClick={open} disabled={upload.isPending}>
+                  <Camera size={20} />
+                  <b>{upload.isPending ? 'Enviando…' : session.photo_url ? 'Substituir foto' : '+ Adicionar foto'}</b>
+                  <small>Envie uma foto do treino</small>
+                </button>
+              )}
+            </PhotoPicker>
           </div>
           {upload.error && <p className={styles.error}>{upload.error.message}</p>}
         </section>

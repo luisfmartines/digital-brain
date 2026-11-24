@@ -5,6 +5,7 @@ import { useProfileSharing } from '../../features/social/sharedProfile'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
 import ProfileAvatar from './ProfileAvatar'
+import PhotoPicker from '../../components/ui/PhotoPicker'
 import AvatarCropDialog from './AvatarCropDialog'
 import { MODULES } from '../../features/onboarding/modules'
 import { levelInfo } from '../../features/profile/level'
@@ -84,21 +85,19 @@ export default function ProfilePage() {
           </div>
           {!editing && <button type="button" className={styles.button} onClick={() => { update.reset(); setEditing(true) }}><Pencil size={14} /> Editar</button>}
         </div>
-        <label className={`${styles.button} ${styles.avatarUpload}`}>
-          <Camera size={15} />
-          {avatar.isPending ? 'Enviando foto…' : profile.avatar_url ? 'Trocar foto' : 'Adicionar foto'}
-          <input aria-label={profile.avatar_url ? 'Trocar foto' : 'Adicionar foto'} type="file"
-            accept="image/jpeg,image/png,image/webp" disabled={avatar.isPending}
-            onChange={(e) => {
-              const file = e.currentTarget.files?.[0]
-              e.currentTarget.value = ''
-              if (!file) return
-              const message = validateAvatarFile(file)
-              setPhotoError(message)
-              avatar.reset()
-              if (!message) setPhotoFile(file)
-            }} />
-        </label>
+        <PhotoPicker title="Foto do perfil" accept="image/jpeg,image/png,image/webp" camera="user" onPhoto={(file) => {
+          const message = validateAvatarFile(file)
+          setPhotoError(message)
+          avatar.reset()
+          if (!message) setPhotoFile(file)
+        }}>
+          {(open) => (
+            <button type="button" className={styles.button + ' ' + styles.avatarUpload} aria-haspopup="dialog" disabled={avatar.isPending} onClick={open}>
+              <Camera size={15} />
+              {avatar.isPending ? 'Enviando foto…' : profile.avatar_url ? 'Trocar foto' : 'Adicionar foto'}
+            </button>
+          )}
+        </PhotoPicker>
         {photoError && <p className={styles.error} role="alert">{photoError}</p>}
         {photoFile && <AvatarCropDialog file={photoFile} uploading={avatar.isPending} uploadError={avatar.error?.message}
           onClose={() => setPhotoFile(null)} onSave={(blob) => avatar.mutate(blob, { onSuccess: () => setPhotoFile(null) })} />}

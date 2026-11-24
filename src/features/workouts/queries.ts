@@ -287,7 +287,7 @@ export function useSessionActions(id: string) {
   const updateSet = useMutation({
     scope,
     mutationFn: async ({ setId, patch }: { setId: string; patch: Pick<Partial<SessionSet>, 'weight_kg' | 'reps' | 'completed' | 'is_warmup' | 'set_type'> }) => {
-      const { error } = await supabase.from('workout_sets').update(patch).eq('id', setId)
+      const { error } = await supabase.from('workout_sets').update(patch).eq('id', setId).eq('workout_id', id).select('id').single()
       if (error) throw error
     },
     onMutate: ({ setId, patch }) => { patchSet(setId, patch) },

@@ -1,5 +1,6 @@
 import ChoiceField from '../../components/ui/ChoiceField'
-import { useEffect, useRef, useState } from 'react'
+import PhotoPicker from '../../components/ui/PhotoPicker'
+import { useEffect, useState } from 'react'
 import { ImagePlus, Info, Plus, Search, X } from 'lucide-react'
 import { useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
 import { MUSCLES, muscleLabel } from '../../features/workouts/utils'
@@ -26,7 +27,6 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
   const [info, setInfo] = useState<Exercise | null>(null)
   const [catalogInfo, setCatalogInfo] = useState<ExerciseMedia | null>(null)
   const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null)
-  const photoInput = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [newMuscle, setNewMuscle] = useState('chest')
   const [term, setTerm] = useState('')
@@ -132,29 +132,29 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
             <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do exercício" />
             <ChoiceField label="Grupo muscular" value={newMuscle} onChange={setNewMuscle}
               options={Object.entries(MUSCLES).map(([value, label]) => ({ value, label }))} />
-            <label className={styles.exercisePhotoField} data-selected={!!photo}>
-              {photo ? (
-                <>
-                  <img src={photo.preview} alt="Prévia da foto do exercício" />
-                  <span>Trocar foto</span>
-                </>
-              ) : (
-                <>
-                  <ImagePlus size={26} aria-hidden="true" />
-                  <span>Adicionar foto</span>
-                  <small>Opcional</small>
-                </>
+            <PhotoPicker title="Foto do exercício" onPhoto={(file) => {
+              setPhoto({ file, preview: URL.createObjectURL(file) })
+              create.reset()
+            }}>
+              {(open) => (
+                <button type="button" className={styles.exercisePhotoField} data-selected={!!photo} disabled={busy}
+                  aria-haspopup="dialog" aria-label={photo ? 'Trocar foto do exercício' : 'Adicionar foto do exercício'} onClick={open}>
+                  {photo ? (
+                    <>
+                      <img src={photo.preview} alt="Prévia da foto do exercício" />
+                      <span>Trocar foto</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus size={26} aria-hidden="true" />
+                      <span>Adicionar foto</span>
+                      <small>Opcional</small>
+                    </>
+                  )}
+                </button>
               )}
-              <input ref={photoInput} type="file" accept="image/*" disabled={busy} aria-label="Foto do exercício (opcional)"
-                onChange={(event) => {
-                  const file = event.currentTarget.files?.[0]
-                  if (!file) return
-                  setPhoto({ file, preview: URL.createObjectURL(file) })
-                  create.reset()
-                }} />
-            </label>
+            </PhotoPicker>
             {photo && <button type="button" className={styles.addSet} disabled={busy} onClick={() => {
-              if (photoInput.current) photoInput.current.value = ''
               setPhoto(null)
               create.reset()
             }}>Remover foto</button>}
