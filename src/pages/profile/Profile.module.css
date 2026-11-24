@@ -45,7 +45,7 @@
   color: var(--color-text); font: inherit; font-size: 16px;
 }
 .form textarea { resize: vertical; }
-.signOut, .error { color: var(--color-danger); }
+.accountAction, .error { color: var(--color-danger); }
 .error { margin: 0; font-size: 12px; }
 
 .connections { display: grid; gap: 10px; }
@@ -185,15 +185,3 @@
 .weekBarTrack .weekBarCurrent { background: var(--color-secondary); }
 .activityMetrics { display: flex; flex-wrap: wrap; gap: 8px; }
 .activityMetrics span { padding: 4px 8px; border-radius: 8px; background: var(--color-surface-2); font-size: 12px; }
-.deleteAccount {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-self: start;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-danger);
-  cursor: pointer;
-}

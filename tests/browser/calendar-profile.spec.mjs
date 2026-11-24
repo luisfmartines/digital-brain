@@ -333,7 +333,15 @@ test('account deletion requires explicit typed confirmation and signs out after 
   })
   await page.route('**/auth/v1/logout?*', (route) => route.fulfill({ status: 204 }))
   await page.goto('/profile')
-  await page.getByRole('button', { name: 'Excluir conta', exact: true }).click()
+  const signOut = await page.getByRole('button', { name: 'Sair da conta' }).boundingBox()
+  const deleteButton = page.getByRole('button', { name: 'Excluir conta', exact: true })
+  const deletion = await deleteButton.boundingBox()
+  expect(deletion).toMatchObject({ width: signOut.width, height: signOut.height })
+  for (const name of ['Rotinas', 'Treinos recentes', 'Publicações recentes']) {
+    const heading = await page.getByRole('heading', { name, exact: true }).boundingBox()
+    expect(heading.y).toBeGreaterThan(deletion.y + deletion.height)
+  }
+  await deleteButton.click()
   const dialog = page.getByRole('dialog', { name: 'Excluir sua conta?' })
   const confirm = dialog.getByRole('button', { name: 'Excluir permanentemente' })
   await expect(confirm).toBeDisabled()

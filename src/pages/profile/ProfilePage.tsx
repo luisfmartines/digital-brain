@@ -137,14 +137,6 @@ export default function ProfilePage() {
         ) : profile.bio && <p className={styles.bio}>{profile.bio}</p>}
       </section>
 
-      {activity.isError && <p className={styles.connectionDetail} role="alert">Não foi possível carregar a atividade. <button type="button" onClick={() => activity.refetch()}>Tentar novamente</button></p>}
-      <ProfileActivitySections own activity={activity.data} routines={routines.data?.map((routine) => ({
-        id: routine.id, name: routine.name, focus: routine.focus,
-        exercises: routine.routine_exercises.map(({ exercise, target_sets, rest_seconds }) => ({
-          name: exercise.name, sets: target_sets, rest: rest_seconds, reps: null,
-        })),
-      }))} />
-
       <section className={styles.card}>
         <div className={styles.person}>
           <span className={styles.icon}><Trophy size={19} /></span>
@@ -187,9 +179,9 @@ export default function ProfilePage() {
       </section>
 
       {update.isError && <p className={styles.error} role="alert">Não foi possível salvar as alterações.</p>}
-      <button type="button" onClick={signOut} className={`${styles.button} ${styles.signOut}`}><LogOut size={16} /> Sair da conta</button>
+      <button type="button" onClick={signOut} className={`${styles.button} ${styles.accountAction}`}><LogOut size={16} /> Sair da conta</button>
       {signOutError && <p className={styles.error} role="alert">Não foi possível sair da conta.</p>}
-      <button type="button" className={styles.deleteAccount} onClick={() => { deleteAccount.reset(); setDeleteText('') }}>
+      <button type="button" className={`${styles.button} ${styles.accountAction}`} onClick={() => { deleteAccount.reset(); setDeleteText('') }}>
         <Trash2 size={16} /> Excluir conta
       </button>
       {deleteText !== null && <Dialog title="Excluir sua conta?" busy={deleteAccount.isPending} onClose={() => setDeleteText(null)}>
@@ -211,6 +203,14 @@ export default function ProfilePage() {
           </div>
         </form>
       </Dialog>}
+
+      {activity.isError && <p className={styles.connectionDetail} role="alert">Não foi possível carregar a atividade. <button type="button" onClick={() => activity.refetch()}>Tentar novamente</button></p>}
+      <ProfileActivitySections own activity={activity.data} routines={routines.data?.map((routine) => ({
+        id: routine.id, name: routine.name, focus: routine.focus,
+        exercises: routine.routine_exercises.map(({ exercise, target_sets, rest_seconds }) => ({
+          name: exercise.name, sets: target_sets, rest: rest_seconds, reps: null,
+        })),
+      }))} />
       </>}
     </div>
   )
