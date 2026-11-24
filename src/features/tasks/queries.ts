@@ -66,6 +66,7 @@ function useInvalidateTasks() {
   return () => {
     queryClient.invalidateQueries({ queryKey: ['tasks'] })
     queryClient.invalidateQueries({ queryKey: ['home', 'tasks'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar', 'schedule'] })
   }
 }
 

@@ -20,15 +20,14 @@ export default function HabitsPage() {
   if (isLoading) return <p className={styles.muted}>Carregando…</p>
   if (error) return <p className={styles.error}>Não foi possível carregar seus hábitos.</p>
 
-  // ?edit=water (vem do card de água da Home) abre direto a meta de água
-  const wantsWater = params.get('edit') === 'water'
-  const editing: Habit | undefined = wantsWater
+  const requestedHabit = params.get('edit')
+  const editing: Habit | undefined = requestedHabit === 'water'
     ? habits.find((h) => h.icon === 'water')
-    : habits.find((h) => h.id === editingId)
+    : habits.find((h) => h.id === (requestedHabit ?? editingId))
 
   function closeSheet() {
     setEditingId(null)
-    if (wantsWater) {
+    if (requestedHabit) {
       setParams((p) => {
         p.delete('edit')
         return p

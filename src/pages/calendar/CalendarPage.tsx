@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { EVENT_CATEGORIES, useCalendarEvents, type CalendarEvent } from '../../features/calendar/queries'
+import type { AgendaItem } from '../../features/calendar/agenda'
+import { EVENT_CATEGORIES, useCalendarEvents, useCalendarSchedule, type CalendarEvent } from '../../features/calendar/queries'
 import { addDays, localDateStr, parseDate, startOfDay, startOfWeek } from '../../lib/date'
 import styles from './Calendar.module.css'
 
@@ -21,20 +22,23 @@ function isOnDay(event: CalendarEvent, day: Date) {
   return starts < addDays(day, 1) && (event.ends_at ? new Date(event.ends_at) > day : starts >= day)
 }
 
-function eventTime(event: CalendarEvent, day: Date) {
-  if (event.all_day) return 'Dia inteiro'
+function eventTime(event: AgendaItem, day: Date) {
+  if (event.all_day) return event.kind === 'habit' ? 'Sem horário' : 'Dia inteiro'
   const start = new Date(event.starts_at)
   const end = event.ends_at ? new Date(event.ends_at) : null
   if (start < day) return end && end < addDays(day, 1) ? `Até ${time.format(end)}` : 'Em andamento'
   return end && end < addDays(day, 1) ? `${time.format(start)}–${time.format(end)}` : time.format(start)
 }
 
-function EventCard({ event, day, returnTo }: { event: CalendarEvent; day: Date; returnTo: string }) {
+function EventCard({ event, day, returnTo }: { event: AgendaItem; day: Date; returnTo: string }) {
   return (
-    <Link to={`/calendar/${event.id}/edit`} state={{ returnTo }} className={styles.event} data-category={event.category}>
+    <Link to={event.href} state={{ returnTo }} className={styles.event} data-category={event.category}>
       <span className={styles.eventInfo}>
         <strong>{event.title}</strong>
-        <small>{eventTime(event, day)} · {EVENT_CATEGORIES[event.category]}</small>
+        <small>
+          {eventTime(event, day)} · {event.kind === 'event' ? EVENT_CATEGORIES[event.category] : event.kind === 'task' ? 'Tarefa' : 'Hábito'}
+          {event.completed && (event.kind === 'task' ? ' · Concluída' : ' · Concluído')}
+        </small>
         {event.description && <small className={styles.description}>{event.description}</small>}
       </span>
       <ChevronRight size={16} />
@@ -64,7 +68,13 @@ export default function CalendarPage() {
   const from = view === 'month' ? startOfWeek(first) : week
   const until = view === 'month' ? addDays(startOfWeek(last), 7) : addDays(week, 7)
   const events = useCalendarEvents(from, until)
-  const rows = events.data ?? []
+  const schedule = useCalendarSchedule(from, until)
+  const rows = useMemo(() => [
+    ...(events.data ?? []).map((event): AgendaItem => ({ ...event, kind: 'event', href: `/calendar/${event.id}/edit` })),
+    ...(schedule.data ?? []),
+  ].sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at)), [events.data, schedule.data])
+  const pending = events.isPending || schedule.isPending
+  const showAgenda = !pending && (rows.length > 0 || (!events.isError && !schedule.isError))
   const days: Date[] = []
   for (let day = from; day < until; day = addDays(day, 1)) days.push(day)
 
@@ -76,7 +86,7 @@ export default function CalendarPage() {
       && (event.ends_at ? new Date(event.ends_at) > first : new Date(event.starts_at) >= first)).length
   const alert = rows.find((event) => {
     const remaining = Date.parse(event.starts_at) - now
-    return !event.all_day && !dismissedAlerts.includes(event.id) && remaining > 0
+    return !event.all_day && !event.completed && !dismissedAlerts.includes(event.id) && remaining > 0
       && remaining <= (event.alarm_minutes_before ?? 0) * 60_000
   })
 
@@ -131,22 +141,23 @@ export default function CalendarPage() {
             {Object.entries(EVENT_CATEGORIES).map(([category, label]) => <span key={category}><i data-category={category} />{label}</span>)}
           </div>
         )}
-        {!events.isPending && !events.isError && <small className={styles.muted}>{visibleCount} {visibleCount === 1 ? 'compromisso' : 'compromissos'} no período</small>}
+        {showAgenda && <small className={styles.muted}>{visibleCount} {visibleCount === 1 ? 'compromisso' : 'compromissos'} no período</small>}
       </section>
 
-      {events.isPending && <p className={styles.muted} role="status">Carregando compromissos…</p>}
-      {events.isError && <p className={styles.error} role="alert">Não foi possível carregar seus compromissos.</p>}
+      {pending && <p className={styles.muted} role="status">Carregando agenda…</p>}
+      {events.isError && <p className={styles.error} role="alert">Não foi possível carregar seus eventos.</p>}
+      {schedule.isError && <p className={styles.error} role="alert">Não foi possível carregar suas tarefas e hábitos na agenda.</p>}
       {alert && (
         <article className={styles.alert}>
           <div className={styles.heading}>
             <small><AlarmClock size={15} /> Começa em {Math.ceil((Date.parse(alert.starts_at) - now) / 60_000)} min</small>
             <button className={styles.soft} type="button" onClick={() => setDismissedAlerts((ids) => [...ids, alert.id])}>Dispensar</button>
           </div>
-          <Link to={`/calendar/${alert.id}/edit`} state={{ returnTo }}>{alert.title}</Link>
+          <Link to={alert.href} state={{ returnTo }}>{alert.title}</Link>
         </article>
       )}
 
-      {!events.isPending && !events.isError && (
+      {showAgenda && (
         view === 'week' ? (
           <section className={styles.agenda}>
             <h2>Agenda da semana</h2>

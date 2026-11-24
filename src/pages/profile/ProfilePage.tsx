@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Brain, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
+import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { MODULES } from '../../features/onboarding/modules'
 import { levelInfo } from '../../features/profile/level'
 import { useProfile } from '../../features/profile/useProfile'
+import { useUploadAvatar } from '../../features/profile/useUploadAvatar'
 import { supabase } from '../../lib/supabase'
 import styles from './Profile.module.css'
 
@@ -12,18 +13,19 @@ export default function ProfilePage() {
   const query = useProfile()
   const profile = query.data
   const cache = useQueryClient()
+  const avatar = useUploadAvatar()
   const [editing, setEditing] = useState(false)
   const [signOutError, setSignOutError] = useState(false)
   const update = useMutation({
     mutationFn: async (changes: { theme: 'light' | 'dark' } | { display_name: string; bio: string | null }) => {
       if (!profile) throw new Error('Perfil indisponível.')
-      const { data, error } = await supabase.from('profiles').update(changes)
-        .eq('id', profile.id).select('display_name, bio, theme').single()
+      const { error } = await supabase.from('profiles').update(changes)
+        .eq('id', profile.id).select('id').single()
       if (error) throw error
-      return { ...profile, ...data }
+      return profile.id
     },
-    onSuccess: (updatedProfile) => {
-      cache.setQueryData(['profile', updatedProfile.id], updatedProfile)
+    onSuccess: async (userId) => {
+      await cache.invalidateQueries({ queryKey: ['profile', userId] })
       setEditing(false)
     },
   })
@@ -68,6 +70,18 @@ export default function ProfilePage() {
           </div>
           {!editing && <button type="button" className={styles.button} onClick={() => { update.reset(); setEditing(true) }}><Pencil size={14} /> Editar</button>}
         </div>
+        <label className={`${styles.button} ${styles.avatarUpload}`}>
+          <Camera size={15} />
+          {avatar.isPending ? 'Enviando foto…' : profile.avatar_url ? 'Trocar foto' : 'Adicionar foto'}
+          <input aria-label={profile.avatar_url ? 'Trocar foto' : 'Adicionar foto'} type="file"
+            accept="image/jpeg,image/png,image/webp" disabled={avatar.isPending}
+            onChange={(e) => {
+              const file = e.currentTarget.files?.[0]
+              e.currentTarget.value = ''
+              if (file) avatar.mutate(file)
+            }} />
+        </label>
+        {avatar.isError && <p className={styles.error} role="alert">{avatar.error.message}</p>}
         {editing ? (
           <form className={styles.form} onSubmit={save}>
             <label>Nome<input name="displayName" required maxLength={80} defaultValue={profile.display_name ?? ''}

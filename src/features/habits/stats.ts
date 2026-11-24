@@ -37,8 +37,10 @@ export type Index = ReturnType<typeof buildIndex>
 
 export const isDone = (ix: Index, habitId: string, date: string) => ix.set.has(`${habitId}|${date}`)
 
-const createdStr = (h: Habit) => localDateStr(new Date(h.created_at))
-export const isScheduled = (h: Habit, d: Date) => h.weekdays.includes(d.getDay()) && localDateStr(d) >= createdStr(h)
+export type ScheduledHabit = Pick<Habit, 'created_at'> & { weekdays: Habit['weekdays'] | null }
+
+const createdStr = (h: Pick<Habit, 'created_at'>) => localDateStr(new Date(h.created_at))
+export const isScheduled = (h: ScheduledHabit, d: Date) => (h.weekdays ?? []).includes(d.getDay()) && localDateStr(d) >= createdStr(h)
 
 export function dayStats(habits: Habit[], ix: Index, d: Date) {
   const ds = localDateStr(d)

@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 
 const userId = '11111111-1111-4111-8111-111111111111'
 
+test.use({ timezoneId: 'America/Sao_Paulo' })
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(({ userId }) => {
     localStorage.setItem('sb-psjuvnsgelfreckmmtky-auth-token', JSON.stringify({
@@ -16,6 +18,7 @@ test.beforeEach(async ({ page }) => {
     const request = route.request()
     const url = new URL(request.url())
     let body = []
+    if (url.pathname.includes('/storage/v1/object/avatars/')) body = { Key: `avatars/${userId}/profile.jpg` }
     if (url.pathname.endsWith('/profiles')) {
       if (request.method() === 'PATCH') Object.assign(profile, request.postDataJSON())
       body = profile
@@ -67,4 +70,68 @@ test('profile persists the theme and the header keeps the friends action', async
   await expect(page.getByRole('button', { name: 'Tema claro' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Tema escuro' }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+})
+
+test('profile validates, uploads and replaces a photo', async ({ page }) => {
+  await page.goto('/profile')
+  const encoded = await page.evaluate(() => document.createElement('canvas').toDataURL('image/png').split(',')[1])
+  const photo = Buffer.from(encoded, 'base64')
+  await page.route('https://*.supabase.co/storage/v1/object/public/avatars/**', (route) =>
+    route.fulfill({ contentType: 'image/png', body: photo }))
+  const input = page.getByLabel('Adicionar foto', { exact: true })
+  await input.setInputFiles({ name: 'foto.txt', mimeType: 'text/plain', buffer: Buffer.from('arquivo') })
+  await expect(page.getByRole('alert')).toContainText('Escolha uma foto JPG, PNG ou WebP')
+
+  const upload = page.waitForRequest((req) => req.url().includes('/storage/v1/object/avatars/') && req.method() === 'POST')
+  await input.setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: photo })
+  const request = await upload
+  expect(new URL(request.url()).pathname).toBe(`/storage/v1/object/avatars/${userId}/profile.jpg`)
+  expect(request.headers()['x-upsert']).toBe('true')
+
+  const avatar = page.getByRole('button', { name: 'Perfil' }).locator('img')
+  await expect(avatar).toHaveAttribute('src', /profile\.jpg\?v=/)
+  await expect(avatar).toHaveJSProperty('naturalWidth', 300)
+  const firstUrl = await avatar.getAttribute('src')
+  await page.getByLabel('Trocar foto', { exact: true }).setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: photo })
+  await expect(avatar).not.toHaveAttribute('src', firstUrl)
+  await page.reload()
+  await expect(avatar).toHaveAttribute('src', /profile\.jpg\?v=/)
+})
+
+test('calendar shows tasks at their due time and habits on configured days', async ({ page }) => {
+  const task = { id: 'work-task', title: 'Trabalhar', due_at: '2026-11-30T22:00:00.000Z',
+    category: 'work', completed_at: null, remind_minutes_before: 10, notes: null }
+  const habit = { id: 'read-habit', name: 'Ler', category: 'mindfulness', weekdays: [1],
+    reminder_time: '17:45:00', created_at: '2026-11-24T12:00:00.000Z' }
+  await page.route('https://*.supabase.co/rest/v1/tasks**', (route) => {
+    if (route.request().method() === 'PATCH') Object.assign(task, route.request().postDataJSON())
+    const url = new URL(route.request().url())
+    return route.fulfill({ json: url.searchParams.has('id') ? task : [task, { ...task, id: 'no-date', title: 'Sem prazo', due_at: null }] })
+  })
+  await page.route('https://*.supabase.co/rest/v1/habits**', (route) => route.fulfill({ json: [habit] }))
+  await page.route('https://*.supabase.co/rest/v1/habit_logs**', (route) =>
+    route.fulfill({ json: [{ habit_id: habit.id, log_date: '2026-11-30' }] }))
+
+  await page.goto('/calendar?view=month&date=2026-11-30')
+  await expect(page.getByRole('link', { name: /Trabalhar/ })).toContainText('19:00 · Tarefa')
+  await expect(page.getByRole('link', { name: /Ler/ })).toContainText('17:45 · Hábito · Concluído')
+  await expect(page.getByText('Sem prazo')).toHaveCount(0)
+
+  await page.getByRole('tab', { name: 'Dia', exact: true }).click()
+  await page.getByRole('button', { name: 'Próximo período' }).click()
+  await expect(page.getByText('Nenhum compromisso neste dia.')).toBeVisible()
+  await page.getByRole('button', { name: 'Período anterior' }).click()
+  await page.getByRole('link', { name: /Ler/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Editar hábito' })).toBeVisible()
+
+  await page.goto('/calendar?view=week&date=2026-11-30')
+  await page.getByRole('link', { name: /Trabalhar/ }).click()
+  await expect(page.getByRole('heading', { name: 'Editar tarefa' })).toBeVisible()
+  await expect(page.getByPlaceholder('Ex.: Revisar os documentos do projeto')).toHaveValue('Trabalhar')
+  await page.getByRole('button', { name: 'Tarde (14:00)' }).click()
+  await page.getByRole('button', { name: 'Salvar tarefa' }).click()
+  await expect(page).toHaveURL(/routine/)
+  await page.goBack()
+  await expect(page).toHaveURL(/calendar/)
+  await expect(page.getByRole('link', { name: /Trabalhar/ })).toContainText('14:00 · Tarefa')
 })

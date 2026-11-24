@@ -25,7 +25,10 @@
   font-size: 12px; font-weight: 750; cursor: pointer;
 }
 .button[aria-pressed='true'] { background: var(--color-primary-soft); color: var(--color-secondary); border-color: var(--color-primary); }
-.button:disabled { opacity: .65; cursor: wait; }
+.button:disabled, .avatarUpload:has(:disabled) { opacity: .65; cursor: wait; }
+.avatarUpload { position: relative; justify-self: start; }
+.avatarUpload input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: inherit; }
+.avatarUpload:focus-within { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .themes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--color-primary-soft); color: var(--color-secondary); }
 .locale { display: block; }
