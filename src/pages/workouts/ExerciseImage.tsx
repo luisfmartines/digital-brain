@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getExercise } from '../../features/exercisedb/api'
 import { useExerciseLink, useExerciseMedia } from '../../features/exercisedb/queries'
@@ -6,8 +6,8 @@ import { useExercisePhoto } from '../../features/exercisedb/exercisePhoto'
 import type { Exercise } from '../../features/workouts/queries'
 import styles from './exerciseImage.module.css'
 
-export default function ExerciseImage({ src, externalId, name, loading = false }: {
-  src?: string | null; externalId?: string | null; name: string; loading?: boolean
+export default function ExerciseImage({ src, externalId, name, loading = false, fallback }: {
+  src?: string | null; externalId?: string | null; name: string; loading?: boolean; fallback?: ReactNode
 }) {
   const [failedUrls, setFailedUrls] = useState<string[]>([])
   const needsRefresh = !src || failedUrls.includes(src)
@@ -23,6 +23,7 @@ export default function ExerciseImage({ src, externalId, name, loading = false }
   if (url && !failedUrls.includes(url)) {
     return <img className={styles.image} src={url} alt={`Demonstração: ${name}`} loading="lazy" onError={() => setFailedUrls((urls) => [...urls, url])} />
   }
+  if (fallback !== undefined) return fallback
   const pending = loading || recovery.isFetching
   return <span className={styles.placeholder} role="img" aria-label={pending ? 'Carregando demonstração' : `Demonstração indisponível: ${name}`}>{pending ? 'Carregando…' : 'Sem demonstração'}</span>
 }

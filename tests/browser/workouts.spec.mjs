@@ -132,7 +132,13 @@ for (const update of [false, true]) {
       await route.fulfill({ status: 204 })
     })
     await page.goto('/workouts/active/active-test')
-    await expect(page.getByRole('img', { name: 'Demonstração: Supino salvo', exact: true })).toBeVisible()
+    const exerciseHeader = page.getByRole('button', { name: /Supino salvo/ })
+    const demo = exerciseHeader.getByRole('img', { name: 'Demonstração: Supino salvo', exact: true })
+    await expect(demo).toBeVisible()
+    await exerciseHeader.click()
+    await expect(exerciseHeader).toHaveAttribute('aria-expanded', 'false')
+    await expect(demo).toBeVisible()
+    await exerciseHeader.click()
     await page.getByText('Instruções de execução', { exact: true }).click()
     await expect(page.getByText('Contraia o tronco e alinhe os punhos com os antebraços.')).toBeVisible()
 
@@ -266,4 +272,19 @@ test('workout summary offers camera and gallery and saves the selected photo', a
   const photo = page.getByRole('img', { name: 'Treino', exact: true })
   await expect(photo).toBeVisible()
   await expect(photo).toHaveJSProperty('naturalWidth', 1)
+})
+
+test('partial and mistyped queries rank the matching catalogue exercise above weaker saved matches', async ({ page }) => {
+  await page.route('**/rest/v1/exercises?*', (route) => route.fulfill({
+    json: [{ ...exercise, id: 'custom-chair', name: 'Cadeira flexora personalizada', muscle_group: 'hamstrings' }],
+  }))
+  await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  const search = page.getByPlaceholder('Pesquisar exercícios')
+  const results = page.getByRole('button', { name: /^Ver detalhes de / })
+
+  await search.fill('cadeira flex')
+  await expect(results.first()).toHaveAccessibleName('Ver detalhes de Cadeira flexora')
+  await expect(page.getByRole('button', { name: 'Ver detalhes de Cadeira flexora personalizada' })).toBeVisible()
+  await search.fill('cadeira fleoxra')
+  await expect(results.first()).toHaveAccessibleName('Ver detalhes de Cadeira flexora')
 })

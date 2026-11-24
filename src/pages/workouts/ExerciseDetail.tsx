@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, Link2, Search, Trophy, Unlink } from 'lucide-react'
-import { muscleName, suggestQuery } from '../../features/exercisedb/api'
+import { muscleName } from '../../features/exercisedb/api'
 import { useExerciseLink, useExerciseMedia, useExerciseSearch, useLinkExercise, useUnlinkExercise } from '../../features/exercisedb/queries'
 import { useExerciseHistory, type Exercise } from '../../features/workouts/queries'
 import {
@@ -28,7 +28,7 @@ const kg = (n: number) => `${Number(n.toFixed(1)).toLocaleString('pt-BR')} kg`
 /* ---------- Vincular ao exercício da ExerciseDB ---------- */
 
 function LinkPanel({ exercise }: { exercise: Exercise }) {
-  const initial = useMemo(() => suggestQuery(exercise.name), [exercise.name])
+  const initial = exercise.name
   const [q, setQ] = useState(initial)
   const [term, setTerm] = useState(initial)
   const search = useExerciseSearch(term)

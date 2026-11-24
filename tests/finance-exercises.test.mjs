@@ -6,6 +6,7 @@ import { records, metricValue } from '../src/features/workouts/exerciseStats.ts'
 import { parseSetCount } from '../src/features/workouts/routineInput.ts'
 import { translateExercise, translateName, translateText, cleanInstruction } from '../src/features/exercisedb/translate.ts'
 import catalogSource from '../src/features/exercisedb/locales/catalog-source.json' with { type: 'json' }
+import pickerCatalogue from '../src/features/exercisedb/locales/catalog-search.json' with { type: 'json' }
 import translations from '../src/features/exercisedb/locales/translation-cache.json' with { type: 'json' }
 
 test('salary is not counted twice and cents remain exact', () => {
@@ -38,10 +39,10 @@ test('expense categories still compose the total with database-compatible kinds'
 test('exercise search uses the public search endpoint and handles results', async (t) => {
   t.mock.method(globalThis, 'fetch', async (url) => {
     assert.equal(new URL(url).pathname, '/api/v1/exercises/search')
-    assert.equal(new URL(url).searchParams.get('search'), 'bench press')
-    return Response.json({ success: true, data: [{ exerciseId: 'abc', name: 'Bench', gifUrl: 'https://example.com/a.gif' }] })
+    assert.equal(new URL(url).searchParams.get('search'), 'moon lift')
+    return Response.json({ success: true, data: [{ exerciseId: 'abc', name: 'Moon lift', gifUrl: 'https://example.com/a.gif' }] })
   })
-  const result = await searchExercises(' bench press ')
+  const result = await searchExercises(' moon lift ')
   assert.equal(result[0].id, 'abc')
   assert.equal(result[0].imageUrl, 'https://example.com/a.gif')
   assert.deepEqual(await searchExercises('a'), [])
@@ -60,12 +61,12 @@ test('exercise details normalize muscles and instructions', async (t) => {
 
 test('API failures are errors, not empty search or empty exercise screens', async (t) => {
   const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({}, { status: 429 }))
-  await assert.rejects(searchExercises('bench'), /Limite/)
+  await assert.rejects(searchExercises('moon lift'), /Limite/)
   fetch.mock.mockImplementation(async () => Response.json({ success: false }))
-  await assert.rejects(searchExercises('bench'), /consulta/)
+  await assert.rejects(searchExercises('moon lift'), /consulta/)
   fetch.mock.mockImplementation(async () => Response.json({ data: null }))
   await assert.rejects(getExercise('missing'), /não encontrado/)
-  await assert.rejects(searchExercises('bench'), /inválida/)
+  await assert.rejects(searchExercises('moon lift'), /inválida/)
 })
 
 test('exercise records exclude warm-ups and sum working sets', () => {
@@ -91,8 +92,8 @@ test('picker loads a catalogue without requiring a search and follows cursor pag
   assert.equal(page.nextCursor, 'next')
   assert.equal(requests[0].pathname, '/api/v1/exercises')
   assert.equal(requests[0].searchParams.has('name'), false)
-  await listExercises('supino', 'chest', page.nextCursor)
-  assert.equal(requests[1].searchParams.get('name'), 'bench press')
+  await listExercises('', 'chest', page.nextCursor)
+  assert.equal(requests[1].searchParams.has('name'), false)
   assert.equal(requests[1].searchParams.get('targetMuscles'), 'pectorals')
   assert.equal(requests[1].searchParams.get('after'), 'next')
 })
@@ -116,6 +117,7 @@ test('sets accept replacement values without coercing empty, fractional or overs
 test('all 1500 catalogue names and every instruction have a bundled translation', () => {
   assert.equal(catalogSource.length, 1500)
   assert.equal(new Set(catalogSource.map((exercise) => exercise.exerciseId)).size, 1500)
+  assert.deepEqual(pickerCatalogue.map(({ exerciseId }) => exerciseId), catalogSource.map(({ exerciseId }) => exerciseId))
   for (const exercise of catalogSource) {
     for (const source of [exercise.name, ...exercise.instructions]) {
       assert.ok(translations[cleanInstruction(source)]?.trim(), `Missing translation: ${source}`)
@@ -144,4 +146,31 @@ test('catalogue uses Brazilian gym names and can find their English equivalents'
   assert.equal(suggestQuery('Cadeira extensora'), 'machine leg extension')
   assert.equal(translateExercise({ name: 'Prensa torácica de máquina', id: 'user:catalog-id', user_id: 'user' }).name, 'Supino reto na máquina')
   assert.equal(translateExercise({ name: 'Machine Leg Extension', id: 'custom-id', user_id: 'user' }).name, 'Machine Leg Extension')
+})
+
+test('catalogue search ranks partial names, accents, reordered terms, aliases and typos', async (t) => {
+  t.mock.method(globalThis, 'fetch', () => { throw new Error('Expected to match the bundled catalogue') })
+  const examples = [
+    ['cadeira flex', /^Cadeira flexora$/],
+    ['cadeira fleoxra', /^Cadeira flexora$/],
+    ['flex sent', /^Cadeira flexora$/],
+    ['halter sup reto', /^Supino reto com halteres$/],
+    ['SUP ÍNCL HÁLT', /^Supino inclinado com halteres$/],
+    ['triceps cord', /^Tríceps corda na polia$/],
+    ['puXada triang', /^Puxada com triângulo na polia$/],
+    ['agacha bulg', /^Agachamento búlgaro/],
+    ['leg 45', /^Leg press 45°$/],
+  ]
+  for (const [term, expected] of examples) {
+    assert.match((await listExercises(term)).exercises[0].name, expected, term)
+  }
+  assert.equal((await searchExercises('cadeira flex'))[0].name, 'Cadeira flexora')
+  assert.equal((await listExercises('cadeira flex', 'hamstrings')).exercises[0].name, 'Cadeira flexora')
+  const first = await listExercises('supino', 'chest')
+  assert.equal(first.exercises.length, 25)
+  assert.ok(first.nextCursor)
+  const second = await listExercises('supino', 'chest', first.nextCursor)
+  const firstIds = new Set(first.exercises.map(({ id }) => id))
+  assert.ok(second.exercises.length > 0)
+  assert.ok(second.exercises.every(({ id }) => !firstIds.has(id)))
 })

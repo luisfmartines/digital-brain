@@ -1,12 +1,15 @@
 
 import type { ExerciseMedia } from './types'
 import { originalSearchTerm, translateName, translateText } from './translate.ts'
+import { catalogSearchEquipment, catalogSearchNames, prepareExerciseSearch, rankExercises } from './search.ts'
 
 const API_URL = (
   import.meta.env?.VITE_EXERCISEDB_URL ||
   'https://oss.exercisedb.dev/api/v1'
 ).replace(/\/+$/, '')
 
+const CATALOG_PAGE_SIZE = 25
+const LOCAL_CURSOR = 'snapshot:'
 type Raw = Record<string, unknown>
 
 const str = (value: unknown): string | null =>
@@ -88,9 +91,10 @@ export async function searchExercises(
 
   if (search.length < 2) return []
 
-  const params = new URLSearchParams({
-    search,
-  })
+  const { searchCatalogue } = await import('./catalogSearch.ts')
+  const { exercises } = searchCatalogue(search, '', 0, CATALOG_PAGE_SIZE)
+  if (exercises.length) return exercises
+  const params = new URLSearchParams({ search: suggestQuery(search) })
 
   const response = await request(
     `/exercises/search?${params.toString()}`
@@ -130,14 +134,26 @@ export function exerciseGroup(exercise: ExerciseMedia) {
 }
 
 export async function listExercises(term = '', muscle = '', after?: string) {
-  const params = new URLSearchParams({ limit: '25' })
+  if (term.trim() && (!after || after.startsWith(LOCAL_CURSOR))) {
+    const { searchCatalogue } = await import('./catalogSearch.ts')
+    const start = after ? Number(after.slice(LOCAL_CURSOR.length)) : 0
+    const { exercises, nextOffset } = searchCatalogue(term, muscle, start, CATALOG_PAGE_SIZE)
+    if (exercises.length || after) {
+      return { exercises, nextCursor: nextOffset === null ? null : LOCAL_CURSOR + nextOffset }
+    }
+  }
+
+  const params = new URLSearchParams({ limit: String(CATALOG_PAGE_SIZE) })
   if (term.trim()) params.set('name', suggestQuery(term.trim()))
   if (CATALOG_MUSCLES[muscle]) params.set('targetMuscles', CATALOG_MUSCLES[muscle])
   if (after) params.set('after', after)
   const response = await request(`/exercises?${params}`) as Raw
   const meta = response?.meta as Raw | undefined
+  const exercises = unwrapList(response).map(normalize).filter((exercise) => exercise.id)
   return {
-    exercises: unwrapList(response).map(normalize).filter((exercise) => exercise.id),
+    exercises: term.trim() ? rankExercises(exercises.map((exercise) => prepareExerciseSearch({
+      item: exercise, names: catalogSearchNames(exercise), equipment: catalogSearchEquipment(exercise),
+    })), term) : exercises,
     nextCursor: meta?.hasNextPage ? str(meta.nextCursor) : null,
   }
 }

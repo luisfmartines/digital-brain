@@ -8,12 +8,29 @@ import { fmtClock, fmtNum, muscleLabel, volumeOf, workoutSeconds } from '../../f
 import { useExerciseLink, useExerciseMedia } from '../../features/exercisedb/queries'
 import ExercisePicker from './ExercisePicker'
 import ExerciseDetail from './ExerciseDetail'
-import { CustomExercisePhoto } from './ExerciseImage'
-import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
+import ExerciseImage, { CustomExercisePhoto } from './ExerciseImage'
+import { ExerciseInstructions } from './ExerciseGuidance'
 import styles from './workouts.module.css'
 
 interface Group { exercise: Exercise; order: number; sets: SessionSet[] }
 const groupKey = (g: Group) => `${g.order}:${g.exercise.id}`
+
+function ActiveExerciseThumbnail({ exercise }: { exercise: Exercise }) {
+  const link = useExerciseLink(exercise.id)
+  const media = useExerciseMedia(link.data)
+  const icon = <Maximize2 size={16} aria-hidden="true" />
+  const demo = media.data
+  return (
+    <span className={styles.iconBox + ' ' + styles.activeThumbnail}>
+      {demo?.videoUrl && !demo.imageUrl ? (
+        <video src={demo.videoUrl} autoPlay loop muted playsInline aria-label={`Demonstração: ${exercise.name}`} />
+      ) : (
+        <ExerciseImage src={demo?.imageUrl} externalId={link.data} name={exercise.name}
+          loading={link.isLoading || media.isLoading} fallback={icon} />
+      )}
+    </span>
+  )
+}
 
 function ActiveGuidance({ exercise, onDetails }: { exercise: Exercise; onDetails: () => void }) {
   const link = useExerciseLink(exercise.id)
@@ -26,7 +43,6 @@ function ActiveGuidance({ exercise, onDetails }: { exercise: Exercise; onDetails
   )
   return (
     <div className={styles.activeGuidance}>
-      <ExerciseDemo video={media.data.videoUrl} image={media.data.imageUrl} name={exercise.name} externalId={link.data} />
       <details>
         <summary>Instruções de execução</summary>
         <ExerciseInstructions media={media.data} linked loading={false} failed={false} />
@@ -340,7 +356,7 @@ export default function ActiveWorkoutPage() {
             <section key={key} className={styles.exCard}>
               <div className={styles.exHead}>
                 <button type="button" className={styles.exerciseToggle} aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [key]: !isOpen }))}>
-                  <span className={styles.iconBox}><Maximize2 size={16} /></span>
+                  <ActiveExerciseThumbnail exercise={g.exercise} />
                   <div className={styles.rText}>
                     <div className={styles.tagRow}>
                       <span className={styles.muscleTag}>{muscleLabel(g.exercise.muscle_group).toUpperCase()}</span>

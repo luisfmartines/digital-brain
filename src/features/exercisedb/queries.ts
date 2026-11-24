@@ -35,7 +35,9 @@ export function useImportExercise() {
         user_id: user.id, exercise_id: id, external_id: media.id, updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,exercise_id' })
       if (link.error) throw link.error
-      qc.setQueryData(['exercisedb', 'detail', media.id], media)
+      if (media.originalInstructions?.length) {
+        qc.setQueryData<ExerciseMedia>(['exercisedb', 'detail', media.id], (existing) => existing ?? media)
+      }
       return data as Exercise
     },
     onSuccess: () => {

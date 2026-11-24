@@ -12,5 +12,14 @@ const catalog = snapshot.map((raw) => {
     equipment: exercise.equipments.join(', ') || null,
   }
 })
-const target = new URL('../supabase/functions/neural/exercise-catalog.json', import.meta.url)
-await writeFile(target, '[\n' + catalog.map((exercise) => '  ' + JSON.stringify(exercise)).join(',\n') + '\n]\n')
+const pickerCatalog = snapshot.map(({ exerciseId, name, gifUrl, bodyParts, targetMuscles, equipments }) => ({
+  exerciseId, name, gifUrl, bodyParts, targetMuscles, equipments,
+}))
+
+const writeCatalog = (path, items) =>
+  writeFile(new URL(path, import.meta.url), '[\n' + items.map((exercise) => '  ' + JSON.stringify(exercise)).join(',\n') + '\n]\n')
+
+await Promise.all([
+  writeCatalog('../supabase/functions/neural/exercise-catalog.json', catalog),
+  writeCatalog('../src/features/exercisedb/locales/catalog-search.json', pickerCatalog),
+])
