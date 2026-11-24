@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { registerHooks } from 'node:module'
 import test from 'node:test'
 
-test('Google agenda imports custom calendars and task lists, and exports local plans without duplicates', async (t) => {
+test('Google agenda imports custom calendars, and exports local plans without duplicates', async (t) => {
   const userId = '11111111-1111-4111-8111-111111111111'
   const taskId = '33333333-3333-4333-8333-333333333333'
   const sent = new Map()
@@ -32,11 +32,6 @@ test('Google agenda imports custom calendars and task lists, and exports local p
         ? { items: [{ id: 'meals@example.test', summaryOverride: 'Refeições', backgroundColor: '#00aa00' }] }
         : { items: [{ id: 'primary', primary: true }], nextPageToken: 'next' })
     }
-    if (url.pathname.endsWith('/users/@me/lists')) return Response.json({ items: [{ id: 'study', title: 'Estudos' }] })
-    if (url.pathname.endsWith('/lists/study/tasks')) {
-      assert.equal(url.searchParams.get('dueMin'), '2026-11-24T00:00:00Z')
-      return Response.json({ items: [{ id: 'task1', title: 'Ler', due: '2026-11-24T00:00:00Z' }] })
-    }
     if (request.method === 'POST') {
       const event = await request.json()
       assert.equal(event.id, 'dbt' + taskId.replaceAll('-', ''))
@@ -51,9 +46,9 @@ test('Google agenda imports custom calendars and task lists, and exports local p
   })
   const { listGoogleEvents } = await import('../supabase/functions/_shared/googleCalendar.ts')
   const { exportGoogleAgenda } = await import('../supabase/functions/_shared/googleAgendaExport.ts')
-  const listing = await listGoogleEvents(userId, '2026-11-24T03:00:00Z', '2026-11-25T03:00:00Z', '2026-11-24', '2026-11-25')
+  const listing = await listGoogleEvents(userId, '2026-11-24T03:00:00Z', '2026-11-25T03:00:00Z')
   assert.deepEqual(listing.warnings, [])
-  assert.deepEqual(listing.events.map(({ summary, calendarName }) => [summary, calendarName]), [['Almoço', 'Refeições'], ['Ler', 'Estudos']])
+  assert.deepEqual(listing.events.map(({ summary, calendarName }) => [summary, calendarName]), [['Almoço', 'Refeições']])
   assert.deepEqual(await exportGoogleAgenda(userId, 0, 'America/Sao_Paulo'), { sent: 1, failed: 0, next: null })
   assert.deepEqual(await exportGoogleAgenda(userId, 0, 'America/Sao_Paulo'), { sent: 0, failed: 0, next: null })
   const [event] = sent.values()

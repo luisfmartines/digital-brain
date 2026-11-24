@@ -2,14 +2,16 @@ import { useEffect, useState, type ReactNode } from 'react'
 import styles from './Splash.module.css'
 
 export default function Splash({ children }: { children: ReactNode }) {
-  const [done, setDone] = useState(() => sessionStorage.getItem('splash') === '1')
+  const [done, setDone] = useState(() => {
+    try { return sessionStorage.getItem('splash') === '1' } catch { return true }
+  })
 
   useEffect(() => {
     if (done) return
     const t = setTimeout(() => {
-      sessionStorage.setItem('splash', '1')
+      try { sessionStorage.setItem('splash', '1') } catch { /* Optional preference. */ }
       setDone(true)
-    }, 2200)
+    }, 600)
     return () => clearTimeout(t)
   }, [done])
 

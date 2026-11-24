@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   if (!input || typeof input !== "object") return json({ error: "invalid_body" }, 400);
   try {
     if (input.action === "list") {
-      const result = await listGoogleEvents(user.id, input.start, input.end, input.firstDay, input.untilDay);
+      const result = await listGoogleEvents(user.id, input.start, input.end);
       if (input.timeZone) {
         try {
           const known = new Set(result.events.map((event) => event.id));

@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
     scope: [
       "https://www.googleapis.com/auth/calendar.events",
       "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
-      "https://www.googleapis.com/auth/tasks.readonly",
     ].join(" "),
     access_type: "offline",
     prompt: "consent",

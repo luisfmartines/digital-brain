@@ -24,7 +24,6 @@ function isOnDay(event: CalendarEvent, day: Date) {
 }
 
 function eventTime(event: AgendaItem, day: Date) {
-  if (event.googleTask) return 'Sem horário'
   if (event.all_day) return 'Dia inteiro'
   const start = new Date(event.starts_at)
   const end = event.ends_at ? new Date(event.ends_at) : null
@@ -38,7 +37,7 @@ function EventCard({ event, day, returnTo }: { event: AgendaItem; day: Date; ret
       <span className={styles.eventInfo}>
         <strong>{event.title}</strong>
         <small>
-          {eventTime(event, day)} · {event.kind === 'task' ? 'Tarefa' : event.kind === 'google' ? (event.googleTask ? 'Google Tasks' : 'Google Agenda') : EVENT_CATEGORIES[event.category]}
+          {eventTime(event, day)} · {event.kind === 'task' ? 'Tarefa' : event.kind === 'google' ? 'Google Agenda' : EVENT_CATEGORIES[event.category]}
           {event.origin && ` · ${event.origin}`}
           {event.completed && ' · Concluída'}
         </small>

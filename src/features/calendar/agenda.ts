@@ -10,7 +10,6 @@ export interface AgendaItem extends CalendarEvent {
   origin?: string
   originColor?: string
   exportedFrom?: string
-  googleTask?: boolean
 }
 
 export function scheduleItems(tasks: AgendaTask[]): AgendaItem[] {

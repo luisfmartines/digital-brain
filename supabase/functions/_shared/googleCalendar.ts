@@ -54,8 +54,6 @@ export interface GoogleEvent {
   iCalUID?: string;
   calendarName?: string;
   calendarColor?: string;
-  googleTask?: boolean;
-  completed?: boolean;
   originalStartTime?: { date?: string; dateTime?: string };
   start?: { date?: string; dateTime?: string };
   end?: { date?: string; dateTime?: string };
@@ -101,12 +99,11 @@ export async function insertGoogleEvent(access: string, input: GoogleEventInput)
   return { id: event.id, link: event.htmlLink, existing: false };
 }
 
-export async function listGoogleEvents(userId: string, start: string, end: string, firstDay?: string, untilDay?: string): Promise<{ events: GoogleEvent[]; warnings: string[] }> {
+export async function listGoogleEvents(userId: string, start: string, end: string): Promise<{ events: GoogleEvent[]; warnings: string[] }> {
   const duration = Date.parse(end) - Date.parse(start);
-  const date = /^\d{4}-\d{2}-\d{2}$/;
-  if (!(duration > 0 && duration <= 45 * 86_400_000) || (firstDay !== undefined && !date.test(firstDay)) || (untilDay !== undefined && !date.test(untilDay))) {
+  if (!(duration > 0 && duration <= 45 * 86_400_000)) {
     throw new GoogleCalendarError("invalid_period", 400);
   }
   const access = await googleAccessToken(userId);
-  return access ? importGoogleAgenda(access, start, end, firstDay ?? start.slice(0, 10), untilDay ?? end.slice(0, 10)) : { events: [], warnings: [] };
+  return access ? importGoogleAgenda(access, start, end) : { events: [], warnings: [] };
 }

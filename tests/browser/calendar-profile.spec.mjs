@@ -172,7 +172,7 @@ test('connected calendar reads Google events and sends new events to the same ag
     return route.fulfill({ json: { id: 'google-new' } })
   })
   await page.goto('/profile?tab=connections')
-  await page.getByRole('button', { name: /Google Agenda e Tasks/ }).click()
+  await page.getByRole('button', { name: /Google Agenda/ }).click()
   await expect(page.getByRole('button', { name: 'Reconectar Google Agenda' })).toBeVisible()
   await page.getByRole('button', { name: 'Sincronizar planejamento' }).click()
   await expect(page.getByRole('status')).toContainText('2 novos itens enviados.')

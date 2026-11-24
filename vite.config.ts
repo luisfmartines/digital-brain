@@ -26,6 +26,9 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    target: ['chrome107', 'edge107', 'firefox104', 'safari15.4'],
+  },
   server: {
     port: 5190,
     host: true,

@@ -63,8 +63,6 @@ interface GoogleEvent {
   location?: string
   calendarName?: string
   calendarColor?: string
-  completed?: boolean
-  googleTask?: boolean
   start?: { date?: string; dateTime?: string }
   end?: { date?: string; dateTime?: string }
   extendedProperties?: { private?: { digitalBrainCategory?: string } }
@@ -93,8 +91,6 @@ function toAgendaItem(event: GoogleEvent): AgendaItem[] {
     description: [event.description?.replace(/<[^>]*>/g, ' ').trim(), event.location].filter(Boolean).join('\n') || null,
     origin: event.calendarName,
     originColor: /^#[0-9a-f]{6}$/i.test(event.calendarColor ?? '') ? event.calendarColor : undefined,
-    completed: event.completed,
-    googleTask: event.googleTask,
     exportedFrom: /^(dbe|dbt)[0-9a-f]{32}$/.test(event.id) ? event.id : undefined,
     starts_at: start.toISOString(),
     ends_at: Number.isFinite(end.getTime()) ? end.toISOString() : null,
@@ -115,7 +111,7 @@ export function useGoogleEvents(from: Date, until: Date, connected: boolean) {
     retry: false,
     queryFn: async () => {
       const response = await googleCalendar<{ events: GoogleEvent[]; warnings?: string[] }>({
-        action: 'list', start, end, firstDay: localDateStr(from), untilDay: localDateStr(until),
+        action: 'list', start, end,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
       return { items: (response?.events ?? []).flatMap(toAgendaItem), warnings: response?.warnings ?? [] }

@@ -1,7 +1,6 @@
 import { GoogleCalendarError, type GoogleEvent } from "./googleCalendar.ts";
 
 const CALENDAR = "https://www.googleapis.com/calendar/v3";
-const TASKS = "https://tasks.googleapis.com/tasks/v1";
 
 export async function readGooglePages<T>(
   url: string, access: string, params: URLSearchParams, field: "items",
@@ -23,10 +22,8 @@ export async function readGooglePages<T>(
 }
 
 type Calendar = { id: string; summary?: string; summaryOverride?: string; backgroundColor?: string; accessRole?: string; primary?: boolean };
-type TaskList = { id: string; title: string };
-type GoogleTask = { id: string; title?: string; notes?: string; due?: string; status?: string; deleted?: boolean };
 
-export async function importGoogleAgenda(access: string, start: string, end: string, firstDay: string, untilDay: string) {
+export async function importGoogleAgenda(access: string, start: string, end: string) {
   const warnings: string[] = [];
   let calendars: Calendar[];
   try {
@@ -68,21 +65,5 @@ export async function importGoogleAgenda(access: string, start: string, end: str
     warnings.push("Se a autorização expirou, reconecte a conta em Perfil → Conexões.");
   }
 
-  const tasks: GoogleEvent[] = [];
-  try {
-    const lists = await readGooglePages<TaskList>(`${TASKS}/users/@me/lists`, access, new URLSearchParams(), "items");
-    for (const list of lists) {
-      const entries = await readGooglePages<GoogleTask>(`${TASKS}/lists/${encodeURIComponent(list.id)}/tasks`, access,
-        new URLSearchParams({ dueMin: `${firstDay}T00:00:00Z`, dueMax: `${untilDay}T00:00:00Z`, showCompleted: "true", showHidden: "true" }), "items");
-      for (const task of entries) {
-        const date = task.due?.slice(0, 10);
-        if (!date || date < firstDay || date >= untilDay || task.deleted) continue;
-        tasks.push({ id: `task:${list.id}:${task.id}`, summary: task.title, description: task.notes,
-          start: { date }, calendarName: list.title, googleTask: true, completed: task.status === "completed" });
-      }
-    }
-  } catch {
-    warnings.push("As listas do Google Tasks não puderam ser lidas. Confira a autorização e a Google Tasks API.");
-  }
-  return { events: [...imports.values(), ...tasks], warnings: [...new Set(warnings)] };
+  return { events: [...imports.values()], warnings: [...new Set(warnings)] };
 }

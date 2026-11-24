@@ -18,8 +18,8 @@ export default function Connections() {
           aria-controls="google-connection-details" onClick={() => setExpanded(!expanded)}>
           <span className={styles.googleIcon}><CalendarDays size={22} /></span>
           <span>
-            <span className={styles.connectionTitle}><strong>Google Agenda e Tasks</strong> <small className={styles.connectionBadge}>{status}</small></span>
-            <small className={styles.connectionDetail}>Calendários, listas de tarefas e planejamento</small>
+            <span className={styles.connectionTitle}><strong>Google Agenda</strong> <small className={styles.connectionBadge}>{status}</small></span>
+            <small className={styles.connectionDetail}>Calendários e planejamento</small>
           </span>
           <ChevronRight size={17} className={styles.connectionChevron} />
         </button>

@@ -8,14 +8,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
+    let active = true
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setSession(data.session)
+    }).catch((error: unknown) => {
+      console.error('Could not restore session', error)
+    }).finally(() => {
+      if (active) setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
     })
-    return () => sub.subscription.unsubscribe()
+    return () => {
+      active = false
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
   return (
