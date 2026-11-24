@@ -8,6 +8,14 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png'],
+      workbox: {
+        navigateFallback: null,
+        runtimeCaching: [{
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkOnly',
+          options: { precacheFallback: { fallbackURL: '/index.html' } },
+        }],
+      },
       manifest: {
         name: 'Digital Brain',
         short_name: 'Digital Brain',

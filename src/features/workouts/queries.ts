@@ -115,20 +115,7 @@ export function useHistory(limit = 5) {
   })
 }
 
-export function useActiveWorkout() {
-  const { user } = useAuth()
-  return useQuery({
-    queryKey: ['workouts', 'active', user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('workouts').select('id, name, started_at')
-        .is('ended_at', null).is('deleted_at', null).order('started_at', { ascending: false }).limit(1)
-      if (error) throw error
-      return ((data ?? [])[0] ?? null) as { id: string; name: string; started_at: string } | null
-    },
-  })
-}
+export { useActiveWorkout } from './useActiveWorkout'
 
 /* ---------- Exercícios e rotinas (edição) ---------- */
 

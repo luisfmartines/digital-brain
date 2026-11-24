@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './features/auth/AuthProvider'
@@ -13,7 +14,9 @@ export default function App() {
       <AuthProvider>
         <ThemeSync />
         <Splash>
-          <RouterProvider router={router} />
+          <Suspense fallback={<p className="route-loading" role="status">Carregando…</p>}>
+            <RouterProvider router={router} />
+          </Suspense>
         </Splash>
       </AuthProvider>
     </QueryClientProvider>

@@ -1,85 +1,63 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import { PublicOnly, RequireAuth, RequireOnboarded } from './guards'
-import LoginPage from '../pages/auth/LoginPage'
-import ResetPasswordPage from '../pages/auth/ResetPasswordPage'
-import HomePage from '../pages/home/HomePage'
-import TaskFormPage from '../pages/tasks/TaskFormPage'
-import RoutinePage from '../pages/routine/RoutinePage'
-import AssistantPage from '../pages/assistant/AssistantPage'
-import ProfilePage from '../pages/profile/ProfilePage'
-import CalendarPage from '../pages/calendar/CalendarPage'
-import CalendarEventPage from '../pages/calendar/CalendarEventPage'
-import OnboardingLayout from '../pages/onboarding/OnboardingLayout'
-import OnboardingModulesPage from '../pages/onboarding/OnboardingModulesPage'
-import OnboardingSetupPage from '../pages/onboarding/OnboardingSetupPage'
-import OnboardingHabitsPage from '../pages/onboarding/OnboardingHabitsPage'
-import OnboardingReadyPage from '../pages/onboarding/OnboardingReadyPage'
-import WorkoutsPage from '../pages/workouts/WorkoutsPage'
-import RoutineFormPage from '../pages/workouts/RoutineFormPage'
-import ActiveWorkoutPage from '../pages/workouts/ActiveWorkoutPage'
-import WorkoutSummaryPage from '../pages/workouts/WorkoutSummaryPage'
-import WorkoutDetailPage from '../pages/workouts/WorkoutDetailPage'
-import AddFriendsPage from '../pages/social/AddFriendsPage'
-import StatsPage from '../pages/workouts/StatsPage'
-import ExerciseDetailPage from '../pages/workouts/ExerciseDetailPage'
-import FinancePage from '../pages/finance/FinancePage'
+import * as Pages from './lazyPages'
 
 export const router = createBrowserRouter([
-  { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/reset-password', element: <Pages.ResetPasswordPage /> },
   {
     element: <PublicOnly />,
-    children: [{ path: '/login', element: <LoginPage /> }],
+    children: [{ path: '/login', element: <Pages.LoginPage /> }],
   },
   {
     element: <RequireAuth />,
     children: [
       {
         path: '/onboarding',
-        element: <OnboardingLayout />,
+        element: <Pages.OnboardingLayout />,
         children: [
           { index: true, element: <Navigate to="modules" replace /> },
-          { path: 'modules', element: <OnboardingModulesPage /> },
-          { path: 'setup', element: <OnboardingSetupPage /> },
-          { path: 'habits', element: <OnboardingHabitsPage /> },
-          { path: 'ready', element: <OnboardingReadyPage /> },
+          { path: 'modules', element: <Pages.OnboardingModulesPage /> },
+          { path: 'setup', element: <Pages.OnboardingSetupPage /> },
+          { path: 'habits', element: <Pages.OnboardingHabitsPage /> },
+          { path: 'ready', element: <Pages.OnboardingReadyPage /> },
         ],
       },
       {
         element: <RequireOnboarded />,
         children: [
           // Telas cheias, sem barra inferior
-          { path: '/tasks/new', element: <TaskFormPage /> },
-          { path: '/tasks/:id/edit', element: <TaskFormPage /> },
+          { path: '/tasks/new', element: <Pages.TaskFormPage /> },
+          { path: '/tasks/:id/edit', element: <Pages.TaskFormPage /> },
 
-          { path: '/calendar/new', element: <CalendarEventPage /> },
-          { path: '/calendar/:id/edit', element: <CalendarEventPage /> },
+          { path: '/calendar/new', element: <Pages.CalendarEventPage /> },
+          { path: '/calendar/:id/edit', element: <Pages.CalendarEventPage /> },
 
           // Amigos
-          { path: '/friends/add', element: <AddFriendsPage /> },
+          { path: '/friends/add', element: <Pages.AddFriendsPage /> },
 
           // Treino ativo
-          { path: '/workouts/active/:id', element: <ActiveWorkoutPage /> },
-          { path: '/workouts/summary/:id', element: <WorkoutSummaryPage /> },
-          { path: '/workouts/view/:id', element: <WorkoutDetailPage /> },
-          { path: '/workouts/exercises/:id', element: <ExerciseDetailPage /> },
-          { path: '/workouts/routines/new', element: <RoutineFormPage /> },
-          { path: '/workouts/routines/:id/edit', element: <RoutineFormPage /> },
+          { path: '/workouts/active/:id', element: <Pages.ActiveWorkoutPage /> },
+          { path: '/workouts/summary/:id', element: <Pages.WorkoutSummaryPage /> },
+          { path: '/workouts/view/:id', element: <Pages.WorkoutDetailPage /> },
+          { path: '/workouts/exercises/:id', element: <Pages.ExerciseDetailPage /> },
+          { path: '/workouts/routines/new', element: <Pages.RoutineFormPage /> },
+          { path: '/workouts/routines/:id/edit', element: <Pages.RoutineFormPage /> },
 
           {
             element: <AppShell />,
             children: [
-              { path: '/', element: <HomePage /> },
-              { path: '/routine', element: <RoutinePage /> },
+              { path: '/', element: <Pages.HomePage /> },
+              { path: '/routine', element: <Pages.RoutinePage /> },
               // Links antigos continuam funcionando
               { path: '/tasks', element: <Navigate to="/routine?tab=tasks" replace /> },
               { path: '/habits', element: <Navigate to="/routine?tab=habits" replace /> },
-              { path: '/workouts', element: <WorkoutsPage /> },
-              { path: '/workouts/stats', element: <StatsPage /> },
-              { path: '/finance', element: <FinancePage /> },
-              { path: '/calendar', element: <CalendarPage /> },
-              { path: '/assistant', element: <AssistantPage /> },
-              { path: '/profile', element: <ProfilePage /> },
+              { path: '/workouts', element: <Pages.WorkoutsPage /> },
+              { path: '/workouts/stats', element: <Pages.StatsPage /> },
+              { path: '/finance', element: <Pages.FinancePage /> },
+              { path: '/calendar', element: <Pages.CalendarPage /> },
+              { path: '/assistant', element: <Pages.AssistantPage /> },
+              { path: '/profile', element: <Pages.ProfilePage /> },
             ],
           },
         ],

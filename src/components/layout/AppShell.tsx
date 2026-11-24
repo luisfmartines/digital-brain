@@ -6,7 +6,7 @@ import CalendarConnectionNotice from './CalendarConnectionNotice'
 import BottomNav from './BottomNav'
 import MascotFab from '../mascot/MascotFab'
 import { useProfile } from '../../features/profile/useProfile'
-import { useActiveWorkout } from '../../features/workouts/queries'
+import { useActiveWorkout } from '../../features/workouts/useActiveWorkout'
 import { useEnsureWaterHabit } from '../../features/water/queries'
 import styles from './AppShell.module.css'
 
