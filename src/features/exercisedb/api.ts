@@ -114,6 +114,31 @@ export async function getExercise(
   return normalize(exercise)
 }
 
+export const CATALOG_MUSCLES: Record<string, string> = {
+  chest: 'pectorals', back: 'lats,upper back,erector spinae,trapezius', shoulders: 'deltoids',
+  biceps: 'biceps', triceps: 'triceps', quads: 'quadriceps', hamstrings: 'hamstrings',
+  glutes: 'glutes', calves: 'calves', core: 'abdominals,obliques',
+}
+
+export function exerciseGroup(exercise: ExerciseMedia) {
+  return Object.entries(CATALOG_MUSCLES).find(([, targets]) =>
+    exercise.targets.some((target) => targets.split(',').includes(target.toLowerCase())),
+  )?.[0] ?? exercise.bodyParts[0] ?? 'other'
+}
+
+export async function listExercises(term = '', muscle = '', after?: string) {
+  const params = new URLSearchParams({ limit: '25' })
+  if (term.trim()) params.set('name', suggestQuery(term.trim()))
+  if (CATALOG_MUSCLES[muscle]) params.set('targetMuscles', CATALOG_MUSCLES[muscle])
+  if (after) params.set('after', after)
+  const response = await request(`/exercises?${params}`) as Raw
+  const meta = response?.meta as Raw | undefined
+  return {
+    exercises: unwrapList(response).map(normalize).filter((exercise) => exercise.id),
+    nextCursor: meta?.hasNextPage ? str(meta.nextCursor) : null,
+  }
+}
+
 /* Tradução de nomes em português para pesquisas em inglês */
 
 const PT_EN: [string, string][] = [

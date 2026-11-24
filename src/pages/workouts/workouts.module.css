@@ -262,3 +262,10 @@
 .pickList .pickRow { display: flex; gap: 6px; }
 .pickList .pickMain { flex: 1; min-width: 0; }
 .pickList .pickInfo { width: 46px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--color-text-muted); }
+.catalogHeading { padding: 14px 4px 6px; font-size: 12px; font-weight: 700; color: var(--text-muted, #a2a2ad); }
+.catalogExercise { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 4px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.catalogExercise img { width: 56px; height: 56px; border-radius: 10px; object-fit: contain; background: #fff; flex-shrink: 0; }
+.catalogExercise span { flex: 1; min-width: 0; }
+.catalogExercise strong, .catalogExercise small { display: block; }
+.catalogExercise small { margin-top: 4px; font-size: 11px; opacity: .65; }
+.catalogExercise:disabled { opacity: .5; cursor: wait; }

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { totals, monthRange, dailyPace, buildSummary } from '../src/features/finance/summary.ts'
-import { getExercise, searchExercises, suggestQuery } from '../src/features/exercisedb/api.ts'
+import { exerciseGroup, getExercise, listExercises, searchExercises, suggestQuery } from '../src/features/exercisedb/api.ts'
 import { records, metricValue } from '../src/features/workouts/exerciseStats.ts'
 
 test('salary is not counted twice and cents remain exact', () => {
@@ -74,4 +74,27 @@ test('exercise records exclude warm-ups and sum working sets', () => {
   assert.equal(records([session]).maxWeight, 50)
   assert.equal(records([session]).maxReps, 10)
   assert.equal(records([]).maxWeight, null)
+})
+
+test('picker loads a catalogue without requiring a search and follows cursor pagination', async (t) => {
+  const requests = []
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    requests.push(new URL(url))
+    return Response.json({ data: [{ exerciseId: 'first', name: 'Bench' }], meta: { hasNextPage: true, nextCursor: 'next' } })
+  })
+  const page = await listExercises()
+  assert.equal(page.exercises.length, 1)
+  assert.equal(page.nextCursor, 'next')
+  assert.equal(requests[0].pathname, '/api/v1/exercises')
+  assert.equal(requests[0].searchParams.has('name'), false)
+  await listExercises('supino', 'chest', page.nextCursor)
+  assert.equal(requests[1].searchParams.get('name'), 'bench press')
+  assert.equal(requests[1].searchParams.get('targetMuscles'), 'pectorals')
+  assert.equal(requests[1].searchParams.get('after'), 'next')
+})
+
+test('catalogue muscle names map to local routine filters', () => {
+  assert.equal(exerciseGroup({ targets: ['quadriceps'], bodyParts: ['upper legs'] }), 'quads')
+  assert.equal(exerciseGroup({ targets: ['deltoids'], bodyParts: ['shoulders'] }), 'shoulders')
+  assert.equal(exerciseGroup({ targets: ['abdominals'], bodyParts: ['waist'] }), 'core')
 })

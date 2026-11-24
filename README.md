@@ -19,7 +19,11 @@ Execute `npm run dev` (porta 5190), `npm test` para os testes de regressão e
 
 O app usa a [ExerciseDB pública v1](https://oss.exercisedb.dev/docs), sem chave:
 busca em `/exercises/search?search=...` e detalhes em `/exercises/:id`.
-No seletor de exercícios, abra o botão de informações e escolha uma demonstração.
+O seletor “Adicionar exercício” abre o catálogo público automaticamente, com GIFs,
+busca por nome, filtros musculares e paginação de 25 itens. Ao selecionar um item,
+o app salva um cadastro individual em `exercises` e seu vínculo de demonstração,
+reutilizando o mesmo cadastro nas próximas seleções. Exercícios personalizados
+continuam disponíveis. Nos exercícios salvos, o botão de informações abre os detalhes.
 As buscas sugerem termos em inglês a partir do nome em português; as instruções
 fornecidas pela API permanecem em inglês. O catálogo público fornece GIFs.
 
@@ -27,6 +31,9 @@ Os vínculos são individuais e persistidos em `exercise_media_links`. A migraç
 `supabase/migrations/20261123000000_exercise_media_links.sql` já foi aplicada ao
 projeto Supabase configurado durante esta integração. Em outro ambiente, aplique
 essa migração antes de usar os vínculos. Ela inclui RLS e permissões de acesso.
+Também foi aplicada `supabase/migrations/20261124014757_exercise_catalog.sql`, que
+cria a tabela `exercises` antes ausente e os relacionamentos usados por rotinas e séries.
+Em um novo ambiente com as tabelas de treinos já instaladas, aplique ambas as migrações.
 
 Não coloque chaves privadas em variáveis `VITE_*`: elas são incluídas no navegador.
 O proxy do pacote de referência era destinado à versão paga e não é necessário
