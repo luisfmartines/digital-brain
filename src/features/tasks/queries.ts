@@ -85,6 +85,7 @@ export function useSaveTask() {
 
 export function useToggleTask() {
   const invalidate = useInvalidateTasks()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
       const { error } = await supabase
@@ -93,7 +94,10 @@ export function useToggleTask() {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
   })
 }
 

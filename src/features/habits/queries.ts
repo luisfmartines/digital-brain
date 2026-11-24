@@ -60,10 +60,14 @@ export async function toggleHabitLog(habitId: string, date: string, done: boolea
 
 export function useToggleLog() {
   const invalidate = useInvalidateHabits()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ habitId, date, done }: { habitId: string; date: string; done: boolean }) =>
       toggleHabitLog(habitId, date, done),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
   })
 }
 

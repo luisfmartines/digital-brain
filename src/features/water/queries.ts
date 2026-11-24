@@ -75,6 +75,7 @@ function useInvalidateWater() {
   const qc = useQueryClient()
   return () => {
     qc.invalidateQueries({ queryKey: ['home', 'water'] })
+    void qc.invalidateQueries({ queryKey: ['profile'] })
     qc.invalidateQueries({ queryKey: ['home', 'habits'] })
     qc.invalidateQueries({ queryKey: ['habits'] })
   }
