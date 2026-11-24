@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { localDateStr, parseDate } from '../../lib/date'
 import { useAuth } from '../auth/useAuth'
@@ -60,6 +60,11 @@ interface GoogleEvent {
   htmlLink?: string
   summary?: string
   description?: string
+  location?: string
+  calendarName?: string
+  calendarColor?: string
+  completed?: boolean
+  googleTask?: boolean
   start?: { date?: string; dateTime?: string }
   end?: { date?: string; dateTime?: string }
   extendedProperties?: { private?: { digitalBrainCategory?: string } }
@@ -85,7 +90,12 @@ function toAgendaItem(event: GoogleEvent): AgendaItem[] {
     kind: 'google',
     href: safeCalendarLink(event.htmlLink),
     title: event.summary || 'Evento do Google Agenda',
-    description: null,
+    description: [event.description?.replace(/<[^>]*>/g, ' ').trim(), event.location].filter(Boolean).join('\n') || null,
+    origin: event.calendarName,
+    originColor: /^#[0-9a-f]{6}$/i.test(event.calendarColor ?? '') ? event.calendarColor : undefined,
+    completed: event.completed,
+    googleTask: event.googleTask,
+    exportedFrom: /^(dbe|dbt)[0-9a-f]{32}$/.test(event.id) ? event.id : undefined,
     starts_at: start.toISOString(),
     ends_at: Number.isFinite(end.getTime()) ? end.toISOString() : null,
     all_day: !!event.start?.date,
@@ -104,8 +114,33 @@ export function useGoogleEvents(from: Date, until: Date, connected: boolean) {
     refetchInterval: 60_000,
     retry: false,
     queryFn: async () => {
-      const response = await googleCalendar<{ events: GoogleEvent[] }>({ action: 'list', start, end })
-      return (response?.events ?? []).flatMap(toAgendaItem)
+      const response = await googleCalendar<{ events: GoogleEvent[]; warnings?: string[] }>({
+        action: 'list', start, end, firstDay: localDateStr(from), untilDay: localDateStr(until),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      })
+      return { items: (response?.events ?? []).flatMap(toAgendaItem), warnings: response?.warnings ?? [] }
     },
+  })
+}
+
+export function useSyncGoogleAgenda() {
+  const cache = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      let offset: number | null = 0
+      let sent = 0
+      let failed = 0
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      while (offset !== null) {
+        const page: { sent: number; failed: number; next: number | null } | null =
+          await googleCalendar({ action: 'sync', offset, timeZone })
+        if (!page) throw new Error('Conecte o Google Agenda antes de sincronizar.')
+        sent += page.sent
+        failed += page.failed
+        offset = page.next
+      }
+      return { sent, failed }
+    },
+    onSettled: () => cache.invalidateQueries({ queryKey: ['calendar'] }),
   })
 }

@@ -12,7 +12,11 @@ Deno.serve(async (req) => {
     client_id: Deno.env.get("GOOGLE_CLIENT_ID")!,
     redirect_uri: REDIRECT_URI,
     response_type: "code",
-    scope: "https://www.googleapis.com/auth/calendar.events",
+    scope: [
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+      "https://www.googleapis.com/auth/tasks.readonly",
+    ].join(" "),
     access_type: "offline",
     prompt: "consent",
     state: await makeState(user.id),

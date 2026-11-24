@@ -1,3 +1,4 @@
+import { exportGoogleAgenda } from "../_shared/googleAgendaExport.ts";
 import { corsHeaders, getUser, json } from "../_shared/common.ts";
 import { createGoogleEvent, GoogleCalendarError, listGoogleEvents } from "../_shared/googleCalendar.ts";
 
@@ -10,8 +11,25 @@ Deno.serve(async (req) => {
   const input = await req.json().catch(() => null);
   if (!input || typeof input !== "object") return json({ error: "invalid_body" }, 400);
   try {
-    if (input.action === "list") return json({ events: await listGoogleEvents(user.id, input.start, input.end) });
-    const event = await createGoogleEvent(user.id, input);
+    if (input.action === "list") {
+      const result = await listGoogleEvents(user.id, input.start, input.end, input.firstDay, input.untilDay);
+      if (input.timeZone) {
+        try {
+          const known = new Set(result.events.map((event) => event.id));
+          const sync = await exportGoogleAgenda(user.id, 0, input.timeZone, { start: input.start, end: input.end }, known);
+          if (sync?.failed) result.warnings.push("Alguns itens do Digital Brain não foram enviados ao Google Agenda.");
+          if (sync?.next != null) result.warnings.push("Para enviar o restante do planejamento, use Perfil → Conexões.");
+        } catch {
+          result.warnings.push("Não foi possível enviar o planejamento ao Google Agenda. Confira a conexão em Perfil.");
+        }
+      }
+      return json(result);
+    }
+    if (input.action === "sync") {
+      const result = await exportGoogleAgenda(user.id, input.offset ?? 0, input.timeZone ?? "America/Sao_Paulo");
+      return result ? json(result) : json({ error: "not_connected" }, 409);
+    }
+    const event = await createGoogleEvent(user.id, { ...input, exportId: undefined });
     return event ? json(event) : json({ error: "not_connected" }, 409);
   } catch (error) {
     if (error instanceof GoogleCalendarError) return json({ error: error.message }, error.status);

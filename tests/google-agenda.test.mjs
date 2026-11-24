@@ -1,0 +1,63 @@
+import assert from 'node:assert/strict'
+import { registerHooks } from 'node:module'
+import test from 'node:test'
+
+test('Google agenda imports custom calendars and task lists, and exports local plans without duplicates', async (t) => {
+  const userId = '11111111-1111-4111-8111-111111111111'
+  const taskId = '33333333-3333-4333-8333-333333333333'
+  const sent = new Map()
+  globalThis.Deno = { env: { get: (key) => ({
+    SUPABASE_URL: 'https://supabase.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test',
+  })[key] } }
+  const hooks = registerHooks({
+    resolve(specifier, context, next) {
+      return next(specifier === 'npm:@supabase/supabase-js@2' ? '@supabase/supabase-js' : specifier, context)
+    },
+  })
+  t.after(() => { hooks.deregister(); delete globalThis.Deno })
+  t.mock.method(globalThis, 'fetch', async (input, init) => {
+    const request = new Request(input, init)
+    const url = new URL(request.url)
+    if (url.hostname === 'supabase.test') {
+      assert.equal(url.searchParams.get('user_id'), `eq.${userId}`)
+      if (url.pathname.endsWith('/google_tokens')) return Response.json([{ refresh_token: 'refresh-test' }])
+      if (url.pathname.endsWith('/tasks')) return Response.json([{ id: taskId, title: 'Trabalhar', notes: 'Revisar pauta',
+        due_at: '2026-11-24T22:00:00.000Z', category: 'work', priority: 'high', remind_minutes_before: 10 }])
+      return Response.json([])
+    }
+    if (url.hostname === 'oauth2.googleapis.com') return Response.json({ access_token: 'access-test' })
+    assert.equal(request.headers.get('authorization'), 'Bearer access-test')
+    if (url.pathname.endsWith('/calendarList')) {
+      return Response.json(url.searchParams.has('pageToken')
+        ? { items: [{ id: 'meals@example.test', summaryOverride: 'Refeições', backgroundColor: '#00aa00' }] }
+        : { items: [{ id: 'primary', primary: true }], nextPageToken: 'next' })
+    }
+    if (url.pathname.endsWith('/users/@me/lists')) return Response.json({ items: [{ id: 'study', title: 'Estudos' }] })
+    if (url.pathname.endsWith('/lists/study/tasks')) {
+      assert.equal(url.searchParams.get('dueMin'), '2026-11-24T00:00:00Z')
+      return Response.json({ items: [{ id: 'task1', title: 'Ler', due: '2026-11-24T00:00:00Z' }] })
+    }
+    if (request.method === 'POST') {
+      const event = await request.json()
+      assert.equal(event.id, 'dbt' + taskId.replaceAll('-', ''))
+      if (sent.has(event.id)) return new Response(null, { status: 409 })
+      sent.set(event.id, event)
+      return Response.json({ id: event.id })
+    }
+    if (url.pathname.includes('meals%40example.test')) {
+      return Response.json({ items: [{ id: 'lunch', summary: 'Almoço', start: { date: '2026-11-24' } }] })
+    }
+    return Response.json({ items: [] })
+  })
+  const { listGoogleEvents } = await import('../supabase/functions/_shared/googleCalendar.ts')
+  const { exportGoogleAgenda } = await import('../supabase/functions/_shared/googleAgendaExport.ts')
+  const listing = await listGoogleEvents(userId, '2026-11-24T03:00:00Z', '2026-11-25T03:00:00Z', '2026-11-24', '2026-11-25')
+  assert.deepEqual(listing.warnings, [])
+  assert.deepEqual(listing.events.map(({ summary, calendarName }) => [summary, calendarName]), [['Almoço', 'Refeições'], ['Ler', 'Estudos']])
+  assert.deepEqual(await exportGoogleAgenda(userId, 0, 'America/Sao_Paulo'), { sent: 1, failed: 0, next: null })
+  assert.deepEqual(await exportGoogleAgenda(userId, 0, 'America/Sao_Paulo'), { sent: 0, failed: 0, next: null })
+  const [event] = sent.values()
+  assert.equal(event.start.dateTime, '2026-11-24T22:00:00.000Z')
+  assert.match(event.description, /Revisar pauta\nCategoria: Trabalho\nPrioridade: Alta/)
+  assert.equal(event.reminders.overrides[0].minutes, 10)
+})

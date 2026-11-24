@@ -1,4 +1,5 @@
 import { admin } from "./common.ts";
+import { importGoogleAgenda } from "./googleAgendaImport.ts";
 
 const EVENTS = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 
@@ -41,6 +42,7 @@ export interface GoogleEventInput {
   description?: string | null;
   category?: string;
   reminderMinutes?: number | null;
+  exportId?: string;
 }
 
 export interface GoogleEvent {
@@ -48,12 +50,24 @@ export interface GoogleEvent {
   htmlLink?: string;
   summary?: string;
   description?: string;
+  location?: string;
+  iCalUID?: string;
+  calendarName?: string;
+  calendarColor?: string;
+  googleTask?: boolean;
+  completed?: boolean;
+  originalStartTime?: { date?: string; dateTime?: string };
   start?: { date?: string; dateTime?: string };
   end?: { date?: string; dateTime?: string };
   extendedProperties?: { private?: { digitalBrainCategory?: string } };
 }
 
 export async function createGoogleEvent(userId: string, input: GoogleEventInput) {
+  const access = await googleAccessToken(userId);
+  return access ? insertGoogleEvent(access, input) : null;
+}
+
+export async function insertGoogleEvent(access: string, input: GoogleEventInput) {
   const { title, start, allDay = false, description, category, reminderMinutes = 10 } = input;
   const startMs = Date.parse(start);
   const end = input.end ?? (Number.isFinite(startMs)
@@ -67,12 +81,11 @@ export async function createGoogleEvent(userId: string, input: GoogleEventInput)
     || (reminderMinutes !== null && (!Number.isInteger(reminderMinutes) || reminderMinutes < 0 || reminderMinutes > 40320))) {
     throw new GoogleCalendarError("invalid_event", 400);
   }
-  const access = await googleAccessToken(userId);
-  if (!access) return null;
   const response = await fetch(EVENTS, {
-    method: "POST",
+    method: "POST", signal: AbortSignal.timeout(9000),
     headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
     body: JSON.stringify({
+      id: input.exportId,
       summary: title.trim(),
       description,
       start: allDay ? { date: start } : { dateTime: start },
@@ -82,31 +95,18 @@ export async function createGoogleEvent(userId: string, input: GoogleEventInput)
     }),
   });
   if (response.status === 401 || response.status === 403) throw new GoogleCalendarError("reconnect_required", 409);
+  if (response.status === 409 && input.exportId) return { id: input.exportId, existing: true };
   if (!response.ok) throw new GoogleCalendarError("calendar_error");
   const event: GoogleEvent = await response.json();
-  return { id: event.id, link: event.htmlLink };
+  return { id: event.id, link: event.htmlLink, existing: false };
 }
 
-export async function listGoogleEvents(userId: string, start: string, end: string) {
+export async function listGoogleEvents(userId: string, start: string, end: string, firstDay?: string, untilDay?: string): Promise<{ events: GoogleEvent[]; warnings: string[] }> {
   const duration = Date.parse(end) - Date.parse(start);
-  if (!(duration > 0 && duration <= 45 * 86_400_000)) throw new GoogleCalendarError("invalid_period", 400);
+  const date = /^\d{4}-\d{2}-\d{2}$/;
+  if (!(duration > 0 && duration <= 45 * 86_400_000) || (firstDay !== undefined && !date.test(firstDay)) || (untilDay !== undefined && !date.test(untilDay))) {
+    throw new GoogleCalendarError("invalid_period", 400);
+  }
   const access = await googleAccessToken(userId);
-  if (!access) return [];
-  const params = new URLSearchParams({
-    timeMin: new Date(start).toISOString(), timeMax: new Date(end).toISOString(),
-    singleEvents: "true", orderBy: "startTime", maxResults: "250",
-    fields: "nextPageToken,items(id,htmlLink,summary,description,start,end,extendedProperties/private)",
-  });
-  const items: GoogleEvent[] = [];
-  let nextPageToken: string | undefined;
-  do {
-    const response = await fetch(`${EVENTS}?${params}`, { headers: { Authorization: `Bearer ${access}` } });
-    if (response.status === 401 || response.status === 403) throw new GoogleCalendarError("reconnect_required", 409);
-    if (!response.ok) throw new GoogleCalendarError("calendar_error");
-    const result: { items?: GoogleEvent[]; nextPageToken?: string } = await response.json();
-    items.push(...(result.items ?? []));
-    nextPageToken = result.nextPageToken;
-    if (nextPageToken) params.set("pageToken", nextPageToken);
-  } while (nextPageToken);
-  return items;
+  return access ? importGoogleAgenda(access, start, end, firstDay ?? start.slice(0, 10), untilDay ?? end.slice(0, 10)) : { events: [], warnings: [] };
 }

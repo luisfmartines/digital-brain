@@ -48,3 +48,20 @@
 .form textarea { resize: vertical; }
 .signOut, .error { color: var(--color-danger); }
 .error { margin: 0; font-size: 12px; }
+
+.connections { display: grid; gap: 10px; }
+.connectionsHeading { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.connectionsHeading svg { color: var(--color-secondary); }
+.connectionCard { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.connectionRow {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px; align-items: center; padding: 14px; border: 0; border-radius: inherit;
+  color: var(--color-text); background: transparent; text-align: left; cursor: pointer;
+}
+.googleIcon { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 12px; color: #448cff; background: color-mix(in srgb, #448cff 15%, var(--color-surface)); }
+.connectionTitle { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; }
+.connectionBadge { color: var(--color-secondary); background: var(--color-primary-soft); border-radius: 999px; padding: 3px 8px; font-size: 10px; }
+.connectionRow .connectionDetail { display: block; margin-top: 4px; font-size: 11px; }
+.connectionChevron { color: var(--color-secondary); }
+.connectionRow[aria-expanded='true'] .connectionChevron { rotate: 90deg; }
+.connectionDetails:not([hidden]) { display: grid; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--color-border); }
