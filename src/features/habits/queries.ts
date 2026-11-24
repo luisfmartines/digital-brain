@@ -44,6 +44,9 @@ export function useInvalidateHabits() {
   return () => {
     queryClient.invalidateQueries({ queryKey: ['habits'] })
     queryClient.invalidateQueries({ queryKey: ['home', 'habits'] })
+    void queryClient.invalidateQueries({ queryKey: ['social', 'feed'] })
+    void queryClient.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
+    void queryClient.invalidateQueries({ queryKey: ['profile'] })
     queryClient.invalidateQueries({ queryKey: ['home', 'water'] })
   }
 }
@@ -60,14 +63,10 @@ export async function toggleHabitLog(habitId: string, date: string, done: boolea
 
 export function useToggleLog() {
   const invalidate = useInvalidateHabits()
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ habitId, date, done }: { habitId: string; date: string; done: boolean }) =>
       toggleHabitLog(habitId, date, done),
-    onSuccess: () => {
-      invalidate()
-      void queryClient.invalidateQueries({ queryKey: ['profile'] })
-    },
+    onSuccess: invalidate,
   })
 }
 

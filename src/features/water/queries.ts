@@ -76,6 +76,8 @@ function useInvalidateWater() {
   return () => {
     qc.invalidateQueries({ queryKey: ['home', 'water'] })
     void qc.invalidateQueries({ queryKey: ['profile'] })
+    void qc.invalidateQueries({ queryKey: ['social', 'feed'] })
+    void qc.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
     qc.invalidateQueries({ queryKey: ['home', 'habits'] })
     qc.invalidateQueries({ queryKey: ['habits'] })
   }

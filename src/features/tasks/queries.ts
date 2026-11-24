@@ -97,6 +97,8 @@ export function useToggleTask() {
     onSuccess: () => {
       invalidate()
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
+      void queryClient.invalidateQueries({ queryKey: ['social', 'feed'] })
+      void queryClient.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
     },
   })
 }

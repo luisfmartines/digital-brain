@@ -1,12 +1,16 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Connections from './Connections'
-import { useProfileSharing } from '../../features/social/sharedProfile'
+import { useProfileActivity, useProfileSharing } from '../../features/social/sharedProfile'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
+import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trash2, Trophy } from 'lucide-react'
 import ProfileAvatar from './ProfileAvatar'
 import PhotoPicker from '../../components/ui/PhotoPicker'
 import AvatarCropDialog from './AvatarCropDialog'
+import Dialog from '../../components/ui/Dialog'
+import dialogStyles from '../../components/ui/Dialog.module.css'
+import { useRoutines } from '../../features/workouts/queries'
+import ProfileActivitySections, { ProfileCounts, ProfilePhotos } from './ProfileActivity'
 import { MODULES } from '../../features/onboarding/modules'
 import { levelInfo } from '../../features/profile/level'
 import { useProfile } from '../../features/profile/useProfile'
@@ -21,6 +25,23 @@ export default function ProfilePage() {
   const sharing = useProfileSharing()
   const profile = query.data
   const cache = useQueryClient()
+  const navigate = useNavigate()
+  const activity = useProfileActivity(connections ? undefined : profile?.id)
+  const routines = useRoutines()
+  const [deleteText, setDeleteText] = useState<string | null>(null)
+  const deleteAccount = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke<{ deleted: boolean }>('delete-account', {
+        body: { confirmation: deleteText },
+      })
+      if (error || !data?.deleted) throw new Error('Não foi possível excluir a conta. Tente novamente.')
+    },
+    onSuccess: async () => {
+      await supabase.auth.signOut({ scope: 'local' })
+      cache.clear()
+      navigate('/login', { replace: true })
+    },
+  })
   const avatar = useUploadAvatar()
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoError, setPhotoError] = useState('')
@@ -74,6 +95,7 @@ export default function ProfilePage() {
         <Link className={styles.button} to="/profile?tab=connections" aria-current={connections ? 'page' : undefined}>Conexões</Link>
       </nav>
       {connections ? <Connections /> : <>
+      <ProfilePhotos photos={activity.data?.photos} />
       <section className={`${styles.card} ${styles.identity}`} aria-label="Dados do perfil">
         <div className={styles.row}>
           <div className={styles.person}>
@@ -85,6 +107,7 @@ export default function ProfilePage() {
           </div>
           {!editing && <button type="button" className={styles.button} onClick={() => { update.reset(); setEditing(true) }}><Pencil size={14} /> Editar</button>}
         </div>
+        <ProfileCounts activity={activity.data} />
         <PhotoPicker title="Foto do perfil" accept="image/jpeg,image/png,image/webp" camera="user" onPhoto={(file) => {
           const message = validateAvatarFile(file)
           setPhotoError(message)
@@ -114,6 +137,14 @@ export default function ProfilePage() {
         ) : profile.bio && <p className={styles.bio}>{profile.bio}</p>}
       </section>
 
+      {activity.isError && <p className={styles.connectionDetail} role="alert">Não foi possível carregar a atividade. <button type="button" onClick={() => activity.refetch()}>Tentar novamente</button></p>}
+      <ProfileActivitySections own activity={activity.data} routines={routines.data?.map((routine) => ({
+        id: routine.id, name: routine.name, focus: routine.focus,
+        exercises: routine.routine_exercises.map(({ exercise, target_sets, rest_seconds }) => ({
+          name: exercise.name, sets: target_sets, rest: rest_seconds, reps: null,
+        })),
+      }))} />
+
       <section className={styles.card}>
         <div className={styles.person}>
           <span className={styles.icon}><Trophy size={19} /></span>
@@ -139,8 +170,8 @@ export default function ProfilePage() {
         <strong>Compartilhamento</strong>
         <button className={styles.button} type="button" aria-pressed={!!sharing.setting.data}
           disabled={!sharing.setting.isSuccess || sharing.change.isPending}
-          onClick={() => sharing.change.mutate(!sharing.setting.data)}>Compartilhar rotinas e média de hábitos</button>
-        <small>Visíveis para outros usuários do Digital Brain ao abrir seu perfil.</small>
+          onClick={() => sharing.change.mutate(!sharing.setting.data)}>Compartilhar rotinas e atividade</button>
+        <small>Exibe rotinas, resumo dos treinos e média de hábitos. Publica conquistas de nível e dias completos para seguidores.</small>
         {(sharing.setting.isError || sharing.change.isError) && <p className={styles.error} role="alert">Não foi possível atualizar o compartilhamento.</p>}
         <strong>Aparência</strong>
         <div className={styles.themes} role="group" aria-label="Tema do aplicativo">
@@ -158,6 +189,28 @@ export default function ProfilePage() {
       {update.isError && <p className={styles.error} role="alert">Não foi possível salvar as alterações.</p>}
       <button type="button" onClick={signOut} className={`${styles.button} ${styles.signOut}`}><LogOut size={16} /> Sair da conta</button>
       {signOutError && <p className={styles.error} role="alert">Não foi possível sair da conta.</p>}
+      <button type="button" className={styles.deleteAccount} onClick={() => { deleteAccount.reset(); setDeleteText('') }}>
+        <Trash2 size={16} /> Excluir conta
+      </button>
+      {deleteText !== null && <Dialog title="Excluir sua conta?" busy={deleteAccount.isPending} onClose={() => setDeleteText(null)}>
+        <p className={dialogStyles.description}>Sua conta, seus dados e suas fotos serão excluídos permanentemente.</p>
+        <form className={styles.form} onSubmit={(event) => {
+          event.preventDefault()
+          if (deleteText === 'EXCLUIR' && !deleteAccount.isPending) deleteAccount.mutate()
+        }}>
+          <label>Digite EXCLUIR para confirmar
+            <input value={deleteText} onChange={(event) => setDeleteText(event.currentTarget.value)} autoComplete="off" disabled={deleteAccount.isPending} />
+          </label>
+          {deleteAccount.isError && <p className={styles.error} role="alert">{deleteAccount.error.message}</p>}
+          <div className={dialogStyles.actions}>
+            <button type="button" className={dialogStyles.button} disabled={deleteAccount.isPending} onClick={() => setDeleteText(null)}>Cancelar</button>
+            <button type="submit" className={dialogStyles.button + ' ' + dialogStyles.danger}
+              disabled={deleteText !== 'EXCLUIR' || deleteAccount.isPending}>
+              {deleteAccount.isPending ? 'Excluindo…' : 'Excluir permanentemente'}
+            </button>
+          </div>
+        </form>
+      </Dialog>}
       </>}
     </div>
   )

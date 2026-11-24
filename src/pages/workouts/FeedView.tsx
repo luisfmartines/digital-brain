@@ -24,7 +24,7 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
   const shown = open ? post.comments : lastComment ? [lastComment] : []
 
   async function share() {
-    const msg = `${post.author?.display_name ?? 'Um amigo'} concluiu ${w?.name ?? 'um treino'}${w ? ` (${fmtNum(w.volume)} kg de volume)` : ''} no Digital Brain.`
+    const msg = post.caption ? (post.author?.display_name ?? 'Um amigo') + ' · ' + post.caption : `${post.author?.display_name ?? 'Um amigo'} concluiu ${w?.name ?? 'um treino'}${w ? ` (${fmtNum(w.volume)} kg de volume)` : ''} no Digital Brain.`
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Digital Brain', text: msg })
@@ -49,6 +49,7 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
           <small>@{post.author?.username ?? 'usuário'} • {ago(post.created_at)}</small>
         </div>
       </div>
+      {post.caption && <p className={styles.postCaption}>{post.caption}</p>}
       {w && <div className={styles.postTag}><span><Trophy size={12} /> {w.name}</span><b>{fmtNum(w.volume)} kg de volume</b></div>}
       {post.photo_url && <img className={styles.photo} src={post.photo_url} alt="" />}
       {w && (

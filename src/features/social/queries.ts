@@ -85,7 +85,7 @@ interface RawPost {
 
 export interface FeedComment { id: string; user_id: string; content: string; created_at: string; author?: Profile }
 export interface FeedPost {
-  id: string; created_at: string; photo_url: string | null; author?: Profile
+  id: string; created_at: string; photo_url: string | null; caption: string | null; author?: Profile
   workout: { id: string; name: string; volume: number; minutes: number; top: { name: string; weight: number } | null } | null
   likes: number; liked: boolean; comments: FeedComment[]
 }
@@ -123,6 +123,7 @@ export function useFeed() {
           id: p.id,
           created_at: p.created_at,
           photo_url: p.photo_url,
+          caption: p.caption,
           author: people.get(p.user_id),
           workout: w
             ? { id: w.id, name: w.name, volume: volumeOf(w.workout_sets), minutes: Math.max(1, Math.round(workoutSeconds({ ...w, paused_at: null }, 0) / 60)), top }

@@ -423,7 +423,10 @@ export function useUploadPhoto(workoutId: string) {
       const { error } = await supabase.from('workouts').update({ photo_url: url }).eq('id', workoutId)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: sessionKey(workoutId) }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sessionKey(workoutId) })
+      void qc.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
+    },
   })
 }
 

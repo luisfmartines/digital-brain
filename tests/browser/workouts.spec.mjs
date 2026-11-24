@@ -218,7 +218,8 @@ test('friends and ranking open a profile with copyable routines even without wor
   await page.goto('/friends/add')
   await expect(page.getByRole('heading', { name: 'Amigos adicionados' })).toBeVisible()
   await page.getByRole('link', { name: 'Ver perfil de Marina' }).click()
-  await expect(page.getByRole('heading', { name: 'Rotina sem treinos' })).toBeVisible()
+  await page.getByRole('button', { name: /Rotina sem treinos.*1 exercício/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Rotina sem treinos' })).toBeVisible()
   await page.getByRole('button', { name: 'Copiar rotina' }).click()
   await expect(page.getByRole('link', { name: 'Abrir rotina copiada' })).toHaveAttribute('href', '/workouts/routines/new-routine/edit')
 

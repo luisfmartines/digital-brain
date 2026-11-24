@@ -2,6 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 
+export interface ProfileRoutine {
+  id: string; name: string; focus: string | null
+  exercises: { name: string; sets: number; reps: number | null; rest: number }[]
+}
+
+export interface ProfileActivity {
+  workoutCount: number | null; followers: number; following: number
+  weeks: { date: string; seconds: number }[]
+  photos: { url: string; name: string; at: string }[]
+  workouts: {
+    id: string; name: string; ended_at: string; seconds: number; volume: number
+    exercises: { name: string; sets: number }[]
+  }[]
+  posts: { id: string; created_at: string; photo_url: string | null; caption: string | null; workout_id: string | null; workout_name: string | null }[]
+}
+
 interface SharedProfile {
   id: string
   name: string | null
@@ -11,7 +27,7 @@ interface SharedProfile {
   level: number | null
   sharing: boolean
   completion: number | null
-  routines: { id: string; name: string; focus: string | null; exercises: { name: string; sets: number; reps: number | null; rest: number }[] }[]
+  routines: ProfileRoutine[]
 }
 
 export function useSharedProfile(id?: string) {
@@ -27,12 +43,25 @@ export function useSharedProfile(id?: string) {
   })
 }
 
+export function useProfileActivity(id?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['social', 'profile-activity', user?.id, id],
+    enabled: !!user && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke<ProfileActivity>('public-profile', { body: { action: 'activity', id } })
+      if (error || !Array.isArray(data?.posts)) throw new Error('Não foi possível carregar a atividade.')
+      return data
+    },
+  })
+}
+
 export function useCopySharedRoutine() {
   const cache = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data, error } = await supabase.functions.invoke<{ id: string }>('public-profile', { body: { action: 'copy', id } })
-      if (error || !data?.id) throw new Error('Não foi possível copiar a rotina. Ela pode não estar mais compartilhada.')
+    mutationFn: async ({ id, type }: { id: string; type: 'routine' | 'workout' }) => {
+      const { data, error } = await supabase.functions.invoke<{ id: string }>('public-profile', { body: { action: type === 'workout' ? 'copy_workout' : 'copy', id } })
+      if (error || !data?.id) throw new Error('Não foi possível copiar a atividade.')
       return data.id
     },
     onSuccess: () => cache.invalidateQueries({ queryKey: ['workouts'] }),
@@ -62,6 +91,7 @@ export function useProfileSharing() {
     onSuccess: (share) => {
       cache.setQueryData(key, share)
       void cache.invalidateQueries({ queryKey: ['social', 'profile'] })
+      void cache.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
     },
   })
   return { setting, change }
