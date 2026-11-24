@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Info, Plus, Search, X } from 'lucide-react'
 import { useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
 import { MUSCLES, muscleLabel } from '../../features/workouts/utils'
@@ -21,6 +21,8 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
   const [creating, setCreating] = useState(false)
   const [info, setInfo] = useState<Exercise | null>(null)
   const [catalogInfo, setCatalogInfo] = useState<ExerciseMedia | null>(null)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const photoInput = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [newMuscle, setNewMuscle] = useState('chest')
   const [term, setTerm] = useState('')
@@ -35,17 +37,21 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
 
   const list = all.filter((e) => !excludedIds.includes(e.id) && (!muscle || e.muscle_group === muscle) && e.name.toLowerCase().includes(q.trim().toLowerCase()))
 
+  function close() {
+    if (!create.isPending) onClose()
+  }
+
   function createOne() {
-    if (!name.trim()) return
-    create.mutate({ name: name.trim(), muscle_group: newMuscle }, { onSuccess: (e) => onPick(e) })
+    if (!name.trim() || busy) return
+    create.mutate({ name: name.trim(), muscle_group: newMuscle, photo }, { onSuccess: (e) => onPick(e) })
   }
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} onClick={close}>
       <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
         <div className={styles.sheetHead}>
           <strong>{title}</strong>
-          <button type="button" className={styles.plainBtn} onClick={onClose} aria-label="Fechar"><X size={18} /></button>
+          <button type="button" className={styles.plainBtn} onClick={close} disabled={create.isPending} aria-label="Fechar"><X size={18} /></button>
         </div>
         <label className={styles.search}><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar exercícios" /></label>
         <div className={styles.filterChips}>
@@ -58,7 +64,7 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
           {list.map((e) => (
             <li key={e.id} className={styles.pickRow}>
               <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => onPick(e)}>
-                <SavedExerciseImage exerciseId={e.id} name={e.name} />
+                <SavedExerciseImage exercise={e} />
                 <span><strong>{e.name}</strong><small>{muscleLabel(e.muscle_group)}{e.equipment ? ` • ${e.equipment}` : ''}</small></span>
               </button>
               <button type="button" className={styles.pickInfo} onClick={() => setInfo(e)} aria-label={`Ver detalhes de ${e.name}`}><Info size={18} /></button>
@@ -84,14 +90,24 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
         {error && <p role="alert">{error}</p>}
         {importExercise.isPending && <p role="status">Adicionando exercício…</p>}
         {importExercise.isError && <p role="alert">Não foi possível adicionar o exercício. Tente novamente.</p>}
-        {create.isError && <p role="alert">Não foi possível criar o exercício. Tente novamente.</p>}
+        {create.isError && <p role="alert">{create.error.message}</p>}
         {creating ? (
           <div className={styles.createBox}>
             <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do exercício" />
             <select className={styles.input} value={newMuscle} onChange={(e) => setNewMuscle(e.target.value)}>
               {Object.entries(MUSCLES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select>
-            <button type="button" className={styles.primary} onClick={createOne} disabled={!name.trim() || busy}>Criar e adicionar</button>
+            <label className={styles.exercisePhotoField}>
+              <span>Foto do exercício (opcional)</span>
+              <input ref={photoInput} type="file" accept="image/*" disabled={busy}
+                onChange={(event) => { setPhoto(event.target.files?.[0] ?? null); create.reset() }} />
+            </label>
+            {photo && <button type="button" className={styles.addSet} disabled={busy} onClick={() => {
+              if (photoInput.current) photoInput.current.value = ''
+              setPhoto(null)
+              create.reset()
+            }}>Remover foto</button>}
+            <button type="button" className={styles.primary} onClick={createOne} disabled={!name.trim() || busy}>{create.isPending ? 'Salvando…' : 'Criar e adicionar'}</button>
           </div>
         ) : (
           <button type="button" className={styles.addExBtn} onClick={() => setCreating(true)}><Plus size={14} /> Criar exercício personalizado</button>

@@ -8,6 +8,7 @@ import { fmtClock, fmtNum, muscleLabel, volumeOf, workoutSeconds } from '../../f
 import { useExerciseLink, useExerciseMedia } from '../../features/exercisedb/queries'
 import ExercisePicker from './ExercisePicker'
 import ExerciseDetail from './ExerciseDetail'
+import { CustomExercisePhoto } from './ExerciseImage'
 import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
 import styles from './workouts.module.css'
 
@@ -383,6 +384,7 @@ export default function ActiveWorkoutPage() {
                     )
                   })}
                   <button type="button" className={styles.addSet} disabled={busy} onClick={() => addSet(g)}><Plus size={14} /> Adicionar série</button>
+                  {g.exercise.photo_path && <CustomExercisePhoto path={g.exercise.photo_path} name={g.exercise.name} />}
                   <ActiveGuidance exercise={g.exercise} onDetails={() => setDetail(g.exercise)} />
                 </>
               )}

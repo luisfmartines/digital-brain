@@ -131,3 +131,17 @@ test('fitness terminology and saved English exercise names are localized', () =>
   assert.equal(translateExercise({ name: 'barbell bench press', equipment: 'barbell' }).equipment, 'Barra')
   assert.equal(suggestQuery('Supino reto com barra'), 'barbell bench press')
 })
+
+test('catalogue uses Brazilian gym names and can find their English equivalents', () => {
+  assert.equal(translateName('Seated Straight Bench Press'), 'Supino reto sentado na máquina')
+  assert.equal(translateName('Machine Incline Chest Press'), 'Supino inclinado na máquina')
+  assert.equal(translateName('Machine Leg Extension'), 'Cadeira extensora')
+  assert.equal(translateName('Machine Lying Leg Curl'), 'Mesa flexora')
+  assert.equal(translateName('cable pushdown (straight arm)'), 'Pullover na polia com braços estendidos')
+  assert.equal(translateName('cable pushdown (with rope attachment)'), 'Tríceps corda na polia')
+  assert.equal(translateName('walking lunge'), 'Passada')
+  assert.equal(suggestQuery('Supino reto sentado na maquina'), 'seated straight bench press')
+  assert.equal(suggestQuery('Cadeira extensora'), 'machine leg extension')
+  assert.equal(translateExercise({ name: 'Prensa torácica de máquina', id: 'user:catalog-id', user_id: 'user' }).name, 'Supino reto na máquina')
+  assert.equal(translateExercise({ name: 'Machine Leg Extension', id: 'custom-id', user_id: 'user' }).name, 'Machine Leg Extension')
+})

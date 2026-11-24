@@ -9,7 +9,7 @@ import {
 } from '../../features/workouts/exerciseStats'
 import { fmtNum, muscleLabel } from '../../features/workouts/utils'
 import styles from './exerciseDetail.module.css'
-import ExerciseImage from './ExerciseImage'
+import ExerciseImage, { CustomExercisePhoto } from './ExerciseImage'
 import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
 import type { ExerciseMedia } from '../../features/exercisedb/types'
 import { translateText } from '../../features/exercisedb/translate'
@@ -228,6 +228,7 @@ export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia,
         <div className={styles.body}>
           {tab === 'summary' && (
             <>
+              {exercise.photo_path && <CustomExercisePhoto path={exercise.photo_path} name={exercise.name} />}
               {externalId ? (
                 mediaQ.isLoading ? <div className={styles.demoSkeleton} /> : media && <ExerciseDemo video={media.videoUrl} image={media.imageUrl} name={exercise.name} externalId={externalId} />
               ) : linkQ.isLoading ? <div className={styles.demoSkeleton} /> : linkQ.isError ? (

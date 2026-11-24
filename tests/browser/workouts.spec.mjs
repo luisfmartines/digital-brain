@@ -198,3 +198,72 @@ test('friends and ranking open a profile with copyable routines even without wor
   await page.getByRole('link', { name: /Marina/ }).click()
   await expect(page).toHaveURL(new RegExp(`/profiles/${friend.id}$`))
 })
+
+test('exercise creation saves an optional photo and displays it after reopening the exercise', async ({ page }) => {
+  let created
+  const order = []
+  await page.route('**/rest/v1/exercises?*', async (route) => {
+    if (route.request().method() === 'POST') {
+      order.push('create')
+      created = route.request().postDataJSON()
+      return route.fulfill({ json: created })
+    }
+    await route.fulfill({ json: created ? [exercise, created] : [exercise] })
+  })
+  await page.route('**/storage/v1/object/exercise-photos/**', (route) => {
+    order.push('upload')
+    return route.fulfill({ json: { Key: new URL(route.request().url()).pathname } })
+  })
+  await page.route('**/storage/v1/object/sign/exercise-photos/**', (route) => {
+    if (route.request().method() === 'GET') return route.fulfill({ contentType: 'image/gif', body: gif })
+    return route.fulfill({ json: { signedURL: '/object/sign/exercise-photos/' + created.photo_path + '?token=test' } })
+  })
+
+  await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  await page.getByRole('button', { name: 'Criar exercício personalizado' }).click()
+  await page.getByPlaceholder('Nome do exercício').fill('Minha remada')
+  await page.getByLabel('Foto do exercício (opcional)').setInputFiles({ name: 'remada.gif', mimeType: 'image/gif', buffer: gif })
+  await page.getByRole('button', { name: 'Criar e adicionar' }).click()
+  await expect(page.getByText('Minha remada', { exact: true })).toBeVisible()
+  expect(created.photo_path).toBe(userId + '/' + created.id + '.jpg')
+  expect(order).toEqual(['upload', 'create'])
+
+  await page.goto('/workouts/exercises/' + created.id)
+  const photo = page.getByRole('img', { name: 'Foto de Minha remada' })
+  await expect(photo).toBeVisible()
+  await expect(photo).toHaveJSProperty('naturalWidth', 1)
+})
+
+test('workout summary offers camera and gallery and saves the selected photo', async ({ page }) => {
+  let photoUrl = null
+  await page.route('**/rest/v1/workouts?*', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      photoUrl = route.request().postDataJSON().photo_url
+      return route.fulfill({ status: 204 })
+    }
+    await route.fulfill({ json: {
+      id: 'photo-workout', name: 'Treino A', routine_id: null, started_at: '2026-11-24T12:00:00Z',
+      ended_at: '2026-11-24T12:20:00Z', paused_at: null, paused_seconds: 0, photo_url: photoUrl, workout_sets: [],
+    } })
+  })
+  await page.route('**/storage/v1/object/post-media/**', (route) => route.fulfill({ json: { Key: 'post-media/workout.jpg' } }))
+  await page.route('**/storage/v1/object/public/post-media/**', (route) => route.fulfill({ contentType: 'image/gif', body: gif }))
+  await page.goto('/workouts/summary/photo-workout')
+
+  await page.getByRole('button', { name: /Adicionar foto/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Adicionar foto do treino' })
+  const camera = page.waitForEvent('filechooser')
+  await dialog.getByRole('button', { name: 'Usar câmera' }).click()
+  expect(await (await camera).element().getAttribute('capture')).toBe('environment')
+  await expect(dialog).toBeHidden()
+
+  await page.getByRole('button', { name: /Adicionar foto/ }).click()
+  const gallery = page.waitForEvent('filechooser')
+  await dialog.getByRole('button', { name: 'Escolher da galeria' }).click()
+  const chooser = await gallery
+  expect(await chooser.element().getAttribute('capture')).toBeNull()
+  await chooser.setFiles({ name: 'treino.gif', mimeType: 'image/gif', buffer: gif })
+  const photo = page.getByRole('img', { name: 'Treino', exact: true })
+  await expect(photo).toBeVisible()
+  await expect(photo).toHaveJSProperty('naturalWidth', 1)
+})

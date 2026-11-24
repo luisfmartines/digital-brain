@@ -321,7 +321,7 @@
   margin-inline: auto;
 }
 .activeGuidance summary { cursor: pointer; padding: 6px 0; font-weight: 700; }
-.finishDialog {
+.finishDialog, .photoSourceDialog {
   width: min(440px, calc(100vw - 32px));
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -329,6 +329,14 @@
   background: var(--color-surface);
   color: var(--color-text);
 }
-.finishDialog[open] { display: grid; gap: 12px; }
-.finishDialog h2, .finishDialog p { margin: 0; }
-.finishDialog::backdrop { background: rgb(0 0 0 / 65%); }
+.finishDialog[open], .photoSourceDialog[open] { display: grid; gap: 12px; }
+.finishDialog h2, .finishDialog p, .photoSourceDialog h2 { margin: 0; }
+.finishDialog::backdrop, .photoSourceDialog::backdrop { background: rgb(0 0 0 / 65%); }
+
+.exercisePhotoField {
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+  min-width: 0;
+}
+.exercisePhotoField input { max-width: 100%; font: inherit; }

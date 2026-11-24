@@ -1,4 +1,5 @@
 import translations from './locales/translation-cache.json' with { type: 'json' }
+import { exerciseNames } from './locales/exercise-names.ts'
 
 const dictionary: Record<string, string> = Object.fromEntries(
   Object.entries(translations).map(([source, translated]) => [source.toLowerCase(), translated]),
@@ -62,6 +63,10 @@ const overrides: Record<string, string> = {
 }
 
 export function translateName(name: string): string {
+  return exerciseNames[name.trim().toLowerCase()] ?? translateCatalogName(name)
+}
+
+function translateCatalogName(name: string): string {
   if (!dictionary[name.toLowerCase()] && !overrides[name.toLowerCase()]) return name
   let result = translateText(name)
   const source = name.toLowerCase()
@@ -97,12 +102,36 @@ export function translateText(text: string): string {
     .replace(/\bdissimulado\b/gi, 'com pegada supinada')
 }
 
-export function translateExercise<T extends { name: string; equipment?: string | null }>(exercise: T): T {
-  return { ...exercise, name: translateName(exercise.name), equipment: exercise.equipment?.split(', ').map(translateText).join(', ') ?? exercise.equipment }
+let previousNames: Map<string, string> | undefined
+
+function legacyExerciseNames() {
+  if (previousNames) return previousNames
+  const candidates = new Map<string, string | null>()
+  for (const [source, name] of Object.entries(exerciseNames)) {
+    const previous = translateCatalogName(source).toLowerCase()
+    candidates.set(previous, candidates.has(previous) && candidates.get(previous) !== name ? null : name)
+  }
+  // Some literal translations were shared by different movements. Keep ambiguous saved names.
+  for (const source of Object.keys(dictionary)) {
+    if (source in exerciseNames) continue
+    const previous = translateCatalogName(source).toLowerCase()
+    if (candidates.has(previous)) candidates.set(previous, null)
+  }
+  previousNames = new Map([...candidates].filter((entry): entry is [string, string] => entry[1] !== null))
+  return previousNames
+}
+
+export function translateExercise<T extends { name: string; equipment?: string | null; id?: string; user_id?: string | null }>(exercise: T): T {
+  const custom = exercise.user_id && exercise.id && !exercise.id.includes(':')
+  if (custom) return exercise
+  const name = exercise.id?.includes(':') ? legacyExerciseNames().get(exercise.name.toLowerCase()) ?? exercise.name : exercise.name
+  return { ...exercise, name: translateName(name), equipment: exercise.equipment?.split(', ').map(translateText).join(', ') ?? exercise.equipment }
 }
 
 export function originalSearchTerm(term: string): string | undefined {
   const folded = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const query = folded(term.trim())
-  return Object.keys(dictionary).find((source) => folded(translateName(source)) === query)
+  if (/^supino (reto )?sentado( na maquina| \(maquina\))?$/.test(query)) return 'seated straight bench press'
+  const reviewed = Object.keys(exerciseNames).find((source) => folded(exerciseNames[source]) === query)
+  return reviewed ?? Object.keys(dictionary).find((source) => folded(translateName(source)) === query)
 }

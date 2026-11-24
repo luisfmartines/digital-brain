@@ -1,6 +1,6 @@
-import { useRef } from 'react'
+import { useRef, type ChangeEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BookOpen, Camera, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
+import { ArrowLeft, BookOpen, Camera, Image, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
 import { useSession, useSharePost, useSummaryExtras, useUploadPhoto } from '../../features/workouts/queries'
@@ -15,7 +15,20 @@ export default function WorkoutSummaryPage() {
   const extras = useSummaryExtras(session)
   const upload = useUploadPhoto(id)
   const share = useSharePost()
-  const fileRef = useRef<HTMLInputElement>(null)
+  const photoDialog = useRef<HTMLDialogElement>(null)
+  const cameraInput = useRef<HTMLInputElement>(null)
+  const galleryInput = useRef<HTMLInputElement>(null)
+
+  function choosePhoto(input: HTMLInputElement | null) {
+    photoDialog.current?.close()
+    input?.click()
+  }
+
+  function uploadSelectedPhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    if (file) upload.mutate(file)
+    event.currentTarget.value = ''
+  }
 
   if (isLoading) return <p className={styles.loading}>Carregando…</p>
   if (!session) return <Navigate to="/workouts" replace />
@@ -134,12 +147,19 @@ export default function WorkoutSummaryPage() {
                 <span>Hoje, {end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             )}
-            <button type="button" className={styles.addPhoto} onClick={() => fileRef.current?.click()} disabled={upload.isPending}>
+            <button type="button" className={styles.addPhoto} onClick={() => photoDialog.current?.showModal()} disabled={upload.isPending}>
               <Camera size={20} />
               <b>{upload.isPending ? 'Enviando…' : session.photo_url ? 'Substituir foto' : '+ Adicionar foto'}</b>
               <small>Envie uma foto do treino</small>
             </button>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = '' }} />
+            <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={uploadSelectedPhoto} />
+            <input ref={galleryInput} type="file" accept="image/*" hidden onChange={uploadSelectedPhoto} />
+            <dialog ref={photoDialog} className={styles.photoSourceDialog} aria-labelledby="photo-source-title">
+              <h2 id="photo-source-title">Adicionar foto do treino</h2>
+              <button type="button" className={styles.addExBtn} onClick={() => choosePhoto(cameraInput.current)}><Camera size={18} /> Usar câmera</button>
+              <button type="button" className={styles.addExBtn} onClick={() => choosePhoto(galleryInput.current)}><Image size={18} /> Escolher da galeria</button>
+              <button type="button" className={styles.addSet} onClick={() => photoDialog.current?.close()}>Cancelar</button>
+            </dialog>
           </div>
           {upload.error && <p className={styles.error}>{upload.error.message}</p>}
         </section>
@@ -147,7 +167,7 @@ export default function WorkoutSummaryPage() {
         <button
           type="button"
           className={styles.primary}
-          disabled={!!extras.data?.postId || share.isPending}
+          disabled={!!extras.data?.postId || share.isPending || upload.isPending}
           onClick={() => share.mutate({ workoutId: id, photoUrl: session.photo_url }, { onSuccess: () => navigate('/?tab=feed', { replace: true }) })}
         >
           <Share2 size={15} /> {extras.data?.postId ? 'Compartilhado no feed' : 'Compartilhar no feed'}

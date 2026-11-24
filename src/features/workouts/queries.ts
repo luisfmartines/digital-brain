@@ -6,15 +6,16 @@ import type { LogWorkout } from './stats'
 import type { HistSession, HistSet } from './exerciseStats'
 import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
 import { translateExercise } from '../exercisedb/translate'
+import { removeExercisePhoto, uploadExercisePhoto } from '../exercisedb/exercisePhoto'
 
-export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null }
+export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null; photo_path?: string | null }
 export interface RoutineExercise { id: string; position: number; target_sets: number; target_reps: number | null; reps_min: number | null; reps_max: number | null; rest_seconds: number; exercise: Exercise }
 export interface Routine { id: string; name: string; focus: string | null; notes: string | null; tags: string[]; created_at: string; routine_exercises: RoutineExercise[] }
 export interface SessionSet extends SetLike { id: string; exercise_id: string; set_number: number; exercise_order: number; exercise: Exercise }
 export interface Session extends Timing { id: string; name: string; routine_id: string | null; photo_url: string | null; workout_sets: SessionSet[] }
 export interface PrevSet { exercise_id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean }
 
-const EX = 'id, name, muscle_group, equipment, user_id'
+const EX = 'id, name, muscle_group, equipment, user_id, photo_path'
 const ROUTINE = `id, name, focus, notes, tags, created_at, routine_exercises(id, position, target_sets, target_reps, reps_min, reps_max, rest_seconds, exercise:exercises(${EX}))`
 const sortRoutine = (r: Routine): Routine => ({
   ...r,
@@ -136,9 +137,22 @@ export function useCreateExercise() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (v: { name: string; muscle_group: string }) => {
-      const { data, error } = await supabase.from('exercises').insert({ ...v, user_id: user!.id }).select(EX).single()
-      if (error) throw error
+    mutationFn: async ({ photo, ...fields }: { name: string; muscle_group: string; photo: File | null }) => {
+      if (!user) throw new Error('Entre novamente para criar o exercício.')
+      const id = crypto.randomUUID()
+      const photoPath = photo ? user.id + '/' + id + '.jpg' : null
+      if (photo && photoPath) await uploadExercisePhoto(photoPath, photo)
+
+      const { data, error } = await supabase.from('exercises')
+        .insert({ ...fields, id, user_id: user.id, photo_path: photoPath }).select(EX).single()
+      if (error) {
+        if (photoPath) {
+          const { data: saved, error: readError } = await supabase.from('exercises').select(EX).eq('id', id).maybeSingle()
+          if (saved) return saved as Exercise
+          if (!readError) await removeExercisePhoto(photoPath).catch(() => undefined)
+        }
+        throw new Error('Não foi possível criar o exercício. Tente novamente.')
+      }
       return data as Exercise
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workouts', 'exercises'] }),
