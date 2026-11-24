@@ -96,3 +96,105 @@ test('every exercise has details; preview shows Portuguese instructions without 
   await expect(page.getByText('Supino reto com barra', { exact: true })).toBeVisible()
   expect(writes.some((request) => request.url().includes('/exercises'))).toBe(true)
 })
+
+const replacement = { ...exercise, id: 'replacement', name: 'Supino inclinado salvo' }
+
+for (const update of [false, true]) {
+  test(`active workout shows guidance, supports swipe and replacement, and sends routine choice ${update}`, async ({ page }) => {
+    let sets = [1, 2, 3].map((n) => ({
+      id: `set-${n}`, exercise_id: exercise.id, exercise_order: 0, set_number: n,
+      weight_kg: 25, reps: 12, completed: false, is_warmup: false, exercise,
+    }))
+    let endedAt = null
+    await page.route('**/rest/v1/exercises?*', (route) => route.fulfill({ json: [exercise, replacement] }))
+    await page.route('**/rest/v1/workouts?*', async (route) => {
+      const url = new URL(route.request().url())
+      const active = url.searchParams.get('id') === 'eq.active-test'
+      await route.fulfill({ json: active ? {
+        id: 'active-test', name: routine.name, routine_id: routine.id, started_at: new Date(Date.now() - 70000).toISOString(),
+        ended_at: endedAt, paused_at: null, paused_seconds: 0, photo_url: null, workout_sets: sets,
+      } : [] })
+    })
+    await page.route('**/rest/v1/workout_sets?*', async (route) => {
+      const request = route.request()
+      const id = new URL(request.url()).searchParams.get('id')?.slice(3)
+      if (request.method() === 'DELETE') sets = sets.filter((set) => set.id !== id)
+      if (request.method() === 'PATCH') {
+        const patch = request.postDataJSON()
+        sets = sets.map((set) => !id || set.id === id ? {
+          ...set, ...patch, exercise: patch.exercise_id === replacement.id ? replacement : set.exercise,
+        } : set)
+      }
+      await route.fulfill({ status: 204 })
+    })
+    await page.route('**/rest/v1/rpc/finish_workout_session', async (route) => {
+      endedAt = new Date().toISOString()
+      await route.fulfill({ status: 204 })
+    })
+    await page.goto('/workouts/active/active-test')
+    await expect(page.getByRole('img', { name: 'Demonstração: Supino salvo', exact: true })).toBeVisible()
+    await page.getByText('Instruções de execução', { exact: true }).click()
+    await expect(page.getByText('Contraia o tronco e alinhe os punhos com os antebraços.')).toBeVisible()
+
+    const firstRow = page.getByRole('button', { name: 'Remover série 1' }).locator('..')
+    await firstRow.scrollIntoViewIfNeeded()
+    const row = await firstRow.boundingBox()
+    const touch = await page.context().newCDPSession(page)
+    const y = Math.round(row.y + row.height / 2)
+    const x = Math.round(row.x + row.width * 0.65)
+    await touch.send('Emulation.setTouchEmulationEnabled', { enabled: true })
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 36, y }] })
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 100, y }] })
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect(page.getByRole('button', { name: 'Remover série 1' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Opções do exercício' }).click()
+    await page.getByRole('button', { name: 'Substituir exercício' }).click()
+    await page.getByRole('button', { name: /Supino inclinado salvo/ }).filter({ hasText: 'Supino inclinado salvo' }).click()
+    await expect(page.getByRole('img', { name: 'Demonstração: Supino inclinado salvo', exact: true })).toBeVisible()
+    await expect(page.getByLabel('Peso em kg').first()).toHaveValue('')
+    await page.getByRole('button', { name: 'Marcar série como concluída' }).first().click()
+    await page.getByRole('button', { name: 'Finalizar' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Atualizar a rotina?' })
+    await expect(dialog).toBeVisible()
+    const finishing = page.waitForRequest('**/rest/v1/rpc/finish_workout_session')
+    await dialog.getByRole('button', { name: update ? 'Atualizar rotina' : 'Manter rotina original' }).click()
+    expect((await finishing).postDataJSON()).toEqual({ session_id: 'active-test', update_routine: update })
+    await expect(page).toHaveURL('/workouts/summary/active-test')
+  })
+}
+
+test('friends and ranking open a profile with copyable routines even without workouts', async ({ page }) => {
+  const friend = { id: '22222222-2222-4222-8222-222222222222', username: 'marina', display_name: 'Marina', avatar_url: null }
+  await page.route('**/rest/v1/follows?*', (route) => {
+    const outgoing = new URL(route.request().url()).searchParams.has('follower_id')
+    return route.fulfill({ json: outgoing ? [{ following_id: friend.id }] : [] })
+  })
+  await page.route('**/rest/v1/profiles?*', (route) => {
+    const ids = new URL(route.request().url()).searchParams.get('id')
+    return route.fulfill({ json: ids?.startsWith('in.') ? [friend] :
+      ids === `eq.${userId}` ? { id: userId, onboarding_completed: true, enabled_modules: ['workouts'] } : [] })
+  })
+  await page.route('**/rest/v1/rpc/leaderboard_week', (route) => route.fulfill({
+    json: [{ ...friend, user_id: friend.id, volume_kg: 0, minutes: 0, sets: 0, workouts: 0, xp: 0, last_workout: null }],
+  }))
+  await page.route('**/functions/v1/public-profile', (route) => route.fulfill({ json:
+    route.request().postDataJSON().action === 'copy' ? { id: 'new-routine' } : {
+      ...friend, name: friend.display_name, avatar: null, sharing: true, completion: null,
+      routines: [{ id: routine.id, name: 'Rotina sem treinos', focus: null, exercises: [{ name: exercise.name, sets: 3, reps: 12, rest: 90 }] }],
+    },
+  }))
+
+  await page.goto('/friends/add')
+  await expect(page.getByRole('heading', { name: 'Amigos adicionados' })).toBeVisible()
+  await page.getByRole('link', { name: 'Ver perfil de Marina' }).click()
+  await expect(page.getByRole('heading', { name: 'Rotina sem treinos' })).toBeVisible()
+  await page.getByRole('button', { name: 'Copiar rotina' }).click()
+  await expect(page.getByRole('link', { name: 'Abrir rotina copiada' })).toHaveAttribute('href', '/workouts/routines/new-routine/edit')
+
+  await page.goto('/workouts?tab=ranking')
+  await expect(page.getByRole('tab', { name: 'Feed dos amigos' })).toHaveCount(0)
+  await page.getByRole('link', { name: /Marina/ }).click()
+  await expect(page).toHaveURL(new RegExp(`/profiles/${friend.id}$`))
+})

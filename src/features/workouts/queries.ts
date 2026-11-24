@@ -258,6 +258,7 @@ export function usePrevious(exerciseIds: string[]) {
 export function useSessionActions(id: string) {
   const qc = useQueryClient()
   const key = sessionKey(id)
+  const scope = { id: `workout-session:${id}` }
   const refresh = () => qc.invalidateQueries({ queryKey: key })
   const patchSet = (setId: string, patch: Partial<SessionSet>) =>
     qc.setQueryData<Session | null>(key, (old) =>
@@ -265,6 +266,7 @@ export function useSessionActions(id: string) {
     )
 
   const updateSet = useMutation({
+    scope,
     mutationFn: async ({ setId, patch }: { setId: string; patch: Pick<Partial<SessionSet>, 'weight_kg' | 'reps' | 'completed' | 'is_warmup'> }) => {
       const { error } = await supabase.from('workout_sets').update(patch).eq('id', setId)
       if (error) throw error
@@ -274,6 +276,7 @@ export function useSessionActions(id: string) {
   })
 
   const addSet = useMutation({
+    scope,
     mutationFn: async (v: { exerciseId: string; order: number; setNumber: number; weight: number | null; reps: number | null }) => {
       const { error } = await supabase.from('workout_sets').insert({
         workout_id: id, exercise_id: v.exerciseId, exercise_order: v.order, set_number: v.setNumber, weight_kg: v.weight, reps: v.reps,
@@ -284,6 +287,7 @@ export function useSessionActions(id: string) {
   })
 
   const removeSet = useMutation({
+    scope,
     mutationFn: async (setId: string) => {
       const { error } = await supabase.from('workout_sets').delete().eq('id', setId)
       if (error) throw error
@@ -292,6 +296,7 @@ export function useSessionActions(id: string) {
   })
 
   const addExercise = useMutation({
+    scope,
     mutationFn: async ({ exerciseId, order }: { exerciseId: string; order: number }) => {
       const rows = [1, 2, 3].map((n) => ({ workout_id: id, exercise_id: exerciseId, exercise_order: order, set_number: n }))
       const { error } = await supabase.from('workout_sets').insert(rows)
@@ -300,15 +305,28 @@ export function useSessionActions(id: string) {
     onSuccess: refresh,
   })
 
+  const replaceExercise = useMutation({
+    scope,
+    mutationFn: async ({ exerciseId, replacementId, order, reps }: { exerciseId: string; replacementId: string; order: number; reps: number | null }) => {
+      const { error } = await supabase.from('workout_sets')
+        .update({ exercise_id: replacementId, weight_kg: null, reps, completed: false })
+        .eq('workout_id', id).eq('exercise_order', order).eq('exercise_id', exerciseId)
+      if (error) throw error
+    },
+    onSuccess: refresh,
+  })
+
   const removeExercise = useMutation({
-    mutationFn: async (exerciseId: string) => {
-      const { error } = await supabase.from('workout_sets').delete().eq('workout_id', id).eq('exercise_id', exerciseId)
+    scope,
+    mutationFn: async ({ exerciseId, order }: { exerciseId: string; order: number }) => {
+      const { error } = await supabase.from('workout_sets').delete().eq('workout_id', id).eq('exercise_order', order).eq('exercise_id', exerciseId)
       if (error) throw error
     },
     onSuccess: refresh,
   })
 
   const pause = useMutation({
+    scope,
     mutationFn: async (w: Session) => {
       const patch = w.paused_at
         ? { paused_seconds: w.paused_seconds + Math.floor((Date.now() - new Date(w.paused_at).getTime()) / 1000), paused_at: null }
@@ -320,20 +338,21 @@ export function useSessionActions(id: string) {
   })
 
   const finish = useMutation({
-    mutationFn: async (w: Session) => {
-      const extra = w.paused_at ? Math.floor((Date.now() - new Date(w.paused_at).getTime()) / 1000) : 0
-      const { error } = await supabase
-        .from('workouts').update({ ended_at: new Date().toISOString(), paused_at: null, paused_seconds: w.paused_seconds + extra }).eq('id', id)
+    scope,
+    mutationFn: async (updateRoutine: boolean) => {
+      const { error } = await supabase.rpc('finish_workout_session', { session_id: id, update_routine: updateRoutine })
       if (error) throw error
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workouts'] })
       qc.invalidateQueries({ queryKey: ['profile'] })
       qc.invalidateQueries({ queryKey: ['home'] })
+      void qc.invalidateQueries({ queryKey: ['social'] })
     },
   })
 
   const discard = useMutation({
+    scope,
     mutationFn: async () => {
       const { error } = await supabase.from('workouts').update({ deleted_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
@@ -341,7 +360,7 @@ export function useSessionActions(id: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workouts'] }),
   })
 
-  return { updateSet, addSet, removeSet, addExercise, removeExercise, pause, finish, discard }
+  return { updateSet, addSet, removeSet, addExercise, replaceExercise, removeExercise, pause, finish, discard }
 }
 
 /* ---------- Resumo do treino ---------- */

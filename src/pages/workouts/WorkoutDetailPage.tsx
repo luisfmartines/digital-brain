@@ -1,4 +1,4 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useWorkoutDetail, type WorkoutDetailSet } from '../../features/social/queries'
@@ -39,7 +39,7 @@ export default function WorkoutDetailPage() {
       <div className={styles.frame}>
         <header className={styles.detHead}>
           <button type="button" className={styles.back} onClick={back} aria-label="Voltar"><ArrowLeft size={20} /></button>
-          <Avatar url={w.author?.avatar_url} name={w.author?.display_name} size={34} />
+          {w.author ? <Link to={`/profiles/${w.author.id}`} aria-label={`Ver perfil de ${w.author.display_name ?? w.author.username ?? 'Atleta'}`}><Avatar url={w.author.avatar_url} name={w.author.display_name} size={34} /></Link> : <Avatar size={34} />}
           <div className={styles.detWho}>
             <strong>{w.name}</strong>
             <small>{w.author?.display_name ?? 'Atleta'} • {date}</small>

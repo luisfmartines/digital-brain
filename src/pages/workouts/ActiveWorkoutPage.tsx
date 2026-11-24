@@ -1,14 +1,57 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
 import { usePrevious, useRoutine, useSession, useSessionActions, type Exercise, type SessionSet } from '../../features/workouts/queries'
 import { fmtClock, fmtNum, muscleLabel, volumeOf, workoutSeconds } from '../../features/workouts/utils'
+import { useExerciseLink, useExerciseMedia } from '../../features/exercisedb/queries'
 import ExercisePicker from './ExercisePicker'
+import ExerciseDetail from './ExerciseDetail'
+import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
 import styles from './workouts.module.css'
 
 interface Group { exercise: Exercise; order: number; sets: SessionSet[] }
+const groupKey = (g: Group) => `${g.order}:${g.exercise.id}`
+
+function ActiveGuidance({ exercise, onDetails }: { exercise: Exercise; onDetails: () => void }) {
+  const link = useExerciseLink(exercise.id)
+  const media = useExerciseMedia(link.data)
+  if (link.isLoading || media.isLoading) return <p className={styles.empty}>Carregando demonstração…</p>
+  if (!link.data || !media.data) return (
+    <button type="button" className={styles.addSet} onClick={onDetails}>
+      {link.isError || media.isError ? 'Abrir detalhes da demonstração' : 'Ver detalhes e adicionar demonstração'}
+    </button>
+  )
+  return (
+    <div className={styles.activeGuidance}>
+      <ExerciseDemo video={media.data.videoUrl} image={media.data.imageUrl} name={exercise.name} externalId={link.data} />
+      <details>
+        <summary>Instruções de execução</summary>
+        <ExerciseInstructions media={media.data} linked loading={false} failed={false} />
+      </details>
+    </div>
+  )
+}
+
+function FinishOptions({ name, busy, error, onClose, onFinish }: {
+  name: string; busy: boolean; error: boolean; onClose: () => void; onFinish: (update: boolean) => void
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => { dialog.current?.showModal() }, [])
+
+  return (
+    <dialog ref={dialog} className={styles.finishDialog} aria-labelledby="finish-title"
+      onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
+      <h2 id="finish-title">Atualizar a rotina?</h2>
+      <p>Seu treino será registrado com as alterações. Você quer aplicá-las à rotina {name} para os próximos treinos?</p>
+      {error && <p role="alert">Não foi possível finalizar o treino. Tente novamente.</p>}
+      <button type="button" className={styles.primary} disabled={busy} onClick={() => onFinish(true)}>Atualizar rotina</button>
+      <button type="button" className={styles.addExBtn} disabled={busy} onClick={() => onFinish(false)}>Manter rotina original</button>
+      <button type="button" className={styles.addSet} disabled={busy} onClick={onClose}>Voltar ao treino</button>
+    </dialog>
+  )
+}
 
 function beep() {
   try {
@@ -36,11 +79,47 @@ interface RowProps {
   onCommit: (patch: { weight_kg: number | null; reps: number | null }) => void
   onToggle: (weight: number | null, reps: number | null) => void
   onCycle: () => void
+  onRemove: () => void
+  busy: boolean
 }
 
-function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle }: RowProps) {
+function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle, onRemove, busy }: RowProps) {
   const [w, setW] = useState(set.weight_kg === null ? '' : String(set.weight_kg))
   const [r, setR] = useState(set.reps === null ? '' : String(set.reps))
+  const gesture = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null)
+  const suppressClick = useRef(false)
+  const [offset, setOffset] = useState(0)
+
+  function start(event: PointerEvent<HTMLDivElement>) {
+    suppressClick.current = false
+    if (busy || !event.isPrimary || event.button !== 0) return
+    if (event.pointerType === 'mouse' && event.target instanceof Element && event.target.closest('input, button')) return
+    gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false }
+  }
+
+  function move(event: PointerEvent<HTMLDivElement>) {
+    const tracking = gesture.current
+    if (!tracking || tracking.id !== event.pointerId) return
+    const dx = event.clientX - tracking.x
+    const dy = event.clientY - tracking.y
+    if (!tracking.dragging) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { gesture.current = null; return }
+      if (dx > -10 || -dx <= Math.abs(dy)) return
+      tracking.dragging = true
+      suppressClick.current = true
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
+    setOffset(Math.max(-96, Math.min(0, dx)))
+  }
+
+  function end(event: PointerEvent<HTMLDivElement>) {
+    const tracking = gesture.current
+    if (!tracking || tracking.id !== event.pointerId) return
+    gesture.current = null
+    setOffset(0)
+    if (event.type === 'pointerup' && tracking.dragging && event.clientX - tracking.x <= -64) onRemove()
+  }
+
   const num = (v: string) => {
     const n = Number(v.replace(',', '.'))
     return v.trim() === '' || !Number.isFinite(n) ? null : n
@@ -52,12 +131,25 @@ function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle }: 
   }
 
   return (
-    <div className={`${styles.setRow} ${current ? styles.setCurrent : ''} ${set.completed ? styles.setDone : ''}`}>
-      <button type="button" className={set.is_warmup ? styles.setNumW : styles.setNum} onClick={onCycle} aria-label="Toggle warm-up">{set.is_warmup ? 'W' : label}</button>
-      <span className={styles.prev}>{previous ? `${previous.weight_kg ?? 0}kg × ${previous.reps ?? 0}` : '—'}</span>
-      <input className={styles.numInput} inputMode="decimal" value={w} onChange={(e) => setW(e.target.value)} onBlur={commit} aria-label="Peso em kg" />
-      <input className={styles.numInput} inputMode="numeric" value={r} onChange={(e) => setR(e.target.value)} onBlur={commit} aria-label="Repetições" />
-      <button type="button" className={set.completed ? styles.checkOn : styles.check} onClick={() => onToggle(num(w), num(r))} aria-label="Mark set as done"><Check size={14} /></button>
+    <div className={styles.swipeSet} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}
+      onLostPointerCapture={(event) => { if (event.target === event.currentTarget) end(event) }}
+      onClickCapture={(event) => {
+        if (suppressClick.current && event.detail > 0) {
+          event.preventDefault()
+          event.stopPropagation()
+          suppressClick.current = false
+        }
+      }}>
+      <span hidden={offset === 0} className={styles.swipeDelete} aria-hidden="true"><Trash2 size={16} /></span>
+      <div style={{ transform: offset ? `translateX(${offset}px)` : undefined }}
+        className={`${styles.setRow} ${current ? styles.setCurrent : ''} ${set.completed ? styles.setDone : ''}`}>
+        <button type="button" className={set.is_warmup ? styles.setNumW : styles.setNum} onClick={onCycle} aria-label="Alternar aquecimento">{set.is_warmup ? 'W' : label}</button>
+        <span className={styles.prev}>{previous ? `${previous.weight_kg ?? 0}kg × ${previous.reps ?? 0}` : '—'}</span>
+        <input className={styles.numInput} inputMode="decimal" value={w} onChange={(e) => setW(e.target.value)} onBlur={commit} aria-label="Peso em kg" />
+        <input className={styles.numInput} inputMode="numeric" value={r} onChange={(e) => setR(e.target.value)} onBlur={commit} aria-label="Repetições" />
+        <button type="button" className={set.completed ? styles.checkOn : styles.check} onClick={() => onToggle(num(w), num(r))} aria-label={set.completed ? 'Desmarcar série concluída' : 'Marcar série como concluída'}><Check size={14} /></button>
+        <button type="button" className={styles.removeSet} aria-label={`Remover série ${set.set_number}`} disabled={busy} onClick={onRemove}><Trash2 size={13} /></button>
+      </div>
     </div>
   )
 }
@@ -73,7 +165,10 @@ export default function ActiveWorkoutPage() {
   const [now, setNow] = useState(() => Date.now())
   const [rest, setRest] = useState<{ endsAt: number; label: string } | null>(null)
   const [open, setOpen] = useState<Record<string, boolean>>({})
-  const [picker, setPicker] = useState(false)
+  const [picker, setPicker] = useState<Group | 'add' | null>(null)
+  const [pickerError, setPickerError] = useState('')
+  const [detail, setDetail] = useState<Exercise | null>(null)
+  const [askingToUpdate, setAskingToUpdate] = useState(false)
   const [menuEx, setMenuEx] = useState<string | null>(null)
   const [vibrate, setVibrate] = useState(true)
   const [sound, setSound] = useState(true)
@@ -86,13 +181,16 @@ export default function ActiveWorkoutPage() {
     return () => clearInterval(t)
   }, [])
 
+  const restEndsAt = rest?.endsAt
   useEffect(() => {
-    if (rest && now >= rest.endsAt) {
+    if (restEndsAt == null) return
+    const timer = window.setTimeout(() => {
       if (vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200])
       if (sound) beep()
       setRest(null)
-    }
-  }, [now, rest, vibrate, sound])
+    }, Math.max(0, restEndsAt - Date.now()))
+    return () => window.clearTimeout(timer)
+  }, [restEndsAt, vibrate, sound])
 
   if (isLoading) return <p className={styles.loading}>Carregando…</p>
   if (!session) return <Navigate to="/workouts" replace />
@@ -101,7 +199,7 @@ export default function ActiveWorkoutPage() {
   const sets = [...session.workout_sets].sort((a, b) => a.exercise_order - b.exercise_order || a.set_number - b.set_number)
   const groups: Group[] = []
   for (const s of sets) {
-    let g = groups.find((x) => x.exercise.id === s.exercise_id)
+    let g = groups.find((x) => x.order === s.exercise_order && x.exercise.id === s.exercise_id)
     if (!g) {
       g = { exercise: s.exercise, order: s.exercise_order, sets: [] }
       groups.push(g)
@@ -112,8 +210,16 @@ export default function ActiveWorkoutPage() {
   const done = sets.filter((s) => s.completed)
   const currentGroup = groups.find((g) => g.sets.some((s) => !s.completed))
   const currentSetId = currentGroup?.sets.find((s) => !s.completed)?.id
-  const restFor = (exId: string) => routine.data?.routine_exercises.find((r) => r.exercise.id === exId)?.rest_seconds ?? 90
-  const targetFor = (exId: string) => routine.data?.routine_exercises.find((r) => r.exercise.id === exId)?.target_sets
+  const plan = routine.data?.routine_exercises
+  const planFor = (g: Group) => plan?.[g.order]
+  const changed = !!plan && (plan.length !== groups.length || groups.some((g, i) =>
+    g.exercise.id !== plan[i].exercise.id || g.sets.length !== plan[i].target_sets
+  ))
+  const editing = actions.addSet.isPending || actions.removeSet.isPending || actions.addExercise.isPending ||
+    actions.removeExercise.isPending || actions.replaceExercise.isPending
+  const busy = editing || actions.finish.isPending || actions.discard.isPending
+  const editFailed = actions.addSet.isError || actions.removeSet.isError || actions.removeExercise.isError ||
+    (actions.updateSet.isError && !actions.updateSet.isPending)
   const remaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0
 
   function toggleSet(g: Group, s: SessionSet, weight: number | null, reps: number | null) {
@@ -122,7 +228,7 @@ export default function ActiveWorkoutPage() {
     if (completed && !s.is_warmup) {
       const next = g.sets.find((x) => x.set_number > s.set_number && !x.completed)
       setRest({
-        endsAt: Date.now() + restFor(g.exercise.id) * 1000,
+        endsAt: Date.now() + (planFor(g)?.rest_seconds ?? 90) * 1000,
         label: next
           ? `Descansando após a série ${s.set_number} • Próxima: ${next.weight_kg ?? weight ?? 0} kg × ${next.reps ?? reps ?? 0} repetições`
           : `Descansando após a última série de ${g.exercise.name}`,
@@ -143,12 +249,49 @@ export default function ActiveWorkoutPage() {
       window.alert('Complete pelo menos uma série ou descarte o treino com o botão X.')
       return
     }
-    if (!window.confirm('Finalizar este treino?')) return
-    actions.finish.mutate(session!, { onSuccess: () => navigate(`/workouts/summary/${id}`, { replace: true }) })
+    if (changed) {
+      actions.finish.reset()
+      setAskingToUpdate(true)
+    } else if (window.confirm('Finalizar este treino?')) {
+      complete(false)
+    }
+  }
+
+  function complete(updateRoutine: boolean) {
+    actions.finish.mutate(updateRoutine, { onSuccess: () => navigate(`/workouts/summary/${id}`, { replace: true }) })
+  }
+
+  function selectExercise(exercise: Exercise) {
+    if (groups.some((g) => g.exercise.id === exercise.id)) {
+      setPickerError('Este exercício já está no treino.')
+      return
+    }
+
+    const callbacks = {
+      onSuccess: () => {
+        if (picker && picker !== 'add') {
+          setRest(null)
+          setOpen((current) => ({ ...current, [groupKey({ ...picker, exercise })]: true }))
+        }
+        setPicker(null)
+      },
+      onError: () => setPickerError('Não foi possível salvar o exercício. Tente novamente.'),
+    }
+
+    if (picker === 'add') {
+      actions.addExercise.mutate({ exerciseId: exercise.id, order: Math.max(plan?.length ?? 0, (groups.at(-1)?.order ?? -1) + 1) }, callbacks)
+    } else if (picker) {
+      if (picker.sets.some((s) => s.completed) && !window.confirm('Substituir o exercício e apagar os registros das séries já concluídas?')) return
+      const original = planFor(picker)
+      actions.replaceExercise.mutate({
+        exerciseId: picker.exercise.id, replacementId: exercise.id, order: picker.order,
+        reps: original?.target_reps ?? original?.reps_max ?? original?.reps_min ?? null,
+      }, callbacks)
+    }
   }
 
   function discard() {
-    if (!window.confirm('Discard this workout? Nothing will be saved.')) return
+    if (!window.confirm('Descartar este treino? As séries registradas serão perdidas.')) return
     actions.discard.mutate(undefined, { onSuccess: () => navigate('/workouts', { replace: true }) })
   }
 
@@ -159,7 +302,7 @@ export default function ActiveWorkoutPage() {
           <button type="button" className={styles.back} onClick={() => navigate('/workouts')} aria-label="Voltar"><ArrowLeft size={20} /></button>
           <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
           <h1 className={styles.headerTitle}>Treino ativo</h1>
-          <button type="button" className={styles.back} onClick={discard} aria-label="Discard workout"><X size={20} /></button>
+          <button type="button" className={styles.back} disabled={busy} onClick={discard} aria-label="Descartar treino"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />
         </header>
 
@@ -169,12 +312,15 @@ export default function ActiveWorkoutPage() {
             <div><span className={styles.cap}>ACTIVE SESSION</span><h2>{session.name}</h2></div>
           </div>
           <div className={styles.sessionBtns}>
-            <button type="button" className={styles.pauseBtn} onClick={() => actions.pause.mutate(session)} aria-label={session.paused_at ? 'Resume' : 'Pause'}>
+            <button type="button" className={styles.pauseBtn} disabled={busy || actions.pause.isPending} onClick={() => actions.pause.mutate(session)} aria-label={session.paused_at ? 'Resume' : 'Pause'}>
               {session.paused_at ? <Play size={15} /> : <Pause size={15} />}
             </button>
-            <button type="button" className={styles.finishBtn} onClick={finish}>Finalizar <Flag size={14} /></button>
+            <button type="button" className={styles.finishBtn} disabled={busy || routine.isFetching} onClick={finish}>Finalizar <Flag size={14} /></button>
           </div>
         </section>
+
+        {(editFailed || (actions.finish.isError && !askingToUpdate)) && <p role="alert" className={styles.empty}>Não foi possível salvar a alteração. Tente novamente.</p>}
+        {routine.isError && <p role="alert" className={styles.empty}>Não foi possível carregar a rotina para comparar as alterações. <button type="button" onClick={() => routine.refetch()}>Tentar novamente</button></p>}
 
         <section className={styles.statsBar}>
           <div><span className={styles.cap}><Clock size={11} /> TEMPO</span><strong>{fmtClock(workoutSeconds(session, now))}</strong></div>
@@ -185,28 +331,32 @@ export default function ActiveWorkoutPage() {
         {groups.length === 0 && <p className={styles.empty}>Treino vazio. Adicione seu primeiro exercício abaixo.</p>}
 
         {groups.map((g) => {
-          const isOpen = open[g.exercise.id] ?? g.exercise.id === currentGroup?.exercise.id
-          const target = targetFor(g.exercise.id)
+          const key = groupKey(g)
+          const isOpen = open[key] ?? g === currentGroup
+          const target = planFor(g)?.target_sets
           let workingIndex = 0
           return (
-            <section key={g.exercise.id} className={styles.exCard}>
-              <div className={styles.exHead} onClick={() => setOpen((o) => ({ ...o, [g.exercise.id]: !isOpen }))}>
-                <span className={styles.iconBox}><Maximize2 size={16} /></span>
-                <div className={styles.rText}>
-                  <div className={styles.tagRow}>
-                    <span className={styles.muscleTag}>{muscleLabel(g.exercise.muscle_group).toUpperCase()}</span>
-                    {target && <small>Meta: {target} séries</small>}
+            <section key={key} className={styles.exCard}>
+              <div className={styles.exHead}>
+                <button type="button" className={styles.exerciseToggle} aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [key]: !isOpen }))}>
+                  <span className={styles.iconBox}><Maximize2 size={16} /></span>
+                  <div className={styles.rText}>
+                    <div className={styles.tagRow}>
+                      <span className={styles.muscleTag}>{muscleLabel(g.exercise.muscle_group).toUpperCase()}</span>
+                      {target && <small>Meta: {target} séries</small>}
+                    </div>
+                    <strong>{g.exercise.name}</strong>
                   </div>
-                  <strong>{g.exercise.name}</strong>
-                </div>
-                {!isOpen && <small className={styles.planned}>{g.sets.length} séries planejadas</small>}
-                <div className={styles.menuWrap} onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className={styles.plainBtn} onClick={() => setMenuEx(menuEx === g.exercise.id ? null : g.exercise.id)} aria-label="Opções do exercício">
+                  {!isOpen && <small className={styles.planned}>{g.sets.length} séries planejadas</small>}
+                </button>
+                <div className={styles.menuWrap}>
+                  <button type="button" className={styles.plainBtn} onClick={() => setMenuEx(menuEx === key ? null : key)} aria-label="Opções do exercício" aria-expanded={menuEx === key} disabled={busy}>
                     {isOpen ? <MoreVertical size={16} /> : <ChevronDown size={16} />}
                   </button>
-                  {menuEx === g.exercise.id && (
+                  {menuEx === key && (
                     <div className={styles.menu}>
-                      <button type="button" onClick={() => { setMenuEx(null); actions.removeExercise.mutate(g.exercise.id) }}>Remover exercício</button>
+                      <button type="button" disabled={busy} onClick={() => { setMenuEx(null); setPickerError(''); setPicker(g) }}>Substituir exercício</button>
+                      <button type="button" disabled={busy} onClick={() => { setMenuEx(null); actions.removeExercise.mutate({ exerciseId: g.exercise.id, order: g.order }) }}>Remover exercício</button>
                     </div>
                   )}
                 </div>
@@ -214,7 +364,7 @@ export default function ActiveWorkoutPage() {
 
               {isOpen && (
                 <>
-                  <div className={styles.setHead}><span>SÉRIE</span><span>ANTERIOR</span><span>KG</span><span>REPETIÇÕES</span><span>FEITO</span></div>
+                  <div className={styles.setHead}><span>SÉRIE</span><span>ANTERIOR</span><span>KG</span><span>REPETIÇÕES</span><span>FEITO</span><span /></div>
                   {g.sets.map((s) => {
                     if (!s.is_warmup) workingIndex++
                     return (
@@ -224,20 +374,23 @@ export default function ActiveWorkoutPage() {
                         label={workingIndex}
                         previous={previous.data?.get(g.exercise.id)?.find((p) => p.set_number === s.set_number)}
                         current={s.id === currentSetId}
+                        busy={busy}
+                        onRemove={() => { if (!busy) actions.removeSet.mutate(s.id) }}
                         onCommit={(patch) => actions.updateSet.mutate({ setId: s.id, patch })}
                         onToggle={(w, r) => toggleSet(g, s, w, r)}
                         onCycle={() => actions.updateSet.mutate({ setId: s.id, patch: { is_warmup: !s.is_warmup } })}
                       />
                     )
                   })}
-                  <button type="button" className={styles.addSet} onClick={() => addSet(g)}><Plus size={14} /> Adicionar série</button>
+                  <button type="button" className={styles.addSet} disabled={busy} onClick={() => addSet(g)}><Plus size={14} /> Adicionar série</button>
+                  <ActiveGuidance exercise={g.exercise} onDetails={() => setDetail(g.exercise)} />
                 </>
               )}
             </section>
           )
         })}
 
-        <button type="button" className={styles.addExBtn} onClick={() => setPicker(true)}><Plus size={14} /> Adicionar exercício</button>
+        <button type="button" className={styles.addExBtn} disabled={busy} onClick={() => { setPickerError(''); setPicker('add') }}><Plus size={14} /> Adicionar exercício</button>
         <div style={{ height: rest ? 190 : 24 }} />
       </div>
 
@@ -264,13 +417,18 @@ export default function ActiveWorkoutPage() {
 
       {picker && (
         <ExercisePicker
-          onClose={() => setPicker(false)}
-          onPick={(e) => {
-            const exists = groups.find((g) => g.exercise.id === e.id)
-            if (!exists) actions.addExercise.mutate({ exerciseId: e.id, order: (groups[groups.length - 1]?.order ?? -1) + 1 })
-            setPicker(false)
-          }}
+          title={picker === 'add' ? 'Adicionar exercício' : 'Substituir exercício'}
+          excludedIds={exerciseIds}
+          error={pickerError}
+          saving={editing}
+          onClose={() => { if (!editing) setPicker(null) }}
+          onPick={selectExercise}
         />
+      )}
+      {detail && <ExerciseDetail exercise={detail} onClose={() => setDetail(null)} />}
+      {askingToUpdate && (
+        <FinishOptions name={routine.data?.name ?? session.name} busy={actions.finish.isPending} error={actions.finish.isError}
+          onClose={() => { actions.finish.reset(); setAskingToUpdate(false) }} onFinish={complete} />
       )}
     </div>
   )

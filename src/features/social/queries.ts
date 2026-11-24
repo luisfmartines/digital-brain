@@ -11,7 +11,8 @@ const PROFILE_COLS = 'id, display_name, username, avatar_url'
 async function profilesByIds(ids: string[]) {
   const map = new Map<string, Profile>()
   if (!ids.length) return map
-  const { data } = await supabase.from('profiles').select(PROFILE_COLS).in('id', ids)
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLS).in('id', ids)
+  if (error) throw error
   for (const p of (data ?? []) as Profile[]) map.set(p.id, p)
   return map
 }
@@ -29,6 +30,18 @@ export function useFollowing() {
       return new Set(((data ?? []) as { following_id: string }[]).map((r) => r.following_id))
     },
   })
+}
+
+export function useFollowingProfiles() {
+  const following = useFollowing()
+  const ids = [...(following.data ?? [])].sort()
+  const profiles = useQuery({
+    queryKey: ['social', 'following-profiles', 'profiles', ids],
+    enabled: following.isSuccess && ids.length > 0,
+    queryFn: async () => [...(await profilesByIds(ids)).values()].sort((a, b) =>
+      (a.display_name ?? a.username ?? '').localeCompare(b.display_name ?? b.username ?? '', 'pt-BR')),
+  })
+  return { following: following.data, profiles: profiles.data ?? [], loading: following.isPending || profiles.isLoading, error: following.isError || profiles.isError }
 }
 
 export function useFollowToggle() {

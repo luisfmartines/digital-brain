@@ -1,18 +1,16 @@
 import { useSearchParams } from 'react-router-dom'
 import TrainingView from './TraningView'
-import FeedView from './FeedView'
 import RankingView from './RankingView'
 import styles from './workouts.module.css'
 
 const TABS = [
   { id: 'train', label: 'Treinamento' },
-  { id: 'feed', label: 'Feed dos amigos' },
   { id: 'ranking', label: 'Classificação' },
 ]
 
 export default function WorkoutsPage() {
   const [params, setParams] = useSearchParams()
-  const tab = params.get('tab') ?? 'train'
+  const tab = params.get('tab') === 'ranking' ? 'ranking' : 'train'
 
   return (
     <div className={styles.page}>
@@ -23,7 +21,7 @@ export default function WorkoutsPage() {
           </button>
         ))}
       </div>
-      {tab === 'feed' ? <FeedView /> : tab === 'ranking' ? <RankingView /> : <TrainingView />}
+      {tab === 'ranking' ? <RankingView /> : <TrainingView />}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { Check, ChevronLeft, Copy, Search, Share2, Sparkles, UserCheck, UserPlus
 import Avatar from '../../components/ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
 import {
-  useFollowers, useFollowing, useFollowToggle, useSearchProfiles, useSuggestedProfiles, type Profile,
+  useFollowers, useFollowingProfiles, useFollowToggle, useSearchProfiles, useSuggestedProfiles, type Profile,
 } from '../../features/social/queries'
 import styles from './AddFriends.module.css'
 
@@ -18,16 +18,21 @@ function loadDismissed(): string[] {
   }
 }
 
-function Row({ p, sub, children }: { p: Profile; sub?: string; children: ReactNode }) {
+function Row({ p, sub, children, actions }: { p: Profile; sub?: string; children: ReactNode; actions?: ReactNode }) {
   return (
-    <li className={styles.row}>
-      <Avatar url={p.avatar_url} name={p.display_name ?? p.username} size={44} />
-      <div className={styles.rowText}>
-        <Link className={styles.profileLink} to={`/profiles/${p.id}`}><strong>{p.display_name ?? p.username ?? 'Ver perfil'}</strong></Link>
-        <span>@{p.username}</span>
-        {sub && <small>{sub}</small>}
+    <li className={actions ? styles.card : undefined}>
+      <div className={styles.row}>
+        <Link to={`/profiles/${p.id}`} aria-label={`Ver perfil de ${p.display_name ?? p.username ?? 'amigo'}`}>
+          <Avatar url={p.avatar_url} name={p.display_name ?? p.username} size={44} />
+        </Link>
+        <div className={styles.rowText}>
+          <Link className={styles.profileLink} to={`/profiles/${p.id}`}><strong>{p.display_name ?? p.username ?? 'Ver perfil'}</strong></Link>
+          {p.username && <span>@{p.username}</span>}
+          {sub && <small>{sub}</small>}
+        </div>
+        {children}
       </div>
-      {children}
+      {actions}
     </li>
   )
 }
@@ -44,7 +49,7 @@ export default function AddFriendsPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { data: profile } = useProfile()
-  const following = useFollowing().data
+  const { following, profiles: friends, loading, error } = useFollowingProfiles()
   const followers = useFollowers().data ?? []
   const suggested = useSuggestedProfiles().data ?? []
   const toggle = useFollowToggle()
@@ -135,6 +140,23 @@ export default function AddFriendsPage() {
           <Share2 size={16} /> Enviar link <small>Convidar</small>
         </button>
 
+        {!searching && (
+          <section>
+            <h3 className={styles.section}>Amigos adicionados</h3>
+            {loading ? <p className={styles.empty} role="status">Carregando amigos…</p> :
+              error ? <p className={styles.empty} role="alert">Não foi possível carregar seus amigos.</p> :
+              friends.length === 0 ? <p className={styles.empty}>Você ainda não adicionou amigos.</p> : (
+                <ul className={styles.list}>
+                  {friends.map((p) => (
+                    <Row key={p.id} p={p}>
+                      <ConnectButton id={p.id} following busy={toggle.isPending} onToggle={onToggle} />
+                    </Row>
+                  ))}
+                </ul>
+              )}
+          </section>
+        )}
+
         {searching ? (
           <section>
             <h3 className={styles.section}>Resultados</h3>
@@ -154,13 +176,12 @@ export default function AddFriendsPage() {
                 <h3 className={styles.section}>Querem se conectar <b>{pending.length}</b></h3>
                 <ul className={styles.list}>
                   {pending.map((p) => (
-                    <li key={p.id} className={styles.card}>
-                      <Row p={p} sub="Seguiu você">{null}</Row>
+                    <Row key={p.id} p={p} sub="Seguiu você" actions={
                       <div className={styles.actions}>
                         <button type="button" className={styles.ghost} onClick={() => dismiss(p.id)}>Ignorar</button>
                         <button type="button" className={styles.accept} disabled={toggle.isPending} onClick={() => onToggle(p.id, false)}><Check size={15} /> Seguir de volta</button>
                       </div>
-                    </li>
+                    }>{null}</Row>
                   ))}
                 </ul>
               </section>

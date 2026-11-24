@@ -148,7 +148,7 @@ export default function WorkoutSummaryPage() {
           type="button"
           className={styles.primary}
           disabled={!!extras.data?.postId || share.isPending}
-          onClick={() => share.mutate({ workoutId: id, photoUrl: session.photo_url }, { onSuccess: () => navigate('/workouts?tab=feed', { replace: true }) })}
+          onClick={() => share.mutate({ workoutId: id, photoUrl: session.photo_url }, { onSuccess: () => navigate('/?tab=feed', { replace: true }) })}
         >
           <Share2 size={15} /> {extras.data?.postId ? 'Compartilhado no feed' : 'Compartilhar no feed'}
         </button>

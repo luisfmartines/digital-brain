@@ -39,15 +39,15 @@ export default function SharedProfilePage() {
             <strong className={styles.completion}>{completion === null ? 'Sem dados no período' : `${completion}%`}</strong>
             <small>Nos últimos 30 dias completos</small>
           </section>
-          <h2 className={styles.sharedHeading}><Dumbbell size={19} /> Rotinas compartilhadas</h2>
-          {routines.length === 0 && <p className={styles.connectionDetail}>Nenhuma rotina compartilhada.</p>}
+          <h2 className={styles.sharedHeading}><Dumbbell size={19} /> Rotinas de treino</h2>
+          {routines.length === 0 && <p className={styles.connectionDetail}>Nenhuma rotina criada.</p>}
           {routines.map((routine) => (
             <section key={routine.id} className={styles.card}>
               <h3>{routine.name}</h3>
               {routine.focus && <small>{routine.focus}</small>}
               <ol className={styles.sharedExercises}>
                 {routine.exercises.map((exercise, index) => (
-                  <li key={index}><span>{exercise.name}</span><small>{exercise.sets} séries{exercise.reps != null && ` × ${exercise.reps}`}</small></li>
+                  <li key={index}><span>{exercise.name}</span><small>{exercise.sets} séries{exercise.reps != null && ` × ${exercise.reps}`}{exercise.rest > 0 && ` · ${exercise.rest}s de descanso`}</small></li>
                 ))}
               </ol>
               {copies[routine.id] ? (

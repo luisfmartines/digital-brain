@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Link2, Pause, Play, Search, Trophy, Unlink } from 'lucide-react'
+import { ArrowLeft, Link2, Search, Trophy, Unlink } from 'lucide-react'
 import { muscleName, suggestQuery } from '../../features/exercisedb/api'
 import { useExerciseLink, useExerciseMedia, useExerciseSearch, useLinkExercise, useUnlinkExercise } from '../../features/exercisedb/queries'
 import { useExerciseHistory, type Exercise } from '../../features/workouts/queries'
@@ -10,8 +10,9 @@ import {
 import { fmtNum, muscleLabel } from '../../features/workouts/utils'
 import styles from './exerciseDetail.module.css'
 import ExerciseImage from './ExerciseImage'
+import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
 import type { ExerciseMedia } from '../../features/exercisedb/types'
-import { cleanInstruction, translateText } from '../../features/exercisedb/translate'
+import { translateText } from '../../features/exercisedb/translate'
 
 type Tab = 'summary' | 'history' | 'instructions'
 const TABS: { id: Tab; label: string }[] = [
@@ -23,32 +24,6 @@ const TABS: { id: Tab; label: string }[] = [
 const shortDate = (d: Date) => d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
 const longDate = (d: Date) => d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
 const kg = (n: number) => `${Number(n.toFixed(1)).toLocaleString('pt-BR')} kg`
-
-/* ---------- Animação do exercício ---------- */
-
-function Demo({ video, image, name, externalId }: { video: string | null; image: string | null; name: string; externalId: string }) {
-  const [paused, setPaused] = useState(false)
-  const [ref, setRef] = useState<HTMLVideoElement | null>(null)
-
-  function toggle() {
-    if (!ref) return
-    if (ref.paused) { void ref.play(); setPaused(false) } else { ref.pause(); setPaused(true) }
-  }
-  return (
-    <div className={styles.demo}>
-      {video ? (
-        <>
-          <video ref={setRef} src={video} poster={image ?? undefined} autoPlay loop muted playsInline aria-label={`Demonstração: ${name}`} />
-          <button type="button" className={styles.pauseBtn} onClick={toggle} aria-label={paused ? 'Reproduzir' : 'Pausar'}>
-            {paused ? <Play size={16} /> : <Pause size={16} />}
-          </button>
-        </>
-      ) : (
-        <ExerciseImage key={externalId} src={image} externalId={externalId} name={name} />
-      )}
-    </div>
-  )
-}
 
 /* ---------- Vincular ao exercício da ExerciseDB ---------- */
 
@@ -216,34 +191,10 @@ function History({ history }: { history: HistSession[] }) {
   )
 }
 
-function Instructions({ media, linked, loading, failed }: { media: ReturnType<typeof useExerciseMedia>['data']; linked: boolean; loading: boolean; failed: boolean }) {
-  if (!linked) return <p className={styles.empty}>Adicione a demonstração na aba Resumo para ver as instruções.</p>
-  if (loading) return <p className={styles.empty}>Carregando…</p>
-  if (failed || !media) return <p className={styles.empty}>Não foi possível carregar as instruções agora.</p>
-  const none = !media.overview && media.instructions.length === 0 && media.tips.length === 0 && media.variations.length === 0
-  return (
-    <>
-      {media.overview && <section className={styles.block}><h3>Visão geral</h3><p>{media.overview}</p></section>}
-      {media.instructions.length > 0 && (
-        <section className={styles.block}><h3>Como fazer</h3><ol className={styles.steps}>{media.instructions.map((t, i) => <li key={i}>{t}</li>)}</ol></section>
-      )}
-      {media.tips.length > 0 && (
-        <section className={styles.block}><h3>Dicas</h3><ul className={styles.bullets}>{media.tips.map((t, i) => <li key={i}>{t}</li>)}</ul></section>
-      )}
-      {media.variations.length > 0 && (
-        <section className={styles.block}><h3>Variações</h3><ul className={styles.bullets}>{media.variations.map((t, i) => <li key={i}>{t}</li>)}</ul></section>
-      )}
-      {none && <p className={styles.empty}>Este exercício não tem instruções na base.</p>}
-      <p className={styles.note}>Conteúdo da ExerciseDB traduzido automaticamente para português, com ajustes de terminologia.</p>
-      {!!media.originalInstructions?.length && <details className={styles.block}><summary>Ver instruções originais em inglês</summary><ol className={styles.steps}>{media.originalInstructions.map((text, i) => <li key={i}>{cleanInstruction(text)}</li>)}</ol></details>}
-    </>
-  )
-}
-
 /* ---------- Tela ---------- */
 
-export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia, adding, addError }: {
-  exercise: Exercise; onClose: () => void; onAdd?: () => void; previewMedia?: ExerciseMedia; adding?: boolean; addError?: boolean
+export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia, adding, addError, addLabel = 'Adicionar exercício' }: {
+  exercise: Exercise; onClose: () => void; onAdd?: () => void; previewMedia?: ExerciseMedia; adding?: boolean; addError?: string; addLabel?: string
 }) {
   const [tab, setTab] = useState<Tab>('summary')
   const linkQ = useExerciseLink(previewMedia ? undefined : exercise.id)
@@ -278,7 +229,7 @@ export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia,
           {tab === 'summary' && (
             <>
               {externalId ? (
-                mediaQ.isLoading ? <div className={styles.demoSkeleton} /> : media && <Demo video={media.videoUrl} image={media.imageUrl} name={exercise.name} externalId={externalId} />
+                mediaQ.isLoading ? <div className={styles.demoSkeleton} /> : media && <ExerciseDemo video={media.videoUrl} image={media.imageUrl} name={exercise.name} externalId={externalId} />
               ) : linkQ.isLoading ? <div className={styles.demoSkeleton} /> : linkQ.isError ? (
                 <p className={styles.err}>Não foi possível carregar o vínculo da demonstração. <button type="button" onClick={() => linkQ.refetch()}>Tentar novamente</button></p>
               ) : (
@@ -290,10 +241,10 @@ export default function ExerciseDetail({ exercise, onClose, onAdd, previewMedia,
             </>
           )}
           {tab === 'history' && (histQ.isLoading ? <p className={styles.empty}>Carregando…</p> : histQ.isError ? <p className={styles.err}>Não foi possível carregar o histórico. <button type="button" onClick={() => histQ.refetch()}>Tentar novamente</button></p> : <History history={history} />)}
-          {tab === 'instructions' && <Instructions media={media} linked={!!externalId} loading={mediaQ.isLoading && !media} failed={mediaQ.isError && !media} />}
+          {tab === 'instructions' && <ExerciseInstructions media={media} linked={!!externalId} loading={mediaQ.isLoading && !media} failed={mediaQ.isError && !media} />}
         </div>
 
-        {onAdd && <div className={styles.footer}>{addError && <p role="alert" className={styles.err}>Não foi possível adicionar o exercício. Tente novamente.</p>}<button type="button" onClick={onAdd} disabled={adding}>{adding ? 'Adicionando…' : 'Adicionar exercício'}</button></div>}
+        {onAdd && <div className={styles.footer}>{addError && <p role="alert" className={styles.err}>{addError}</p>}<button type="button" onClick={onAdd} disabled={adding}>{adding ? 'Salvando…' : addLabel}</button></div>}
       </div>
     </div>
   )

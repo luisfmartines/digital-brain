@@ -124,10 +124,10 @@
 .tagRow { display: flex; align-items: center; gap: 8px; }
 .muscleTag { padding: 3px 8px; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-secondary); font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
 .planned { font-size: 10px; color: var(--color-text-muted); white-space: nowrap; }
-.setHead, .setRow { display: grid; grid-template-columns: 34px 1.3fr 1fr 1fr 40px; align-items: center; gap: 8px; }
+.setHead, .setRow { display: grid; grid-template-columns: 32px minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 36px 24px; align-items: center; gap: 8px; }
 .setHead { padding: 0 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--color-text-muted); }
 .setHead span:nth-child(n + 3) { text-align: center; }
-.setRow { padding: 6px; border-radius: var(--radius-md); background: var(--color-surface-3); }
+.setRow { position: relative; padding: 6px; border-radius: var(--radius-md); background: var(--color-surface-3); }
 .setCurrent { box-shadow: inset 3px 0 0 var(--color-secondary); background: rgba(63, 166, 114, 0.1); }
 .setDone .numInput { color: var(--color-text-muted); }
 .setNum, .setNumW { width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--color-surface-2); color: var(--color-text); font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -270,3 +270,65 @@
 .catalogExercise small { margin-top: 4px; font-size: 11px; opacity: .65; }
 .catalogExercise:disabled { opacity: .5; cursor: wait; }
 .profileLink { color: var(--color-text); text-underline-offset: 3px; }
+
+.exerciseToggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.swipeSet {
+  position: relative;
+  touch-action: pan-y pinch-zoom;
+  overflow: clip;
+  border-radius: var(--radius-md);
+}
+.swipeDelete {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 96px;
+  display: grid;
+  place-items: center end;
+  padding-right: 16px;
+  background: #992f3b;
+  color: white;
+}
+.swipeDelete[hidden] { display: none; }
+.removeSet {
+  display: grid;
+  place-items: center;
+  min-height: 28px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.removeSet:focus-visible { outline-offset: -2px; }
+.activeGuidance {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0;
+}
+.activeGuidance > div:first-child {
+  width: min(100%, 270px);
+  margin-inline: auto;
+}
+.activeGuidance summary { cursor: pointer; padding: 6px 0; font-weight: 700; }
+.finishDialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.finishDialog[open] { display: grid; gap: 12px; }
+.finishDialog h2, .finishDialog p { margin: 0; }
+.finishDialog::backdrop { background: rgb(0 0 0 / 65%); }

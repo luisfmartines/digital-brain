@@ -39,7 +39,11 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
   return (
     <li className={styles.post}>
       <div className={styles.postHead}>
-        <Avatar url={post.author?.avatar_url} name={post.author?.display_name} size={38} />
+        {post.author ? (
+          <Link to={`/profiles/${post.author.id}`} aria-label={`Ver perfil de ${post.author.display_name ?? post.author.username ?? 'Atleta'}`}>
+            <Avatar url={post.author.avatar_url} name={post.author.display_name} size={38} />
+          </Link>
+        ) : <Avatar size={38} />}
         <div className={styles.rText}>
           {post.author ? <Link className={styles.profileLink} to={`/profiles/${post.author.id}`}><strong>{post.author.display_name ?? 'Atleta'}</strong></Link> : <strong>Atleta</strong>}
           <small>@{post.author?.username ?? 'usuário'} • {ago(post.created_at)}</small>
@@ -90,7 +94,9 @@ function Finder() {
         const on = following?.has(p.id) ?? false
         return (
           <div key={p.id} className={styles.finderRow}>
-            <Avatar url={p.avatar_url} name={p.display_name} size={34} />
+            <Link to={`/profiles/${p.id}`} aria-label={`Ver perfil de ${p.display_name ?? p.username ?? 'Atleta'}`}>
+              <Avatar url={p.avatar_url} name={p.display_name} size={34} />
+            </Link>
             <div className={styles.rText}><Link className={styles.profileLink} to={`/profiles/${p.id}`}><strong>{p.display_name ?? p.username}</strong></Link><small>@{p.username}</small></div>
             <button type="button" className={on ? styles.followOn : styles.follow} onClick={() => toggle.mutate({ id: p.id, following: on })}>
               {on ? <><UserCheck size={13} /> Seguindo</> : <><UserPlus size={13} /> Seguir</>}

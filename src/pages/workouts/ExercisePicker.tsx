@@ -10,7 +10,9 @@ import type { ExerciseMedia } from '../../features/exercisedb/types'
 import ExerciseImage, { SavedExerciseImage } from './ExerciseImage'
 import { translateText } from '../../features/exercisedb/translate'
 
-export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exercise) => void; onClose: () => void }) {
+export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exercício', excludedIds = [], error, saving = false }: {
+  onPick: (e: Exercise) => void; onClose: () => void; title?: string; excludedIds?: string[]; error?: string; saving?: boolean
+}) {
   const saved = useExercises()
   const all = saved.data ?? []
   const create = useCreateExercise()
@@ -29,9 +31,9 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
   const catalog = useExerciseCatalog(term, muscle)
   const importExercise = useImportExercise()
   const remote = catalog.data?.pages.flatMap((page) => page.exercises) ?? []
-  const busy = importExercise.isPending || create.isPending
+  const busy = saving || importExercise.isPending || create.isPending
 
-  const list = all.filter((e) => (!muscle || e.muscle_group === muscle) && e.name.toLowerCase().includes(q.trim().toLowerCase()))
+  const list = all.filter((e) => !excludedIds.includes(e.id) && (!muscle || e.muscle_group === muscle) && e.name.toLowerCase().includes(q.trim().toLowerCase()))
 
   function createOne() {
     if (!name.trim()) return
@@ -42,7 +44,7 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
         <div className={styles.sheetHead}>
-          <strong>Adicionar exercício</strong>
+          <strong>{title}</strong>
           <button type="button" className={styles.plainBtn} onClick={onClose} aria-label="Fechar"><X size={18} /></button>
         </div>
         <label className={styles.search}><Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar exercícios" /></label>
@@ -79,6 +81,7 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
           {!catalog.isPending && !catalog.isError && remote.length === 0 && <li className={styles.empty}>Nenhum exercício no catálogo para esta busca.</li>}
           {catalog.hasNextPage && <li><button type="button" className={styles.addExBtn} disabled={catalog.isFetching} onClick={() => catalog.fetchNextPage()}>{catalog.isFetchingNextPage ? 'Carregando…' : 'Carregar mais exercícios'}</button></li>}
         </ul>
+        {error && <p role="alert">{error}</p>}
         {importExercise.isPending && <p role="status">Adicionando exercício…</p>}
         {importExercise.isError && <p role="alert">Não foi possível adicionar o exercício. Tente novamente.</p>}
         {create.isError && <p role="alert">Não foi possível criar o exercício. Tente novamente.</p>}
@@ -94,15 +97,16 @@ export default function ExercisePicker({ onPick, onClose }: { onPick: (e: Exerci
           <button type="button" className={styles.addExBtn} onClick={() => setCreating(true)}><Plus size={14} /> Criar exercício personalizado</button>
         )}
       </div>
-      {info && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail key={info.id} exercise={info} onClose={() => setInfo(null)} onAdd={() => onPick(info)} /></div>}
+      {info && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail key={info.id} exercise={info} onClose={() => setInfo(null)} onAdd={() => onPick(info)} adding={saving} addError={error} addLabel={title} /></div>}
       {catalogInfo && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail
         key={catalogInfo.id}
         exercise={{ id: catalogInfo.id, name: catalogInfo.name, muscle_group: exerciseGroup(catalogInfo), equipment: catalogInfo.equipments.map(translateText).join(', ') || null, user_id: null }}
         previewMedia={catalogInfo}
         onClose={() => setCatalogInfo(null)}
         onAdd={() => importExercise.mutate(catalogInfo, { onSuccess: onPick })}
-        adding={importExercise.isPending}
-        addError={importExercise.isError}
+        adding={busy}
+        addError={error || (importExercise.isError ? 'Não foi possível importar o exercício. Tente novamente.' : undefined)}
+        addLabel={title}
       /></div>}
     </div>
   )
