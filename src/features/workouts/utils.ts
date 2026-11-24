@@ -45,9 +45,6 @@ export function ago(iso: string) {
   return relDays(iso)
 }
 
-export const repsText = (min: number | null, max: number | null) =>
-  min && max && min !== max ? `${min}-${max}` : String(max ?? min ?? '—')
-
 export const estimateMinutes = (rows: { target_sets: number; rest_seconds: number }[]) =>
   Math.max(5, Math.round(rows.reduce((a, r) => a + r.target_sets * (45 + r.rest_seconds), 0) / 300) * 5)
 

@@ -98,7 +98,23 @@ test('profile validates, uploads and replaces a photo', async ({ page }) => {
   await expect(avatar).toHaveAttribute('src', /profile\.jpg\?v=/)
 })
 
-test('calendar shows tasks at their due time and habits on configured days', async ({ page }) => {
+test('weekly habits keep long names and seven days inside the card on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 })
+  const name = 'Ler vinte páginas e registrar o que aprendi'
+  await page.route('https://*.supabase.co/rest/v1/habits**', (route) => route.fulfill({ json: [{
+    id: 'read-habit', name, category: 'mindfulness', weekdays: [0, 1, 2, 3, 4, 5, 6],
+    reminder_time: '17:45:00', created_at: '2025-01-01T12:00:00.000Z',
+  }] }))
+  await page.goto('/routine?tab=habits')
+  await page.getByRole('tab', { name: 'Semanal' }).click()
+  const habit = page.getByRole('button', { name: `Editar ${name}`, exact: true })
+  await expect(habit).toBeVisible()
+  const row = habit.locator('..')
+  await expect(row.getByRole('button')).toHaveCount(8)
+  expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+})
+
+test('calendar shows and reschedules tasks without displaying habits', async ({ page }) => {
   const task = { id: 'work-task', title: 'Trabalhar', due_at: '2026-11-30T22:00:00.000Z',
     category: 'work', completed_at: null, remind_minutes_before: 10, notes: null }
   const habit = { id: 'read-habit', name: 'Ler', category: 'mindfulness', weekdays: [1],
@@ -114,16 +130,13 @@ test('calendar shows tasks at their due time and habits on configured days', asy
 
   await page.goto('/calendar?view=month&date=2026-11-30')
   await expect(page.getByRole('link', { name: /Trabalhar/ })).toContainText('19:00 · Tarefa')
-  await expect(page.getByRole('link', { name: /Ler/ })).toContainText('17:45 · Hábito · Concluído')
+  await expect(page.getByText('Ler', { exact: true })).toHaveCount(0)
   await expect(page.getByText('Sem prazo')).toHaveCount(0)
 
   await page.getByRole('tab', { name: 'Dia', exact: true }).click()
   await page.getByRole('button', { name: 'Próximo período' }).click()
   await expect(page.getByText('Nenhum compromisso neste dia.')).toBeVisible()
   await page.getByRole('button', { name: 'Período anterior' }).click()
-  await page.getByRole('link', { name: /Ler/ }).click()
-  await expect(page.getByRole('dialog', { name: 'Editar hábito' })).toBeVisible()
-
   await page.goto('/calendar?view=week&date=2026-11-30')
   await page.getByRole('link', { name: /Trabalhar/ }).click()
   await expect(page.getByRole('heading', { name: 'Editar tarefa' })).toBeVisible()

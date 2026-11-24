@@ -51,7 +51,7 @@
 .createBtn, .quickBtn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border: 0; border-radius: var(--radius-md); font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .createBtn { background: var(--color-secondary); color: var(--color-on-primary); }
 .quickBtn { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
-.featured { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-surface), rgba(27, 77, 54, 0.55)); }
+.featured { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-surface), var(--color-accent-gradient)); }
 .readyPill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--color-secondary); color: var(--color-on-primary); font-size: 9px; font-weight: 800; }
 .est { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--color-text-muted); }
 .fTitle { font-size: 22px; }
@@ -86,7 +86,7 @@
 .input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
 .exRow { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
 .rowBtns { display: flex; }
-.ctrlRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ctrlRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ctrlRow label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: var(--color-text-muted); }
 .mini { width: 100%; padding: 9px 6px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-2); color: var(--color-text); font-size: 14px; text-align: center; }
 .addExBtn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); background: transparent; color: var(--color-secondary); font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -186,7 +186,7 @@
 /* Feed (pág. 16) */
 .feedPills { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .pillBtn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 0; border-radius: 999px; background: var(--color-surface); color: var(--color-secondary); font-size: 10px; font-weight: 700; cursor: pointer; }
-.cta { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--color-surface), rgba(27, 77, 54, 0.5)); }
+.cta { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--color-surface), var(--color-accent-gradient)); }
 .smallBtn { display: inline-flex; align-items: center; gap: 4px; padding: 9px 14px; border: 0; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-on-primary); font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .smallBtn:disabled { opacity: 0.6; }
 .post { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
@@ -231,7 +231,7 @@
 .rankTag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--color-surface-3); font-size: 9px; font-weight: 700; color: var(--color-text-muted); }
 .youTag { padding: 1px 8px; border-radius: 999px; background: var(--color-primary); color: var(--color-on-primary); font-size: 8px; font-weight: 800; }
 .rankNum { width: 16px; text-align: center; font-size: 13px; color: var(--color-text-muted); }
-.yourRank { border: 1px solid rgba(63, 166, 114, 0.4); background: linear-gradient(120deg, var(--color-surface), rgba(27, 77, 54, 0.5)); }
+.yourRank { border: 1px solid rgba(63, 166, 114, 0.4); background: linear-gradient(120deg, var(--color-surface), var(--color-accent-gradient)); }
 
 /* Detalhe completo do treino (somente leitura) */
 .detHead { display: flex; align-items: center; gap: 10px; }

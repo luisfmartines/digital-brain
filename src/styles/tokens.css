@@ -7,6 +7,7 @@
   --color-primary: #3fa672;
   --color-secondary: #6fcf9a;
   --color-tertiary: #1b4d36;
+  --color-accent-gradient: rgba(27, 77, 54, 0.55);
   --color-on-primary: #06281a;
   --color-primary-soft: rgba(63, 166, 114, 0.16);
 
@@ -30,13 +31,16 @@
 [data-theme='light'] {
   color-scheme: light;
   --color-secondary: #21734c;
-  --color-tertiary: #216343;
+  --color-tertiary: #d2e9da;
+  --color-accent-gradient: #dcefe2;
+  --color-primary: #399765;
+  --color-primary-soft: #e1f1e7;
   --color-bg: #f6faf7;
   --color-surface: #ffffff;
   --color-surface-2: #edf3ef;
   --color-surface-3: #f1f6f3;
-  --color-border: #d9e4dd;
+  --color-border: #cbdcd1;
   --color-text: #131318;
-  --color-text-muted: #5b6460;
+  --color-text-muted: #47594f;
   --color-danger: #ba1a1a;
 }

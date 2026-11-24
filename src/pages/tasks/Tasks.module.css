@@ -7,7 +7,7 @@
 .h1 { font-size: 26px; }
 .newBtn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 999px; background: var(--color-primary); color: var(--color-on-primary); font-size: 12px; font-weight: 700; text-decoration: none; }
 
-.hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--color-surface) 45%, rgba(27, 77, 54, 0.6)); }
+.hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--color-surface) 45%, var(--color-accent-gradient)); }
 .heroText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .heroKicker { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-secondary); }
 .heroPct { font-family: var(--font-heading); font-size: 30px; font-weight: 700; }

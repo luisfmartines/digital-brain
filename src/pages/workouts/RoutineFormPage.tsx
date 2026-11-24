@@ -7,7 +7,7 @@ import ExercisePicker from './ExercisePicker'
 import styles from './workouts.module.css'
 import { parseSetCount } from '../../features/workouts/routineInput'
 
-interface Row { key: string; exercise: Exercise; target_sets: string; reps_min: number | null; reps_max: number | null; rest_seconds: number }
+interface Row { key: string; exercise: Exercise; target_sets: string; target_reps: number | null; rest_seconds: number }
 const REST = [45, 60, 90, 120, 180]
 const numOrNull = (v: string) => (v.trim() === '' ? null : Math.max(0, Math.round(Number(v))) || null)
 
@@ -18,7 +18,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
   const [focus, setFocus] = useState(routine?.focus ?? '')
   const [tags, setTags] = useState((routine?.tags ?? []).join(', '))
   const [rows, setRows] = useState<Row[]>(
-    routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), reps_min: r.reps_min, reps_max: r.reps_max, rest_seconds: r.rest_seconds })) ?? []
+    routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), target_reps: r.target_reps ?? r.reps_max ?? r.reps_min ?? null, rest_seconds: r.rest_seconds })) ?? []
   )
   const [picker, setPicker] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +45,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
       {
         id: routine?.id,
         input: { name: name.trim(), focus: focus.trim() || null, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) },
-        rows: rows.map((r) => ({ exercise_id: r.exercise.id, target_sets: parseSetCount(r.target_sets)!, reps_min: r.reps_min, reps_max: r.reps_max, rest_seconds: r.rest_seconds })),
+        rows: rows.map((r) => ({ exercise_id: r.exercise.id, target_sets: parseSetCount(r.target_sets)!, target_reps: r.target_reps, rest_seconds: r.rest_seconds })),
       },
       { onSuccess: () => navigate('/workouts', { replace: true }), onError: (e) => setError(e.message) }
     )
@@ -83,8 +83,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
               </div>
               <div className={styles.ctrlRow}>
                 <label>Séries<input className={styles.mini} inputMode="numeric" value={r.target_sets} onFocus={(e) => e.currentTarget.select()} onChange={(e) => patch(r.key, { target_sets: e.target.value })} aria-invalid={r.target_sets !== '' && parseSetCount(r.target_sets) === null} /></label>
-                <label>Reps mín.<input className={styles.mini} inputMode="numeric" value={r.reps_min ?? ''} onChange={(e) => patch(r.key, { reps_min: numOrNull(e.target.value) })} /></label>
-                <label>Reps máx.<input className={styles.mini} inputMode="numeric" value={r.reps_max ?? ''} onChange={(e) => patch(r.key, { reps_max: numOrNull(e.target.value) })} /></label>
+                <label>Repetições<input className={styles.mini} type="number" min="1" step="1" inputMode="numeric" value={r.target_reps ?? ''} onChange={(e) => patch(r.key, { target_reps: numOrNull(e.target.value) })} /></label>
                 <label>Descanso<select className={styles.mini} value={r.rest_seconds} onChange={(e) => patch(r.key, { rest_seconds: Number(e.target.value) })}>
                   {REST.map((s) => <option key={s} value={s}>{s}s</option>)}
                 </select></label>
@@ -101,7 +100,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
       {picker && (
         <ExercisePicker
           onClose={() => setPicker(false)}
-          onPick={(e) => { setRows((c) => [...c, { key: `${e.id}-${Date.now()}`, exercise: e, target_sets: '3', reps_min: 8, reps_max: 12, rest_seconds: 90 }]); setPicker(false) }}
+          onPick={(e) => { setRows((c) => [...c, { key: `${e.id}-${Date.now()}`, exercise: e, target_sets: '3', target_reps: 12, rest_seconds: 90 }]); setPicker(false) }}
         />
       )}
     </div>

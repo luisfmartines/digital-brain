@@ -1,9 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
-import { localDateStr } from '../../lib/date'
-import type { Log } from '../habits/stats'
-import { scheduleItems, type AgendaHabit, type AgendaTask } from './agenda'
+import { scheduleItems, type AgendaTask } from './agenda'
 
 export const EVENT_CATEGORIES = {
   work: 'Trabalho',
@@ -67,18 +65,11 @@ export function useCalendarSchedule(from: Date, until: Date) {
     queryKey: ['calendar', 'schedule', user?.id, start, end],
     enabled: !!user,
     queryFn: async ({ signal }) => {
-      const [tasks, habits, logs] = await Promise.all([
-        readAll<AgendaTask>((a, b) => supabase.from('tasks')
-          .select('id, title, notes, due_at, completed_at, remind_minutes_before, category')
-          .is('deleted_at', null).gte('due_at', start).lt('due_at', end)
-          .order('due_at').order('id').range(a, b).abortSignal(signal)),
-        readAll<AgendaHabit>((a, b) => supabase.from('habits').select('id, name, category, weekdays, reminder_time, created_at')
-          .is('deleted_at', null).is('archived_at', null).lt('created_at', end).order('id').range(a, b).abortSignal(signal)),
-        readAll<Log>((a, b) => supabase.from('habit_logs').select('habit_id, log_date')
-          .gte('log_date', localDateStr(from)).lt('log_date', localDateStr(until))
-          .order('log_date').order('habit_id').range(a, b).abortSignal(signal)),
-      ])
-      return scheduleItems(tasks, habits, logs, from, until)
+      const tasks = await readAll<AgendaTask>((a, b) => supabase.from('tasks')
+        .select('id, title, notes, due_at, completed_at, remind_minutes_before, category')
+        .is('deleted_at', null).gte('due_at', start).lt('due_at', end)
+        .order('due_at').order('id').range(a, b).abortSignal(signal))
+      return scheduleItems(tasks)
     },
   })
 }

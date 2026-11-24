@@ -9,7 +9,7 @@
 .title { margin-top: 6px; font-size: 26px; }
 .lead { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--color-text-muted); }
 
-.me { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--color-surface), rgba(27, 77, 54, 0.45)); }
+.me { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--color-surface), var(--color-accent-gradient)); }
 .me small { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-text-muted); }
 .handle { font-family: var(--font-heading); font-size: 18px; overflow: hidden; text-overflow: ellipsis; }
 .iconBtn { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--color-surface-2); color: var(--color-secondary); cursor: pointer; }

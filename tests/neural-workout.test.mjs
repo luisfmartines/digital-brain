@@ -27,7 +27,7 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
       assert.ok(!instructions.includes(userId))
       return Response.json({ candidates: [{ content: { parts: [{ functionCall: {
         name: 'criar_treino', args: { nome: 'Peitoral com halteres', exercicios: ['1', '2', '3'].map((ref) => ({
-          exercicio_id: ref, series: 3, reps_min: 8, reps_max: 12,
+          exercicio_id: ref, series: 3, repeticoes: 12,
         })) },
       } }] } }] })
     }
@@ -62,6 +62,7 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
   assert.equal(response.status, 200)
   assert.equal((await response.json()).actions[0].kind, 'routine')
   assert.equal(modelCalls, 2)
+  assert.ok(inserts.get('routine_exercises').every((row) => row.target_reps === 12))
   const exercises = inserts.get('exercises')
   assert.equal(exercises.length, 3)
   assert.ok(exercises.every(({ id, user_id }) => id.startsWith(userId + ':') && user_id === userId))

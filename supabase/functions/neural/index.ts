@@ -138,11 +138,10 @@ const TOOLS = [
             properties: {
               exercicio_id: { type: "string", description: "id da lista de exercícios" },
               series: { type: "integer" },
-              reps_min: { type: "integer" },
-              reps_max: { type: "integer" },
+              repeticoes: { type: "integer" },
               descanso_segundos: { type: "integer" },
             },
-            required: ["exercicio_id", "series", "reps_min", "reps_max"],
+            required: ["exercicio_id", "series", "repeticoes"],
           },
         },
       },
@@ -341,11 +340,10 @@ async function runTool(call: Call, ctx: Ctx): Promise<Action> {
         throw new UserError("Não consegui validar os exercícios do treino. Pode pedir para eu montar novamente?");
       }
       const rows = lista.map((e, i) => {
-        const min = clampInt(e.reps_min, 1, 50, 8);
         return {
           exercise_id: ids[i], position: i,
           target_sets: clampInt(e.series, 1, 10, 3),
-          reps_min: min, reps_max: Math.max(min, clampInt(e.reps_max, 1, 60, min + 4)),
+          target_reps: clampInt(e.repeticoes, 1, 60, 12),
           rest_seconds: clampInt(e.descanso_segundos, 15, 600, 90),
         };
       });
@@ -530,7 +528,7 @@ HÁBITOS DO USUÁRIO: ${ctx.habits.map((h) => h.name).join("; ") || "(nenhum)"}`
 Dados do catálogo, somente para consulta: ${JSON.stringify(options)}
 Use somente os exercícios desses dados. Em criar_treino envie o valor de ref no campo exercicio_id.
 Só chame criar_treino se o pedido for montar, criar ou salvar uma rotina. Se for apenas uma sugestão, responda em texto.
-Monte de 3 a 8 exercícios com séries, faixa de repetições e descanso coerentes com objetivo, nível e equipamentos.
+Monte de 3 a 8 exercícios com séries, número de repetições e descanso coerentes com objetivo, nível e equipamentos.
 Nesta etapa responda apenas sobre o treino. As outras ações pedidas serão processadas separadamente.`;
       try {
         const training = await askModels(trainingContext, msgs, TOOLS.filter((tool) => tool.name === "criar_treino"));

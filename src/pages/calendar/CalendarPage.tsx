@@ -23,7 +23,7 @@ function isOnDay(event: CalendarEvent, day: Date) {
 }
 
 function eventTime(event: AgendaItem, day: Date) {
-  if (event.all_day) return event.kind === 'habit' ? 'Sem horário' : 'Dia inteiro'
+  if (event.all_day) return 'Dia inteiro'
   const start = new Date(event.starts_at)
   const end = event.ends_at ? new Date(event.ends_at) : null
   if (start < day) return end && end < addDays(day, 1) ? `Até ${time.format(end)}` : 'Em andamento'
@@ -36,8 +36,8 @@ function EventCard({ event, day, returnTo }: { event: AgendaItem; day: Date; ret
       <span className={styles.eventInfo}>
         <strong>{event.title}</strong>
         <small>
-          {eventTime(event, day)} · {event.kind === 'event' ? EVENT_CATEGORIES[event.category] : event.kind === 'task' ? 'Tarefa' : 'Hábito'}
-          {event.completed && (event.kind === 'task' ? ' · Concluída' : ' · Concluído')}
+          {eventTime(event, day)} · {event.kind === 'event' ? EVENT_CATEGORIES[event.category] : 'Tarefa'}
+          {event.completed && ' · Concluída'}
         </small>
         {event.description && <small className={styles.description}>{event.description}</small>}
       </span>
@@ -146,7 +146,7 @@ export default function CalendarPage() {
 
       {pending && <p className={styles.muted} role="status">Carregando agenda…</p>}
       {events.isError && <p className={styles.error} role="alert">Não foi possível carregar seus eventos.</p>}
-      {schedule.isError && <p className={styles.error} role="alert">Não foi possível carregar suas tarefas e hábitos na agenda.</p>}
+      {schedule.isError && <p className={styles.error} role="alert">Não foi possível carregar suas tarefas na agenda.</p>}
       {alert && (
         <article className={styles.alert}>
           <div className={styles.heading}>

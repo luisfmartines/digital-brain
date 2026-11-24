@@ -47,7 +47,11 @@ test('clear 3, type 4, and persist exactly four sets', async ({ page }) => {
   await expect(input).toHaveValue('4')
   const request = page.waitForRequest((req) => req.url().includes('/rest/v1/routine_exercises') && req.method() === 'POST')
   await page.getByRole('button', { name: 'Salvar rotina', exact: true }).click()
-  expect((await request).postDataJSON()[0].target_sets).toBe(4)
+  const row = (await request).postDataJSON()[0]
+  expect(row.target_sets).toBe(4)
+  expect(row.target_reps).toBe(12)
+  expect(row).not.toHaveProperty('reps_min')
+  expect(row).not.toHaveProperty('reps_max')
 })
 
 test('empty and out-of-range sets do not save or silently become ten', async ({ page }) => {

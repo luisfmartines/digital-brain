@@ -44,7 +44,6 @@ export function useInvalidateHabits() {
   return () => {
     queryClient.invalidateQueries({ queryKey: ['habits'] })
     queryClient.invalidateQueries({ queryKey: ['home', 'habits'] })
-    queryClient.invalidateQueries({ queryKey: ['calendar', 'schedule'] })
     queryClient.invalidateQueries({ queryKey: ['home', 'water'] })
   }
 }

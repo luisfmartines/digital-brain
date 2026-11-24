@@ -8,14 +8,14 @@ import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from
 import { translateExercise } from '../exercisedb/translate'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null }
-export interface RoutineExercise { id: string; position: number; target_sets: number; reps_min: number | null; reps_max: number | null; rest_seconds: number; exercise: Exercise }
+export interface RoutineExercise { id: string; position: number; target_sets: number; target_reps: number | null; reps_min: number | null; reps_max: number | null; rest_seconds: number; exercise: Exercise }
 export interface Routine { id: string; name: string; focus: string | null; notes: string | null; tags: string[]; created_at: string; routine_exercises: RoutineExercise[] }
 export interface SessionSet extends SetLike { id: string; exercise_id: string; set_number: number; exercise_order: number; exercise: Exercise }
 export interface Session extends Timing { id: string; name: string; routine_id: string | null; photo_url: string | null; workout_sets: SessionSet[] }
 export interface PrevSet { exercise_id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean }
 
 const EX = 'id, name, muscle_group, equipment, user_id'
-const ROUTINE = `id, name, focus, notes, tags, created_at, routine_exercises(id, position, target_sets, reps_min, reps_max, rest_seconds, exercise:exercises(${EX}))`
+const ROUTINE = `id, name, focus, notes, tags, created_at, routine_exercises(id, position, target_sets, target_reps, reps_min, reps_max, rest_seconds, exercise:exercises(${EX}))`
 const sortRoutine = (r: Routine): Routine => ({
   ...r,
   routine_exercises: [...(r.routine_exercises ?? [])].map((row) => ({ ...row, exercise: translateExercise(row.exercise) })).sort((a, b) => a.position - b.position),
@@ -158,7 +158,7 @@ export function useCreateExercise() {
   })
 }
 
-export interface RoutineRow { exercise_id: string; target_sets: number; reps_min: number | null; reps_max: number | null; rest_seconds: number }
+export interface RoutineRow { exercise_id: string; target_sets: number; target_reps: number | null; rest_seconds: number }
 
 export function useSaveRoutine() {
   const qc = useQueryClient()
@@ -223,7 +223,7 @@ export function useStartWorkout() {
             const p = prevBy.get(r.exercise.id)?.[i]
             return {
               workout_id: wid, exercise_id: r.exercise.id, exercise_order: idx, set_number: i + 1,
-              weight_kg: p?.weight_kg ?? null, reps: p?.reps ?? r.reps_max ?? r.reps_min ?? null,
+              weight_kg: p?.weight_kg ?? null, reps: p?.reps ?? r.target_reps ?? r.reps_max ?? r.reps_min ?? null,
             }
           })
         )

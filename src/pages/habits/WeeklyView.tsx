@@ -126,8 +126,8 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
       </section>
 
       <section className={styles.panel}>
-        <div className={styles.sectionHead}>
-          <span>Matriz de consistência <em className={styles.badge}>{habits.length} rotinas ativas</em></span>
+        <div className={styles.matrixHeader}>
+          <h2>Matriz de consistência</h2>
           <span className={styles.legendMini}><i className={styles.dotDone} /> Concluído <i className={styles.dotPlan} /> Planejado</span>
         </div>
         <div className={styles.matrix}>
@@ -153,6 +153,7 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
                   disabled={st === 'off' || st === 'planned'}
                   onClick={() => toggle.mutate({ habitId: h.id, date: localDateStr(days[i]), done: st === 'done' })}
                   aria-label={`${h.name} ${localDateStr(days[i])}`}
+                  aria-pressed={st === 'done'}
                 >
                   {st === 'done' && <Check size={11} />}
                   {st === 'missed' && <X size={11} />}
@@ -180,7 +181,8 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
               return (
                 <div key={localDateStr(d)} className={`${styles.dayCard} ${isToday ? styles.dayCardToday : ''}`}>
                   <small>{isToday ? 'Hoje' : d.toLocaleDateString('pt-BR', { weekday: 'short' })} {d.getDate()}</small>
-                  <strong>{isToday ? `${s.done}/${s.scheduled} concluído(s)` : `${pct}%`}</strong>
+                  <strong>{isToday ? `${s.done}/${s.scheduled}` : `${pct}%`}</strong>
+                  {isToday && <small>Concluídos</small>}
                   <span className={styles.miniBar}><i style={{ width: `${pct}%` }} /></span>
                 </div>
               )

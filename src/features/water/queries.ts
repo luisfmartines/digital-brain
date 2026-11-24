@@ -77,7 +77,6 @@ function useInvalidateWater() {
     qc.invalidateQueries({ queryKey: ['home', 'water'] })
     qc.invalidateQueries({ queryKey: ['home', 'habits'] })
     qc.invalidateQueries({ queryKey: ['habits'] })
-    qc.invalidateQueries({ queryKey: ['calendar', 'schedule'] })
   }
 }
 
@@ -148,7 +147,6 @@ export function useEnsureWaterHabit() {
       })
       if (error) throw error
       qc.invalidateQueries({ queryKey: ['habits'] })
-      qc.invalidateQueries({ queryKey: ['calendar', 'schedule'] })
       qc.invalidateQueries({ queryKey: ['home', 'habits'] })
       return true
     },

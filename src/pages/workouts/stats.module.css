@@ -8,7 +8,7 @@
 .period, .periodOn { padding: 8px 4px; border: 0; border-radius: 999px; background: transparent; color: var(--color-text-muted); font-size: 11px; font-weight: 700; cursor: pointer; }
 .periodOn { background: var(--color-tertiary); color: var(--color-secondary); }
 
-.overview { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-surface), rgba(27, 77, 54, 0.45)); }
+.overview { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-surface), var(--color-accent-gradient)); }
 .ovIcon { width: 44px; height: 44px; display: grid; place-items: center; flex-shrink: 0; border-radius: 12px; background: var(--color-surface-2); color: var(--color-secondary); }
 .kicker { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-text-muted); }
 .ovTitle { font-family: var(--font-heading); font-size: 16px; }

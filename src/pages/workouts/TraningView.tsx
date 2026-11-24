@@ -4,7 +4,7 @@ import { ArrowRight, Check, Clock, History, Dumbbell, MoreVertical, Pencil, Play
 import {
   useActiveWorkout, useDeleteRoutine, useHistory, useLastPerformed, useRoutines, useStartWorkout, useWeekStats, type Routine,
 } from '../../features/workouts/queries'
-import { estimateMinutes, fmtNum, mins, muscleLabel, relDays, repsText } from './helpers'
+import { estimateMinutes, fmtNum, mins, muscleLabel, relDays } from './helpers'
 import styles from './workouts.module.css'
 
 const info = (r: Routine) => ({
@@ -76,7 +76,7 @@ export default function TrainingView() {
           {f.muscles.length > 0 && <span className={styles.chipGreen}>{f.muscles.join(', ')}</span>}
           <ul className={styles.exList}>
             {ready.routine_exercises.slice(0, 3).map((r, i) => (
-              <li key={r.id}><span>{i + 1}. {r.exercise.name}</span><b>{r.target_sets} × {repsText(r.reps_min, r.reps_max)}</b></li>
+              <li key={r.id}><span>{i + 1}. {r.exercise.name}</span><b>{r.target_sets} × {r.target_reps ?? r.reps_max ?? r.reps_min ?? '—'}</b></li>
             ))}
           </ul>
           <button type="button" className={styles.startBtn} onClick={() => go(ready)} disabled={start.isPending}>Iniciar treino <Play size={14} /></button>
