@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Dumbbell } from 'lucide-react'
 import AppHeader from './AppHeader'
+import CalendarConnectionNotice from './CalendarConnectionNotice'
 import BottomNav from './BottomNav'
 import MascotFab from '../mascot/MascotFab'
 import { useProfile } from '../../features/profile/useProfile'
@@ -74,6 +75,7 @@ export default function AppShell() {
       <div className={styles.frame}>
         <AppHeader subtitle={SUBTITLES[pathname] ?? 'INÍCIO'} />
         <main className={`${styles.content} ${fabCount === 1 ? styles.contentFab : ''} ${fabCount === 2 ? styles.contentFab2 : ''}`}>
+          <CalendarConnectionNotice />
           <Outlet />
         </main>
         {showAi && <MascotFab hidden={typing} lifted={showWorkout} />}

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
+import { createConnectedEvent } from './google'
 import { scheduleItems, type AgendaTask } from './agenda'
 
 export const EVENT_CATEGORIES = {
@@ -92,6 +93,7 @@ export function useChangeEvent() {
   const cache = useQueryClient()
   return useMutation({
     mutationFn: async (change: { id?: string; input: EventInput } | { id: string; remove: true }) => {
+      if (!change.id && 'input' in change && await createConnectedEvent(change.input)) return
       const events = supabase.from('calendar_events')
       const { error } = 'remove' in change
         ? await events.update({ deleted_at: new Date().toISOString() }).eq('id', change.id).is('deleted_at', null).select('id').single()

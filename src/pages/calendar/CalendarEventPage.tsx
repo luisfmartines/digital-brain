@@ -53,8 +53,8 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
       const next = new URL(returnTo, window.location.origin)
       next.searchParams.set('date', day)
       navigate(next.pathname + next.search, { replace: true })
-    } catch {
-      setError('Não foi possível salvar o evento. Tente novamente.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Não foi possível salvar o evento. Tente novamente.')
     }
   }
 

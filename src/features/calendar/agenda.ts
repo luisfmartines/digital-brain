@@ -4,7 +4,7 @@ import type { CalendarEvent } from './queries'
 export type AgendaTask = Pick<Task, 'id' | 'title' | 'notes' | 'due_at' | 'completed_at' | 'remind_minutes_before' | 'category'>
 
 export interface AgendaItem extends CalendarEvent {
-  kind: 'event' | 'task'
+  kind: 'event' | 'task' | 'google'
   href: string
   completed?: boolean
 }

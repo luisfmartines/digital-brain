@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
 import type { AgendaItem } from '../../features/calendar/agenda'
 import { EVENT_CATEGORIES, useCalendarEvents, useCalendarSchedule, type CalendarEvent } from '../../features/calendar/queries'
 import { addDays, localDateStr, parseDate, startOfDay, startOfWeek } from '../../lib/date'
@@ -32,11 +33,11 @@ function eventTime(event: AgendaItem, day: Date) {
 
 function EventCard({ event, day, returnTo }: { event: AgendaItem; day: Date; returnTo: string }) {
   return (
-    <Link to={event.href} state={{ returnTo }} className={styles.event} data-category={event.category}>
+    <Link to={event.href} state={event.kind === 'google' ? undefined : { returnTo }} target={event.kind === 'google' ? '_blank' : undefined} rel={event.kind === 'google' ? 'noopener noreferrer' : undefined} className={styles.event} data-category={event.category}>
       <span className={styles.eventInfo}>
         <strong>{event.title}</strong>
         <small>
-          {eventTime(event, day)} · {event.kind === 'event' ? EVENT_CATEGORIES[event.category] : 'Tarefa'}
+          {eventTime(event, day)} · {event.kind === 'task' ? 'Tarefa' : event.kind === 'google' ? 'Google Agenda' : EVENT_CATEGORIES[event.category]}
           {event.completed && ' · Concluída'}
         </small>
         {event.description && <small className={styles.description}>{event.description}</small>}
@@ -68,12 +69,15 @@ export default function CalendarPage() {
   const from = view === 'month' ? startOfWeek(first) : week
   const until = view === 'month' ? addDays(startOfWeek(last), 7) : addDays(week, 7)
   const events = useCalendarEvents(from, until)
+  const connection = useGoogleConnection()
+  const google = useGoogleEvents(from, until, !!connection.data)
   const schedule = useCalendarSchedule(from, until)
   const rows = useMemo(() => [
     ...(events.data ?? []).map((event): AgendaItem => ({ ...event, kind: 'event', href: `/calendar/${event.id}/edit` })),
     ...(schedule.data ?? []),
-  ].sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at)), [events.data, schedule.data])
-  const pending = events.isPending || schedule.isPending
+    ...(google.data ?? []),
+  ].sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at)), [events.data, schedule.data, google.data])
+  const pending = events.isPending || schedule.isPending || connection.isPending || (!!connection.data && google.isPending)
   const showAgenda = !pending && (rows.length > 0 || (!events.isError && !schedule.isError))
   const days: Date[] = []
   for (let day = from; day < until; day = addDays(day, 1)) days.push(day)
@@ -105,6 +109,8 @@ export default function CalendarPage() {
         <h1>Calendário</h1>
         <button className={styles.soft} type="button" onClick={() => go(today)}><CalendarDays size={15} /> Hoje</button>
       </div>
+      {google.isError && <p className={styles.error} role="alert">{google.error.message} <Link to="/profile?tab=connections">Conexões</Link></p>}
+      {connection.isError && <p className={styles.error} role="alert">Não foi possível verificar a conexão com o Google Agenda.</p>}
       <div className={styles.segmented} role="tablist" aria-label="Visualização do calendário">
         {VIEWS.map(({ id, label }) => (
           <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => go(selected, id)}>{label}</button>

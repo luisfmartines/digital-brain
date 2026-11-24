@@ -10,6 +10,7 @@
 //   GROQ_MODEL       (opcional) padrão: llama-3.3-70b-versatile
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { createGoogleEvent, GoogleCalendarError } from "../_shared/googleCalendar.ts";
 import { findExercises, type Exercise } from "./exerciseSearch.ts";
 
 const CORS = {
@@ -262,13 +263,31 @@ async function runTool(call: Call, ctx: Ctx): Promise<Action> {
       const cat = ["work", "meeting", "health", "personal"].includes(str(a.categoria, 10)) ? str(a.categoria, 10) : "personal";
       const alarm = a.lembrete_minutos === undefined ? 10 : clampInt(a.lembrete_minutos, 0, 10080, 10);
       const titulo = str(a.titulo) || "Compromisso";
+      let googleEvent;
+      try {
+        googleEvent = await createGoogleEvent(ctx.userId, {
+          title: titulo, description: str(a.descricao, 500) || null, start: start.toISOString(),
+          end: end?.toISOString(), category: cat, reminderMinutes: alarm || null,
+        });
+      } catch (error) {
+        if (error instanceof GoogleCalendarError && error.message === "reconnect_required") {
+          throw new UserError("Reconecte o Google Agenda em Perfil → Conexões e tente novamente.");
+        }
+        throw new UserError("Não consegui salvar o evento no Google Agenda. Tente novamente.");
+      }
+      const when = new Date(start.getTime() - tz.off * 60_000);
+      const date = `${when.getUTCFullYear()}-${pad(when.getUTCMonth() + 1)}-${pad(when.getUTCDate())}`;
+      const link = `/calendar?view=day&date=${date}`;
+      if (googleEvent) {
+        return { kind: "event", title: titulo, subtitle: `${date} às ${pad(when.getUTCHours())}:${pad(when.getUTCMinutes())}`,
+          badge: "Google Agenda", link };
+      }
       const { data, error } = await db.from("calendar_events").insert({
         title: titulo, description: str(a.descricao, 500) || null, starts_at: start.toISOString(),
         ends_at: end ? end.toISOString() : null, all_day: false,
         alarm_minutes_before: alarm > 0 ? alarm : null, source: "chatbot", category: cat,
       }).select("id").single();
       if (error) throw error;
-      const when = new Date(start.getTime() - tz.off * 60_000);
       const label = `${DIAS[when.getUTCDay()]}, ${pad(when.getUTCDate())}/${pad(when.getUTCMonth() + 1)} às ${pad(when.getUTCHours())}:${pad(when.getUTCMinutes())}`;
       return {
         kind: "event", title: titulo, subtitle: label,

@@ -17,6 +17,9 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://*.supabase.co/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
+    if (url.pathname.endsWith('/functions/v1/google-calendar-create-event')) {
+      return route.fulfill({ status: 409, json: { error: 'not_connected' } })
+    }
     let body = []
     if (url.pathname.includes('/storage/v1/object/avatars/')) body = { Key: `avatars/${userId}/profile.jpg` }
     if (url.pathname.endsWith('/profiles')) {
@@ -147,4 +150,30 @@ test('calendar shows and reschedules tasks without displaying habits', async ({ 
   await page.goBack()
   await expect(page).toHaveURL(/calendar/)
   await expect(page.getByRole('link', { name: /Trabalhar/ })).toContainText('14:00 · Tarefa')
+})
+
+test('connected calendar reads Google events and sends new events to the same agenda', async ({ page }) => {
+  const received = []
+  const googleEvents = [{ id: 'google-original', summary: 'Feriado no Google', start: { date: '2026-11-24' },
+    end: { date: '2026-11-25' }, htmlLink: 'https://calendar.google.com/calendar/event?eid=sample' }]
+  await page.route('https://*.supabase.co/rest/v1/google_tokens**', (route) =>
+    route.fulfill({ json: { user_id: userId, updated_at: '2026-11-24T12:00:00Z' } }))
+  await page.route('https://*.supabase.co/functions/v1/google-calendar-create-event', async (route) => {
+    const request = route.request().postDataJSON()
+    if (request.action === 'list') return route.fulfill({ json: { events: googleEvents } })
+    received.push(request)
+    googleEvents.push({ id: 'google-new', summary: request.title, start: { dateTime: request.start },
+      end: { dateTime: '2026-11-24T13:00:00Z' } })
+    return route.fulfill({ json: { id: 'google-new' } })
+  })
+  await page.goto('/profile?tab=connections')
+  await expect(page.getByRole('button', { name: 'Reconectar Google Agenda' })).toBeVisible()
+  await page.goto('/calendar?view=day&date=2026-11-24')
+  await expect(page.getByRole('link', { name: /Feriado no Google/ })).toContainText('Dia inteiro · Google Agenda')
+  await page.getByRole('link', { name: 'Novo evento' }).click()
+  await page.getByLabel('Título do evento').fill('Enviado ao Google')
+  await page.getByRole('button', { name: 'Salvar evento' }).click()
+  await expect(page.getByRole('link', { name: /Enviado ao Google/ })).toContainText('09:00–10:00 · Google Agenda')
+  expect(received).toHaveLength(1)
+  expect(received[0]).toMatchObject({ title: 'Enviado ao Google', start: '2026-11-24T12:00:00.000Z', reminderMinutes: 10 })
 })

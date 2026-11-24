@@ -36,3 +36,6 @@
   animation: pulse 1.4s infinite;
 }
 @keyframes pulse { 50% { opacity: 0.3; } }
+.calendarNotice { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--color-primary-soft); font-size: 13px; }
+.calendarNotice a { color: var(--color-secondary); }
+.calendarNotice button { margin-left: auto; padding: 4px 8px; border: 0; background: transparent; cursor: pointer; }

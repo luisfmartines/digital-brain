@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import Connections from './Connections'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -10,6 +12,8 @@ import { supabase } from '../../lib/supabase'
 import styles from './Profile.module.css'
 
 export default function ProfilePage() {
+  const [params] = useSearchParams()
+  const connections = params.get('tab') === 'connections'
   const query = useProfile()
   const profile = query.data
   const cache = useQueryClient()
@@ -59,6 +63,11 @@ export default function ProfilePage() {
   return (
     <div className={styles.page}>
       <h1>Perfil</h1>
+      <nav className={styles.themes} aria-label="Configurações do perfil">
+        <Link className={styles.button} to="/profile" aria-current={!connections ? 'page' : undefined}>Geral</Link>
+        <Link className={styles.button} to="/profile?tab=connections" aria-current={connections ? 'page' : undefined}>Conexões</Link>
+      </nav>
+      {connections ? <Connections /> : <>
       <section className={`${styles.card} ${styles.identity}`} aria-label="Dados do perfil">
         <div className={styles.row}>
           <div className={styles.person}>
@@ -133,6 +142,7 @@ export default function ProfilePage() {
       {update.isError && <p className={styles.error} role="alert">Não foi possível salvar as alterações.</p>}
       <button type="button" onClick={signOut} className={`${styles.button} ${styles.signOut}`}><LogOut size={16} /> Sair da conta</button>
       {signOutError && <p className={styles.error} role="alert">Não foi possível sair da conta.</p>}
+      </>}
     </div>
   )
 }
