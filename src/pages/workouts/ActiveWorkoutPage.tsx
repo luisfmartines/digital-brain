@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
@@ -14,6 +14,45 @@ import styles from './workouts.module.css'
 
 interface Group { exercise: Exercise; order: number; sets: SessionSet[] }
 const groupKey = (g: Group) => `${g.order}:${g.exercise.id}`
+
+const REST_LIMIT = 3600
+const restStorageKey = (id: string) => 'workout-rest:' + id
+
+function readRestDurations(id: string): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(restStorageKey(id)) ?? '{}') ?? {}
+  } catch {
+    return {}
+  }
+}
+
+function storeRestDurations(id: string, durations?: Record<string, number>) {
+  try {
+    if (durations) localStorage.setItem(restStorageKey(id), JSON.stringify(durations))
+    else localStorage.removeItem(restStorageKey(id))
+  } catch {
+    // A edição continua disponível na tela se o navegador bloquear o armazenamento.
+  }
+}
+
+function RestDurationField({ seconds, onApply }: { seconds: number; onApply: (value: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  return (
+    <form className={styles.restDurationField} onSubmit={(event) => {
+      event.preventDefault()
+      const value = Number(draft ?? seconds)
+      if (draft === '' || !Number.isInteger(value) || value < 0 || value > REST_LIMIT) return
+      onApply(value)
+      setDraft(null)
+    }}>
+      <label>Descanso entre séries (segundos)
+        <input className={styles.mini} type="number" min={0} max={REST_LIMIT} step={1} required
+          value={draft ?? seconds} onChange={(event) => setDraft(event.currentTarget.value)} />
+      </label>
+      <button type="submit" className={styles.smallBtn} disabled={draft === null || Number(draft) === seconds}>Aplicar</button>
+    </form>
+  )
+}
 
 function ActiveExerciseThumbnail({ exercise }: { exercise: Exercise }) {
   const link = useExerciseLink(exercise.id)
@@ -173,14 +212,19 @@ function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle, on
 
 export default function ActiveWorkoutPage() {
   const { id = '' } = useParams()
+  return <ActiveWorkoutSession key={id} id={id} />
+}
+
+function ActiveWorkoutSession({ id }: { id: string }) {
   const navigate = useNavigate()
   const { data: profile } = useProfile()
-  const { data: session, isLoading } = useSession(id)
+  const { data: session, isLoading, isError, refetch } = useSession(id)
   const routine = useRoutine(session?.routine_id ?? undefined)
   const actions = useSessionActions(id)
 
   const [now, setNow] = useState(() => Date.now())
-  const [rest, setRest] = useState<{ endsAt: number; label: string } | null>(null)
+  const [rest, setRest] = useState<{ group: string; endsAt: number; label: string } | null>(null)
+  const [restDurations, setRestDurations] = useState(() => readRestDurations(id))
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [picker, setPicker] = useState<Group | 'add' | null>(null)
   const [pickerError, setPickerError] = useState('')
@@ -210,6 +254,13 @@ export default function ActiveWorkoutPage() {
   }, [restEndsAt, vibrate, sound])
 
   if (isLoading) return <p className={styles.loading}>Carregando…</p>
+  if (isError && !session) return (
+    <section className={styles.frame}>
+      <p role="alert" className={styles.error}>Não foi possível abrir o treino em andamento.</p>
+      <button type="button" className={styles.addExBtn} onClick={() => refetch()}>Tentar novamente</button>
+      <Link to="/workouts">Voltar para treinos</Link>
+    </section>
+  )
   if (!session) return <Navigate to="/workouts" replace />
   if (session.ended_at) return <Navigate to={`/workouts/summary/${id}`} replace />
 
@@ -229,6 +280,20 @@ export default function ActiveWorkoutPage() {
   const currentSetId = currentGroup?.sets.find((s) => !s.completed)?.id
   const plan = routine.data?.routine_exercises
   const planFor = (g: Group) => plan?.[g.order]
+  const restFor = (g: Group) => restDurations[groupKey(g)] ?? planFor(g)?.rest_seconds ?? 90
+
+  function changeRest(g: Group, seconds: number) {
+    const key = groupKey(g)
+    const changeMs = (seconds - restFor(g)) * 1000
+    const durations = { ...restDurations, [key]: seconds }
+    setRestDurations(durations)
+    storeRestDurations(id, durations)
+    setNow(Date.now())
+    setRest((current) => {
+      if (current?.group !== key) return current
+      return seconds === 0 ? null : { ...current, endsAt: current.endsAt + changeMs }
+    })
+  }
   const changed = !!plan && (plan.length !== groups.length || groups.some((g, i) =>
     g.exercise.id !== plan[i].exercise.id || g.sets.length !== plan[i].target_sets
   ))
@@ -242,12 +307,20 @@ export default function ActiveWorkoutPage() {
   function toggleSet(g: Group, s: SessionSet, weight: number | null, reps: number | null) {
     const completed = !s.completed
     actions.updateSet.mutate({ setId: s.id, patch: { completed, weight_kg: weight, reps } })
+    const seconds = restFor(g)
     if (completed && !s.is_warmup) {
+      if (seconds <= 0) {
+        setRest(null)
+        return
+      }
+      const startedAt = Date.now()
+      setNow(startedAt)
       const next = g.sets.find((x) => x.set_number > s.set_number && !x.completed)
       setRest({
-        endsAt: Date.now() + (planFor(g)?.rest_seconds ?? 90) * 1000,
+        group: groupKey(g),
+        endsAt: startedAt + seconds * 1000,
         label: next
-          ? `Descansando após a série ${s.set_number} • Próxima: ${next.weight_kg ?? weight ?? 0} kg × ${next.reps ?? reps ?? 0} repetições`
+          ? 'Descansando após a série ' + s.set_number + ' • Próxima série: ' + next.set_number
           : `Descansando após a última série de ${g.exercise.name}`,
       })
     }
@@ -257,7 +330,7 @@ export default function ActiveWorkoutPage() {
     const lastSet = g.sets[g.sets.length - 1]
     actions.addSet.mutate({
       exerciseId: g.exercise.id, order: g.order, setNumber: (lastSet?.set_number ?? 0) + 1,
-      weight: lastSet?.weight_kg ?? null, reps: lastSet?.reps ?? null,
+      weight: lastSet?.weight_kg ?? null,
     })
   }
 
@@ -275,7 +348,10 @@ export default function ActiveWorkoutPage() {
   }
 
   function complete(updateRoutine: boolean) {
-    actions.finish.mutate(updateRoutine, { onSuccess: () => navigate(`/workouts/summary/${id}`, { replace: true }) })
+    actions.finish.mutate(updateRoutine, { onSuccess: () => {
+      storeRestDurations(id)
+      navigate('/workouts/summary/' + id, { replace: true })
+    } })
   }
 
   function selectExercise(exercise: Exercise) {
@@ -299,17 +375,18 @@ export default function ActiveWorkoutPage() {
       actions.addExercise.mutate({ exerciseId: exercise.id, order: Math.max(plan?.length ?? 0, (groups.at(-1)?.order ?? -1) + 1) }, callbacks)
     } else if (picker) {
       if (picker.sets.some((s) => s.completed) && !window.confirm('Substituir o exercício e apagar os registros das séries já concluídas?')) return
-      const original = planFor(picker)
       actions.replaceExercise.mutate({
         exerciseId: picker.exercise.id, replacementId: exercise.id, order: picker.order,
-        reps: original?.target_reps ?? original?.reps_max ?? original?.reps_min ?? null,
       }, callbacks)
     }
   }
 
   function discard() {
     if (!window.confirm('Descartar este treino? As séries registradas serão perdidas.')) return
-    actions.discard.mutate(undefined, { onSuccess: () => navigate('/workouts', { replace: true }) })
+    actions.discard.mutate(undefined, { onSuccess: () => {
+      storeRestDurations(id)
+      navigate('/workouts', { replace: true })
+    } })
   }
 
   return (
@@ -381,6 +458,7 @@ export default function ActiveWorkoutPage() {
 
               {isOpen && (
                 <>
+                  <RestDurationField seconds={restFor(g)} onApply={(seconds) => changeRest(g, seconds)} />
                   <div className={styles.setHead}><span>SÉRIE</span><span>ANTERIOR</span><span>KG</span><span>REPETIÇÕES</span><span>FEITO</span><span /></div>
                   {g.sets.map((s) => {
                     if (!s.is_warmup) workingIndex++

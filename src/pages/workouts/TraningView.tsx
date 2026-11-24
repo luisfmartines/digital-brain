@@ -15,7 +15,8 @@ const info = (r: Routine) => ({
 
 export default function TrainingView() {
   const navigate = useNavigate()
-  const routines = useRoutines().data ?? []
+  const routineList = useRoutines()
+  const routines = routineList.data ?? []
   const last = useLastPerformed().data ?? {}
   const week = useWeekStats().data
   const history = useHistory().data ?? []
@@ -58,8 +59,10 @@ export default function TrainingView() {
 
       <div className={styles.btnRow}>
         <Link to="/workouts/routines/new" className={styles.createBtn}><Plus size={15} /> Criar rotina</Link>
-        <button type="button" className={styles.quickBtn} onClick={() => go()} disabled={start.isPending}><Timer size={15} /> Treino rápido</button>
+        <button type="button" className={styles.quickBtn} onClick={() => go()} disabled={start.isPending}><Timer size={15} /> Iniciar treino vazio</button>
       </div>
+
+      {start.isError && <p className={styles.error} role="alert">Não foi possível iniciar o treino. Tente novamente.</p>}
 
       {ready && f && (
         <section className={styles.featured}>
@@ -76,7 +79,7 @@ export default function TrainingView() {
           {f.muscles.length > 0 && <span className={styles.chipGreen}>{f.muscles.join(', ')}</span>}
           <ul className={styles.exList}>
             {ready.routine_exercises.slice(0, 3).map((r, i) => (
-              <li key={r.id}><span>{i + 1}. {r.exercise.name}</span><b>{r.target_sets} × {r.target_reps ?? r.reps_max ?? r.reps_min ?? '—'}</b></li>
+              <li key={r.id}><span>{i + 1}. {r.exercise.name}</span><b>{r.target_sets} {r.target_sets === 1 ? 'série' : 'séries'}</b></li>
             ))}
           </ul>
           <button type="button" className={styles.startBtn} onClick={() => go(ready)} disabled={start.isPending}>Iniciar treino <Play size={14} /></button>
@@ -88,7 +91,9 @@ export default function TrainingView() {
         <Link to="/workouts/routines/new" className={styles.link}>Nova +</Link>
       </div>
 
-      {routines.length === 0 && <p className={styles.empty}>Nenhuma rotina ainda. Crie a primeira para começar por aqui.</p>}
+      {routineList.isPending && <p className={styles.loading} role="status">Carregando rotinas…</p>}
+      {routineList.isError && <p className={styles.error} role="alert">Não foi possível carregar as rotinas. <button type="button" onClick={() => routineList.refetch()}>Tentar novamente</button></p>}
+      {routineList.isSuccess && routines.length === 0 && <p className={styles.empty}>Nenhuma rotina ainda. Crie a primeira para começar por aqui.</p>}
 
       <ul className={styles.list}>
         {routines.map((r) => {

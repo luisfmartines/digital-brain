@@ -342,3 +342,19 @@
   min-width: 0;
 }
 .exercisePhotoField input { max-width: 100%; font: inherit; }
+
+.restDurationField {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.restDurationField label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+.restDurationField input { width: 4.5rem; }

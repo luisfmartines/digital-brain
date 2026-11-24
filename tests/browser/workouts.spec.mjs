@@ -49,7 +49,8 @@ test('clear 3, type 4, and persist exactly four sets', async ({ page }) => {
   await page.getByRole('button', { name: 'Salvar rotina', exact: true }).click()
   const row = (await request).postDataJSON()[0]
   expect(row.target_sets).toBe(4)
-  expect(row.target_reps).toBe(12)
+  expect(row).not.toHaveProperty('target_reps')
+  await expect(page.getByLabel('Repetições', { exact: true })).toHaveCount(0)
   expect(row).not.toHaveProperty('reps_min')
   expect(row).not.toHaveProperty('reps_max')
 })
@@ -160,6 +161,7 @@ for (const update of [false, true]) {
     await page.getByRole('button', { name: /Supino inclinado salvo/ }).filter({ hasText: 'Supino inclinado salvo' }).click()
     await expect(page.getByRole('img', { name: 'Demonstração: Supino inclinado salvo', exact: true })).toBeVisible()
     await expect(page.getByLabel('Peso em kg').first()).toHaveValue('')
+    await expect(page.getByLabel('Repetições').first()).toHaveValue('')
     await page.getByRole('button', { name: 'Marcar série como concluída' }).first().click()
     await page.getByRole('button', { name: 'Finalizar' }).click()
     const dialog = page.getByRole('dialog', { name: 'Atualizar a rotina?' })
@@ -287,4 +289,127 @@ test('partial and mistyped queries rank the matching catalogue exercise above we
   await expect(page.getByRole('button', { name: 'Ver detalhes de Cadeira flexora personalizada' })).toBeVisible()
   await search.fill('cadeira fleoxra')
   await expect(results.first()).toHaveAccessibleName('Ver detalhes de Cadeira flexora')
+})
+
+test('a saved routine appears on the hub when the exercise photo column is unavailable', async ({ page }) => {
+  let savedRoutine
+  await page.route('**/rest/v1/workout_routines?*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (url.searchParams.get('select')?.includes('photo_path')) {
+      return route.fulfill({ status: 400, json: { code: '42703', message: 'column exercises.photo_path does not exist' } })
+    }
+    if (request.method() === 'POST') {
+      savedRoutine = { ...request.postDataJSON(), id: 'routine-new', routine_exercises: [] }
+      return route.fulfill({ json: { id: savedRoutine.id } })
+    }
+    await route.fulfill({ json: savedRoutine ? [savedRoutine] : [] })
+  })
+  await page.route('**/rest/v1/routine_exercises*', async (route) => {
+    savedRoutine.routine_exercises = route.request().postDataJSON().map((row) => ({ ...row, id: 'new-row', exercise }))
+    await route.fulfill({ status: 204 })
+  })
+  await page.goto('/workouts/routines/new')
+  await page.getByLabel('Nome da rotina').fill('Rotina recém-salva')
+  await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  await page.getByRole('button', { name: /Supino salvo/ }).filter({ hasText: 'Supino salvo' }).click()
+  await page.getByRole('button', { name: 'Salvar rotina', exact: true }).click()
+  await expect(page).toHaveURL('/workouts')
+  await expect(page.getByRole('listitem').filter({ hasText: 'Rotina recém-salva' })).toBeVisible()
+  await expect(page.getByText(/1\. Supino salvo/)).toBeVisible()
+})
+
+test('an empty workout opens and lets the user change the rest for an exercise', async ({ page }) => {
+  let active
+  await page.route('**/rest/v1/workouts?*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST') {
+      active = {
+        ...request.postDataJSON(), id: 'quick-test', started_at: new Date().toISOString(),
+        ended_at: null, paused_at: null, paused_seconds: 0, workout_sets: [], photo_url: null,
+      }
+      return route.fulfill({ json: { id: active.id } })
+    }
+    if (url.searchParams.get('id') === 'eq.quick-test') {
+      if (url.searchParams.get('select').includes('photo_path,') || url.searchParams.get('select').includes('user_id, photo_path')) {
+        return route.fulfill({ status: 400, json: { code: '42703', message: 'column exercises.photo_path does not exist' } })
+      }
+      return route.fulfill({ json: active })
+    }
+    await route.fulfill({ json: [] })
+  })
+  await page.route('**/rest/v1/workout_routines?*', (route) => route.fulfill({ json: [] }))
+  await page.route('**/rest/v1/workout_sets*', async (route) => {
+    const request = route.request()
+    if (request.method() === 'POST') {
+      const payload = request.postDataJSON()
+      for (const row of Array.isArray(payload) ? payload : [payload]) {
+        active.workout_sets.push({ ...row, id: 'set-' + row.set_number, exercise, weight_kg: row.weight_kg ?? null, completed: false, is_warmup: false })
+      }
+    }
+    if (request.method() === 'PATCH') {
+      const updatedId = new URL(request.url()).searchParams.get('id').slice(3)
+      active.workout_sets = active.workout_sets.map((set) => set.id === updatedId ? { ...set, ...request.postDataJSON() } : set)
+    }
+    await route.fulfill({ status: 204 })
+  })
+  await page.goto('/workouts')
+  await page.getByRole('button', { name: 'Iniciar treino vazio' }).click()
+  await expect(page).toHaveURL('/workouts/active/quick-test')
+  await expect(page.getByRole('heading', { name: 'Treino ativo' })).toBeVisible()
+  await expect(page.getByText(/Treino vazio/)).toBeVisible()
+  expect(active.routine_id).toBeNull()
+  expect(active.workout_sets).toHaveLength(0)
+
+  await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  await page.getByRole('button', { name: /Supino salvo/ }).filter({ hasText: 'Supino salvo' }).click()
+  const reps = page.getByLabel('Repetições')
+  await expect(reps.first()).toHaveValue('')
+  await reps.first().fill('8')
+  await page.getByRole('button', { name: 'Adicionar série' }).click()
+  await expect(reps).toHaveCount(4)
+  await expect(reps.last()).toHaveValue('')
+
+  const rest = page.getByLabel('Descanso entre séries (segundos)')
+  await rest.fill('125')
+  await page.getByRole('button', { name: 'Aplicar' }).click()
+  await page.reload()
+  await expect(rest).toHaveValue('125')
+  await page.getByRole('button', { name: 'Marcar série como concluída' }).first().click()
+  await expect(page.getByText(/^02:0[0-5]$/)).toBeVisible()
+  await rest.fill('0')
+  await page.getByRole('button', { name: 'Aplicar' }).click()
+  await expect(page.getByRole('button', { name: /Pular descanso/ })).toHaveCount(0)
+})
+
+test('starting a saved routine leaves reps blank even when the prior session had reps', async ({ page }) => {
+  let sets = []
+  await page.route('**/rest/v1/workout_routines?*', (route) => route.fulfill({
+    json: new URL(route.request().url()).searchParams.has('id') ? routine : [routine],
+  }))
+  await page.route('**/rest/v1/rpc/previous_sets', (route) => route.fulfill({
+    json: [{ exercise_id: exercise.id, set_number: 1, weight_kg: 25, reps: 12, is_warmup: false }],
+  }))
+  await page.route('**/rest/v1/workouts?*', async (route) => {
+    const request = route.request()
+    if (request.method() === 'POST') return route.fulfill({ json: { id: 'planned-test' } })
+    const url = new URL(request.url())
+    await route.fulfill({ json: url.searchParams.has('id') ? {
+      id: 'planned-test', name: routine.name, routine_id: routine.id, started_at: new Date().toISOString(),
+      ended_at: null, paused_seconds: 0, paused_at: null, workout_sets: sets,
+    } : [] })
+  })
+  await page.route('**/rest/v1/workout_sets*', async (route) => {
+    sets = route.request().postDataJSON().map((row) => ({ ...row, id: 'planned-' + row.set_number, exercise, completed: false, is_warmup: false }))
+    await route.fulfill({ status: 204 })
+  })
+  await page.goto('/workouts')
+  await page.getByRole('button', { name: 'Iniciar treino', exact: true }).click()
+  await expect(page).toHaveURL('/workouts/active/planned-test')
+  await expect(page.getByLabel('Repetições').first()).toHaveValue('')
+  await expect(page.getByLabel('Peso em kg').first()).toHaveValue('25')
+  await expect(page.getByText('25kg × 12')).toBeVisible()
+  expect(sets).toHaveLength(3)
+  expect(sets.every((set) => set.reps === null)).toBe(true)
 })

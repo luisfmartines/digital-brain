@@ -9,14 +9,15 @@ import { translateExercise } from '../exercisedb/translate'
 import { removeExercisePhoto, uploadExercisePhoto } from '../exercisedb/exercisePhoto'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null; photo_path?: string | null }
-export interface RoutineExercise { id: string; position: number; target_sets: number; target_reps: number | null; reps_min: number | null; reps_max: number | null; rest_seconds: number; exercise: Exercise }
+export interface RoutineExercise { id: string; position: number; target_sets: number; rest_seconds: number; exercise: Exercise }
 export interface Routine { id: string; name: string; focus: string | null; notes: string | null; tags: string[]; created_at: string; routine_exercises: RoutineExercise[] }
 export interface SessionSet extends SetLike { id: string; exercise_id: string; set_number: number; exercise_order: number; exercise: Exercise }
 export interface Session extends Timing { id: string; name: string; routine_id: string | null; photo_url: string | null; workout_sets: SessionSet[] }
 export interface PrevSet { exercise_id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean }
 
-const EX = 'id, name, muscle_group, equipment, user_id, photo_path'
-const ROUTINE = `id, name, focus, notes, tags, created_at, routine_exercises(id, position, target_sets, target_reps, reps_min, reps_max, rest_seconds, exercise:exercises(${EX}))`
+// A foto é opcional e pode ainda não existir no esquema do ambiente.
+const EX = '*'
+const ROUTINE = `id, name, focus, notes, tags, created_at, routine_exercises(id, position, target_sets, rest_seconds, exercise:exercises(${EX}))`
 const sortRoutine = (r: Routine): Routine => ({
   ...r,
   routine_exercises: [...(r.routine_exercises ?? [])].map((row) => ({ ...row, exercise: translateExercise(row.exercise) })).sort((a, b) => a.position - b.position),
@@ -42,7 +43,7 @@ export function useRoutine(id?: string) {
     queryKey: ['workouts', 'routine', id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from('workout_routines').select(ROUTINE).eq('id', id!).single()
+      const { data, error } = await supabase.from('workout_routines').select(ROUTINE).eq('id', id!).is('deleted_at', null).single()
       if (error) throw error
       return sortRoutine(data as unknown as Routine)
     },
@@ -144,7 +145,7 @@ export function useCreateExercise() {
       if (photo && photoPath) await uploadExercisePhoto(photoPath, photo)
 
       const { data, error } = await supabase.from('exercises')
-        .insert({ ...fields, id, user_id: user.id, photo_path: photoPath }).select(EX).single()
+        .insert({ ...fields, id, user_id: user.id, ...(photoPath ? { photo_path: photoPath } : {}) }).select(EX).single()
       if (error) {
         if (photoPath) {
           const { data: saved, error: readError } = await supabase.from('exercises').select(EX).eq('id', id).maybeSingle()
@@ -159,7 +160,7 @@ export function useCreateExercise() {
   })
 }
 
-export interface RoutineRow { exercise_id: string; target_sets: number; target_reps: number | null; rest_seconds: number }
+export interface RoutineRow { exercise_id: string; target_sets: number; rest_seconds: number }
 
 export function useSaveRoutine() {
   const qc = useQueryClient()
@@ -199,11 +200,14 @@ export function useDeleteRoutine() {
 /* ---------- Sessão de treino ---------- */
 
 export function useStartWorkout() {
+  const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
     // Se já existe um treino em andamento, devolve o dele
     mutationFn: async (routine?: Routine): Promise<string> => {
-      const active = await supabase.from('workouts').select('id').is('ended_at', null).is('deleted_at', null).limit(1)
+      if (!user) throw new Error('Entre novamente para iniciar o treino.')
+      const active = await supabase.from('workouts').select('id').eq('user_id', user.id)
+        .is('ended_at', null).is('deleted_at', null).order('started_at', { ascending: false }).limit(1)
       if (active.error) throw active.error
       if (active.data?.[0]) return active.data[0].id as string
 
@@ -224,7 +228,7 @@ export function useStartWorkout() {
             const p = prevBy.get(r.exercise.id)?.[i]
             return {
               workout_id: wid, exercise_id: r.exercise.id, exercise_order: idx, set_number: i + 1,
-              weight_kg: p?.weight_kg ?? null, reps: p?.reps ?? r.target_reps ?? r.reps_max ?? r.reps_min ?? null,
+              weight_kg: p?.weight_kg ?? null, reps: null,
             }
           })
         )
@@ -291,9 +295,9 @@ export function useSessionActions(id: string) {
 
   const addSet = useMutation({
     scope,
-    mutationFn: async (v: { exerciseId: string; order: number; setNumber: number; weight: number | null; reps: number | null }) => {
+    mutationFn: async (v: { exerciseId: string; order: number; setNumber: number; weight: number | null }) => {
       const { error } = await supabase.from('workout_sets').insert({
-        workout_id: id, exercise_id: v.exerciseId, exercise_order: v.order, set_number: v.setNumber, weight_kg: v.weight, reps: v.reps,
+        workout_id: id, exercise_id: v.exerciseId, exercise_order: v.order, set_number: v.setNumber, weight_kg: v.weight, reps: null,
       })
       if (error) throw error
     },
@@ -312,7 +316,7 @@ export function useSessionActions(id: string) {
   const addExercise = useMutation({
     scope,
     mutationFn: async ({ exerciseId, order }: { exerciseId: string; order: number }) => {
-      const rows = [1, 2, 3].map((n) => ({ workout_id: id, exercise_id: exerciseId, exercise_order: order, set_number: n }))
+      const rows = [1, 2, 3].map((n) => ({ workout_id: id, exercise_id: exerciseId, exercise_order: order, set_number: n, reps: null }))
       const { error } = await supabase.from('workout_sets').insert(rows)
       if (error) throw error
     },
@@ -321,9 +325,9 @@ export function useSessionActions(id: string) {
 
   const replaceExercise = useMutation({
     scope,
-    mutationFn: async ({ exerciseId, replacementId, order, reps }: { exerciseId: string; replacementId: string; order: number; reps: number | null }) => {
+    mutationFn: async ({ exerciseId, replacementId, order }: { exerciseId: string; replacementId: string; order: number }) => {
       const { error } = await supabase.from('workout_sets')
-        .update({ exercise_id: replacementId, weight_kg: null, reps, completed: false })
+        .update({ exercise_id: replacementId, weight_kg: null, reps: null, completed: false })
         .eq('workout_id', id).eq('exercise_order', order).eq('exercise_id', exerciseId)
       if (error) throw error
     },

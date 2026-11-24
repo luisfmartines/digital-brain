@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, ChevronLeft, Plus, Trash2 } from 'lucide-react'
 import { useRoutine, useSaveRoutine, type Exercise, type Routine } from '../../features/workouts/queries'
 import { muscleLabel } from '../../features/workouts/utils'
@@ -7,9 +7,8 @@ import ExercisePicker from './ExercisePicker'
 import styles from './workouts.module.css'
 import { parseSetCount } from '../../features/workouts/routineInput'
 
-interface Row { key: string; exercise: Exercise; target_sets: string; target_reps: number | null; rest_seconds: number }
+interface Row { key: string; exercise: Exercise; target_sets: string; rest_seconds: number }
 const REST = [45, 60, 90, 120, 180]
-const numOrNull = (v: string) => (v.trim() === '' ? null : Math.max(0, Math.round(Number(v))) || null)
 
 function RoutineForm({ routine }: { routine?: Routine }) {
   const navigate = useNavigate()
@@ -18,7 +17,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
   const [focus, setFocus] = useState(routine?.focus ?? '')
   const [tags, setTags] = useState((routine?.tags ?? []).join(', '))
   const [rows, setRows] = useState<Row[]>(
-    routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), target_reps: r.target_reps ?? r.reps_max ?? r.reps_min ?? null, rest_seconds: r.rest_seconds })) ?? []
+    routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), rest_seconds: r.rest_seconds })) ?? []
   )
   const [picker, setPicker] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +44,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
       {
         id: routine?.id,
         input: { name: name.trim(), focus: focus.trim() || null, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) },
-        rows: rows.map((r) => ({ exercise_id: r.exercise.id, target_sets: parseSetCount(r.target_sets)!, target_reps: r.target_reps, rest_seconds: r.rest_seconds })),
+        rows: rows.map((r) => ({ exercise_id: r.exercise.id, target_sets: parseSetCount(r.target_sets)!, rest_seconds: r.rest_seconds })),
       },
       { onSuccess: () => navigate('/workouts', { replace: true }), onError: (e) => setError(e.message) }
     )
@@ -83,7 +82,6 @@ function RoutineForm({ routine }: { routine?: Routine }) {
               </div>
               <div className={styles.ctrlRow}>
                 <label>Séries<input className={styles.mini} inputMode="numeric" value={r.target_sets} onFocus={(e) => e.currentTarget.select()} onChange={(e) => patch(r.key, { target_sets: e.target.value })} aria-invalid={r.target_sets !== '' && parseSetCount(r.target_sets) === null} /></label>
-                <label>Repetições<input className={styles.mini} type="number" min="1" step="1" inputMode="numeric" value={r.target_reps ?? ''} onChange={(e) => patch(r.key, { target_reps: numOrNull(e.target.value) })} /></label>
                 <label>Descanso<select className={styles.mini} value={r.rest_seconds} onChange={(e) => patch(r.key, { rest_seconds: Number(e.target.value) })}>
                   {REST.map((s) => <option key={s} value={s}>{s}s</option>)}
                 </select></label>
@@ -93,14 +91,14 @@ function RoutineForm({ routine }: { routine?: Routine }) {
         </ul>
         <button type="button" className={styles.addExBtn} onClick={() => setPicker(true)}><Plus size={14} /> Adicionar exercício</button>
 
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <p className={styles.error} role="alert">{error}</p>}
         <button type="button" className={styles.primary} onClick={submit} disabled={!name.trim() || save.isPending}>{save.isPending ? 'Salvando…' : 'Salvar rotina'}</button>
         <button type="button" className={styles.cancel} onClick={() => navigate(-1)}>Cancelar</button>
       </div>
       {picker && (
         <ExercisePicker
           onClose={() => setPicker(false)}
-          onPick={(e) => { setRows((c) => [...c, { key: `${e.id}-${Date.now()}`, exercise: e, target_sets: '3', target_reps: 12, rest_seconds: 90 }]); setPicker(false) }}
+          onPick={(e) => { setRows((c) => [...c, { key: `${e.id}-${Date.now()}`, exercise: e, target_sets: '3', rest_seconds: 90 }]); setPicker(false) }}
         />
       )}
     </div>
@@ -109,7 +107,14 @@ function RoutineForm({ routine }: { routine?: Routine }) {
 
 export default function RoutineFormPage() {
   const { id } = useParams()
-  const { data: routine, isLoading } = useRoutine(id)
-  if (id && isLoading) return <p style={{ padding: 24 }}>Carregando…</p>
+  const { data: routine, isLoading, refetch } = useRoutine(id)
+  if (id && isLoading) return <p className={styles.loading}>Carregando rotina…</p>
+  if (id && !routine) return (
+    <section className={styles.frame}>
+      <p role="alert" className={styles.error}>Não foi possível abrir esta rotina.</p>
+      <button type="button" className={styles.addExBtn} onClick={() => refetch()}>Tentar novamente</button>
+      <Link to="/workouts">Voltar para treinos</Link>
+    </section>
+  )
   return <RoutineForm key={routine?.id ?? 'new'} routine={routine ?? undefined} />
 }
