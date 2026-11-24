@@ -21,11 +21,14 @@ export async function readGooglePages<T>(
   return rows;
 }
 
-export type Calendar = { id: string; summary?: string; summaryOverride?: string; backgroundColor?: string; accessRole?: string; primary?: boolean };
+export type Calendar = { id: string; summary?: string; summaryOverride?: string; backgroundColor?: string; accessRole?: string; primary?: boolean; deleted?: boolean; hidden?: boolean };
 
-export function readCalendars(access: string) {
-  return readGooglePages<Calendar>(`${CALENDAR}/users/me/calendarList`, access,
-    new URLSearchParams({ showHidden: "true", maxResults: "250" }), "items");
+export async function readCalendars(access: string) {
+  const calendars = await readGooglePages<Calendar>(`${CALENDAR}/users/me/calendarList`, access,
+    new URLSearchParams({ minAccessRole: "owner", showHidden: "false", showDeleted: "false", maxResults: "250" }), "items");
+  return calendars.filter((calendar) =>
+    calendar.accessRole === "owner" && !calendar.deleted && !calendar.hidden
+  );
 }
 
 export async function importGoogleAgenda(access: string, start: string, end: string) {

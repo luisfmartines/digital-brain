@@ -29,9 +29,15 @@ test('Google agenda imports custom calendars, and exports local plans without du
     if (url.hostname === 'oauth2.googleapis.com') return Response.json({ access_token: 'access-test' })
     assert.equal(request.headers.get('authorization'), 'Bearer access-test')
     if (url.pathname.endsWith('/calendarList')) {
+      assert.equal(url.searchParams.get('minAccessRole'), 'owner')
+      assert.equal(url.searchParams.get('showDeleted'), 'false')
+      assert.equal(url.searchParams.get('showHidden'), 'false')
       return Response.json(url.searchParams.has('pageToken')
-        ? { items: [{ id: 'meals@example.test', summaryOverride: 'Refeições', accessRole: 'writer', backgroundColor: '#00aa00' }] }
-        : { items: [{ id: 'primary', primary: true }], nextPageToken: 'next' })
+        ? { items: [{ id: 'meals@example.test', summaryOverride: 'Refeições', accessRole: 'owner', backgroundColor: '#00aa00' },
+          { id: 'senac', summary: 'Senac - curso', accessRole: 'owner', deleted: true },
+          { id: 'rotinas', summary: 'Rotinas', accessRole: 'owner', hidden: true },
+          { id: 'shared', summary: 'Outra conta', accessRole: 'writer' }] }
+        : { items: [{ id: 'primary', primary: true, accessRole: 'owner' }], nextPageToken: 'next' })
     }
     if (request.method === 'POST') {
       const event = await request.json()
@@ -44,6 +50,7 @@ test('Google agenda imports custom calendars, and exports local plans without du
       sent.set(event.id, event)
       return Response.json({ id: event.id })
     }
+    assert.doesNotMatch(url.pathname, /calendars\/(senac|rotinas|shared)\/events/)
     if (url.pathname.includes('meals%40example.test')) {
       return Response.json({ items: [{ id: 'lunch', summary: 'Almoço', start: { date: '2026-11-24' } }] })
     }

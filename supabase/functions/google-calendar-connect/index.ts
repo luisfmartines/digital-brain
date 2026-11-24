@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
     ].join(" "),
     access_type: "offline",
-    prompt: "consent",
+    prompt: "consent select_account",
     state: await makeState(user.id),
   });
 
