@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, ChevronLeft, Copy, Search, Share2, Sparkles, UserCheck, UserPlus } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
@@ -23,7 +23,7 @@ function Row({ p, sub, children }: { p: Profile; sub?: string; children: ReactNo
     <li className={styles.row}>
       <Avatar url={p.avatar_url} name={p.display_name ?? p.username} size={44} />
       <div className={styles.rowText}>
-        <strong>{p.display_name ?? p.username}</strong>
+        <Link className={styles.profileLink} to={`/profiles/${p.id}`}><strong>{p.display_name ?? p.username ?? 'Ver perfil'}</strong></Link>
         <span>@{p.username}</span>
         {sub && <small>{sub}</small>}
       </div>

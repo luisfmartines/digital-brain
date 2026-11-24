@@ -1,6 +1,6 @@
 import { exportGoogleAgenda } from "../_shared/googleAgendaExport.ts";
 import { corsHeaders, getUser, json } from "../_shared/common.ts";
-import { createGoogleEvent, GoogleCalendarError, listGoogleEvents } from "../_shared/googleCalendar.ts";
+import { createGoogleEvent, GoogleCalendarError, listGoogleCalendars, listGoogleEvents } from "../_shared/googleCalendar.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -11,6 +11,10 @@ Deno.serve(async (req) => {
   const input = await req.json().catch(() => null);
   if (!input || typeof input !== "object") return json({ error: "invalid_body" }, 400);
   try {
+    if (input.action === "calendars") {
+      const calendars = await listGoogleCalendars(user.id);
+      return calendars ? json({ calendars }) : json({ error: "not_connected" }, 409);
+    }
     if (input.action === "list") {
       const result = await listGoogleEvents(user.id, input.start, input.end);
       if (input.timeZone) {

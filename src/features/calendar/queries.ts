@@ -92,8 +92,11 @@ export function useCalendarEvent(id?: string) {
 export function useChangeEvent() {
   const cache = useQueryClient()
   return useMutation({
-    mutationFn: async (change: { id?: string; input: EventInput } | { id: string; remove: true }) => {
-      if (!change.id && 'input' in change && await createConnectedEvent(change.input)) return
+    mutationFn: async (change: { id?: string; input: EventInput; calendarId?: string } | { id: string; remove: true }) => {
+      if (!change.id && 'input' in change) {
+        if (await createConnectedEvent(change.input, change.calendarId)) return
+        if (change.calendarId) throw new Error('Reconecte o Google Agenda para salvar neste calendário.')
+      }
       const events = supabase.from('calendar_events')
       const { error } = 'remove' in change
         ? await events.update({ deleted_at: new Date().toISOString() }).eq('id', change.id).is('deleted_at', null).select('id').single()

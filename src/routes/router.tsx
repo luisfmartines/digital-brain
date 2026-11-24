@@ -58,6 +58,7 @@ export const router = createBrowserRouter([
               { path: '/calendar', element: <Pages.CalendarPage /> },
               { path: '/assistant', element: <Pages.AssistantPage /> },
               { path: '/profile', element: <Pages.ProfilePage /> },
+              { path: '/profiles/:id', element: <Pages.SharedProfilePage /> },
             ],
           },
         ],

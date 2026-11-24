@@ -269,3 +269,4 @@
 .catalogExercise strong, .catalogExercise small { display: block; }
 .catalogExercise small { margin-top: 4px; font-size: 11px; opacity: .65; }
 .catalogExercise:disabled { opacity: .5; cursor: wait; }
+.profileLink { color: var(--color-text); text-underline-offset: 3px; }

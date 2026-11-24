@@ -37,14 +37,16 @@ async function googleCalendar<T>(body: object) {
   const response = (error as { context?: Response }).context
   const details = await response?.json().catch(() => null)
   if (response?.status === 409 && details?.error === 'not_connected') return null
+  if (details?.error === 'invalid_calendar') throw new Error('Esse calendário não está disponível para gravar. Escolha outro.')
   if (details?.error === 'reconnect_required') {
     throw new Error('Reconecte o Google Agenda em Perfil → Conexões e tente novamente.')
   }
   throw new Error('Não foi possível acessar o Google Agenda. Tente novamente.')
 }
 
-export async function createConnectedEvent(input: EventInput) {
+export async function createConnectedEvent(input: EventInput, calendarId?: string) {
   return googleCalendar<{ id: string }>({
+    calendarId,
     title: input.title,
     description: input.description,
     category: input.category,
@@ -115,6 +117,28 @@ export function useGoogleEvents(from: Date, until: Date, connected: boolean) {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
       return { items: (response?.events ?? []).flatMap(toAgendaItem), warnings: response?.warnings ?? [] }
+    },
+  })
+}
+
+export interface GoogleCalendar {
+  id: string
+  name: string
+  color?: string
+  primary: boolean
+  writable: boolean
+}
+
+export function useGoogleCalendars(connected: boolean) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['calendar', 'google-calendars', user?.id],
+    enabled: connected && !!user,
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const data = await googleCalendar<{ calendars: GoogleCalendar[] }>({ action: 'calendars' })
+      return data?.calendars ?? []
     },
   })
 }

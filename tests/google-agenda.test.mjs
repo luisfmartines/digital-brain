@@ -6,6 +6,7 @@ test('Google agenda imports custom calendars, and exports local plans without du
   const userId = '11111111-1111-4111-8111-111111111111'
   const taskId = '33333333-3333-4333-8333-333333333333'
   const sent = new Map()
+  const selected = []
   globalThis.Deno = { env: { get: (key) => ({
     SUPABASE_URL: 'https://supabase.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test',
   })[key] } }
@@ -29,11 +30,15 @@ test('Google agenda imports custom calendars, and exports local plans without du
     assert.equal(request.headers.get('authorization'), 'Bearer access-test')
     if (url.pathname.endsWith('/calendarList')) {
       return Response.json(url.searchParams.has('pageToken')
-        ? { items: [{ id: 'meals@example.test', summaryOverride: 'Refeições', backgroundColor: '#00aa00' }] }
+        ? { items: [{ id: 'meals@example.test', summaryOverride: 'Refeições', accessRole: 'writer', backgroundColor: '#00aa00' }] }
         : { items: [{ id: 'primary', primary: true }], nextPageToken: 'next' })
     }
     if (request.method === 'POST') {
       const event = await request.json()
+      if (!event.id) {
+        selected.push(url.pathname)
+        return Response.json({ id: 'selected-event' })
+      }
       assert.equal(event.id, 'dbt' + taskId.replaceAll('-', ''))
       if (sent.has(event.id)) return new Response(null, { status: 409 })
       sent.set(event.id, event)
@@ -44,7 +49,7 @@ test('Google agenda imports custom calendars, and exports local plans without du
     }
     return Response.json({ items: [] })
   })
-  const { listGoogleEvents } = await import('../supabase/functions/_shared/googleCalendar.ts')
+  const { createGoogleEvent, listGoogleEvents } = await import('../supabase/functions/_shared/googleCalendar.ts')
   const { exportGoogleAgenda } = await import('../supabase/functions/_shared/googleAgendaExport.ts')
   const listing = await listGoogleEvents(userId, '2026-11-24T03:00:00Z', '2026-11-25T03:00:00Z')
   assert.deepEqual(listing.warnings, [])
@@ -55,4 +60,7 @@ test('Google agenda imports custom calendars, and exports local plans without du
   assert.equal(event.start.dateTime, '2026-11-24T22:00:00.000Z')
   assert.match(event.description, /Revisar pauta\nCategoria: Trabalho\nPrioridade: Alta/)
   assert.equal(event.reminders.overrides[0].minutes, 10)
+  await createGoogleEvent(userId, { calendarId: 'meals@example.test', title: 'Jantar', start: '2026-11-24T22:00:00Z' })
+  await assert.rejects(createGoogleEvent(userId, { calendarId: 'unlisted@example.test', title: 'Jantar', start: '2026-11-24T22:00:00Z' }), /invalid_calendar/)
+  assert.deepEqual(selected, ['/calendar/v3/calendars/meals%40example.test/events'])
 })

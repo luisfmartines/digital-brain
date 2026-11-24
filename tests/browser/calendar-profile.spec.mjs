@@ -162,6 +162,11 @@ test('connected calendar reads Google events and sends new events to the same ag
   await page.route('https://*.supabase.co/functions/v1/google-calendar-create-event', async (route) => {
     const request = route.request().postDataJSON()
     if (request.action === 'list') return route.fulfill({ json: { events: googleEvents } })
+    if (request.action === 'calendars') return route.fulfill({ json: { calendars: [
+      { id: 'main', name: 'Principal', primary: true, writable: true },
+      { id: 'meals@google.test', name: 'Refeições', writable: true },
+      { id: 'holidays', name: 'Feriados', writable: false },
+    ] } })
     if (request.action === 'sync') {
       syncOffsets.push(request.offset)
       return route.fulfill({ json: { sent: 1, failed: 0, next: request.offset === 0 ? 15 : null } })
@@ -180,9 +185,33 @@ test('connected calendar reads Google events and sends new events to the same ag
   await page.goto('/calendar?view=day&date=2026-11-24')
   await expect(page.getByRole('link', { name: /Feriado no Google/ })).toContainText('Dia inteiro · Google Agenda · Refeições')
   await page.getByRole('link', { name: 'Novo evento' }).click()
+  await expect(page.getByRole('button', { name: 'Saúde', exact: true })).toHaveCount(0)
+  await page.getByLabel('Calendário do Google').selectOption('meals@google.test')
+  await expect(page.getByRole('option', { name: 'Feriados' })).toHaveCount(0)
   await page.getByLabel('Título do evento').fill('Enviado ao Google')
   await page.getByRole('button', { name: 'Salvar evento' }).click()
   await expect(page.getByRole('link', { name: /Enviado ao Google/ })).toContainText('09:00–10:00 · Google Agenda')
   expect(received).toHaveLength(1)
-  expect(received[0]).toMatchObject({ title: 'Enviado ao Google', start: '2026-11-24T12:00:00.000Z', reminderMinutes: 10 })
+  expect(received[0]).toMatchObject({ title: 'Enviado ao Google', calendarId: 'meals@google.test', start: '2026-11-24T12:00:00.000Z', reminderMinutes: 10 })
+})
+
+test('another profile shows shared details and copies a workout routine', async ({ page }) => {
+  const otherId = '22222222-2222-4222-8222-222222222222'
+  const calls = []
+  await page.route('https://*.supabase.co/functions/v1/public-profile', (route) => {
+    const action = route.request().postDataJSON()
+    calls.push(action)
+    return route.fulfill({ json: action.action === 'copy' ? { id: 'copied-routine' } : {
+      id: otherId, name: 'Ana', username: 'ana', level: 7, bio: 'Corro e treino força.', sharing: true, completion: 85,
+      routines: [{ id: 'test-routine', name: 'Treino de força', exercises: [{ name: 'Agachamento', sets: 3, reps: 10 }] }],
+    } })
+  })
+  await page.goto('/profiles/' + otherId)
+  await expect(page.getByRole('heading', { name: 'Ana' })).toBeVisible()
+  await expect(page.getByText('Nível 7')).toBeVisible()
+  await expect(page.getByText('85%')).toBeVisible()
+  await expect(page.getByText('Agachamento')).toBeVisible()
+  await page.getByRole('button', { name: 'Copiar rotina' }).click()
+  await expect(page.getByRole('link', { name: 'Abrir rotina copiada' })).toHaveAttribute('href', '/workouts/routines/copied-routine/edit')
+  expect(calls).toEqual([{ action: 'read', id: otherId }, { action: 'copy', id: 'test-routine' }])
 })

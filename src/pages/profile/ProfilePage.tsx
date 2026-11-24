@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Connections from './Connections'
+import { useProfileSharing } from '../../features/social/sharedProfile'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -15,6 +16,7 @@ export default function ProfilePage() {
   const [params] = useSearchParams()
   const connections = params.get('tab') === 'connections'
   const query = useProfile()
+  const sharing = useProfileSharing()
   const profile = query.data
   const cache = useQueryClient()
   const avatar = useUploadAvatar()
@@ -126,6 +128,12 @@ export default function ProfilePage() {
 
       <section className={styles.card}>
         <h2>Preferências</h2>
+        <strong>Compartilhamento</strong>
+        <button className={styles.button} type="button" aria-pressed={!!sharing.setting.data}
+          disabled={!sharing.setting.isSuccess || sharing.change.isPending}
+          onClick={() => sharing.change.mutate(!sharing.setting.data)}>Compartilhar rotinas e média de hábitos</button>
+        <small>Visíveis para outros usuários do Digital Brain ao abrir seu perfil.</small>
+        {(sharing.setting.isError || sharing.change.isError) && <p className={styles.error} role="alert">Não foi possível atualizar o compartilhamento.</p>}
         <strong>Aparência</strong>
         <div className={styles.themes} role="group" aria-label="Tema do aplicativo">
           <button type="button" className={styles.button} aria-pressed={theme === 'light'} disabled={update.isPending}

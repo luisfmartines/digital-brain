@@ -10,7 +10,7 @@ import { useRoutines, useStartWorkout } from '../../features/workouts/queries'
 import { startOfWeek } from '../../lib/date'
 import { useOnline } from '../../hooks/useOnline'
 import { ago, fmtNum, xpFor } from '../../features/workouts/utils'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import styles from './workouts.module.css'
 
 function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
@@ -41,7 +41,7 @@ function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
       <div className={styles.postHead}>
         <Avatar url={post.author?.avatar_url} name={post.author?.display_name} size={38} />
         <div className={styles.rText}>
-          <strong>{post.author?.display_name ?? 'Atleta'}</strong>
+          {post.author ? <Link className={styles.profileLink} to={`/profiles/${post.author.id}`}><strong>{post.author.display_name ?? 'Atleta'}</strong></Link> : <strong>Atleta</strong>}
           <small>@{post.author?.username ?? 'usuário'} • {ago(post.created_at)}</small>
         </div>
       </div>
@@ -91,7 +91,7 @@ function Finder() {
         return (
           <div key={p.id} className={styles.finderRow}>
             <Avatar url={p.avatar_url} name={p.display_name} size={34} />
-            <div className={styles.rText}><strong>{p.display_name}</strong><small>@{p.username}</small></div>
+            <div className={styles.rText}><Link className={styles.profileLink} to={`/profiles/${p.id}`}><strong>{p.display_name ?? p.username}</strong></Link><small>@{p.username}</small></div>
             <button type="button" className={on ? styles.followOn : styles.follow} onClick={() => toggle.mutate({ id: p.id, following: on })}>
               {on ? <><UserCheck size={13} /> Seguindo</> : <><UserPlus size={13} /> Seguir</>}
             </button>

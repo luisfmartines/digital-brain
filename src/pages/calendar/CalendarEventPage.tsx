@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarPlus, Trash2 } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { EVENT_CATEGORIES, useCalendarEvent, useChangeEvent, type CalendarEvent, type EventInput } from '../../features/calendar/queries'
 import { addDays, localDateStr, parseDate } from '../../lib/date'
+import { useGoogleCalendars, useGoogleConnection } from '../../features/calendar/google'
 import styles from './Calendar.module.css'
 
 const reminders = [
@@ -16,6 +17,11 @@ const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-dig
 function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: string; returnTo: string }) {
   const navigate = useNavigate()
   const change = useChangeEvent()
+  const connection = useGoogleConnection()
+  const connected = !event && !!connection.data
+  const calendars = useGoogleCalendars(connected)
+  const writable = calendars.data?.filter((item) => item.writable) ?? []
+  const cannotSave = !event && (connection.isPending || connection.isError || (connected && !writable.length))
   const start = event ? new Date(event.starts_at) : null
   const end = event?.ends_at ? new Date(event.ends_at) : null
   const [category, setCategory] = useState<EventInput['category']>(event?.category ?? 'personal')
@@ -45,7 +51,8 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
       return
     }
     try {
-      await change.mutateAsync({ id: event?.id, input: {
+      if (cannotSave) return
+      await change.mutateAsync({ id: event?.id, calendarId: connected ? String(values.get('calendarId')) : undefined, input: {
         title, description: description || null, category, all_day: allDay,
         starts_at: starts.toISOString(), ends_at: ends?.toISOString() ?? null,
         alarm_minutes_before: allDay || !reminder ? null : Number(reminder),
@@ -71,12 +78,26 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
 
   return (
     <form className={styles.form} onSubmit={save}>
+      {connected ? (
+        <section className={styles.panel}>
+          {writable.length > 0 ? (
+            <label>Calendário do Google
+              <select name="calendarId" defaultValue={writable.find((item) => item.primary)?.id ?? writable[0].id} required>
+                {writable.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
+          ) : <p role="status">{calendars.isPending ? 'Carregando calendários…' : calendars.error?.message ?? 'Nenhum calendário permite criar eventos.'}</p>}
+          {!writable.length && !calendars.isPending && <Link to="/profile?tab=connections">Conexões</Link>}
+        </section>
+      ) : !connection.data && (!connection.isPending || event) && (
       <div className={styles.categories} role="group" aria-label="Categoria">
         {Object.entries(EVENT_CATEGORIES).map(([id, label]) => (
           <button key={id} type="button" className={styles.soft} aria-pressed={category === id}
             onClick={() => setCategory(id as EventInput['category'])}>{label}</button>
         ))}
       </div>
+      )}
+      {connection.isError && !event && <p role="alert">Não foi possível verificar a conexão. <button type="button" onClick={() => void connection.refetch()}>Tentar novamente</button></p>}
       <section className={styles.panel}>
         <label>Título do evento<input name="title" defaultValue={event?.title} required maxLength={120} /></label>
         <label>Notas<textarea name="description" defaultValue={event?.description ?? ''} rows={3} maxLength={500} /></label>
@@ -109,7 +130,7 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
         </fieldset>
       )}
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <button className={styles.primary} type="submit" disabled={change.isPending}><CalendarPlus size={18} /> Salvar evento</button>
+      <button className={styles.primary} type="submit" disabled={change.isPending || cannotSave}><CalendarPlus size={18} /> Salvar evento</button>
       <Link className={styles.soft} to={returnTo}>Cancelar</Link>
       {event && (
         confirmDelete ? (

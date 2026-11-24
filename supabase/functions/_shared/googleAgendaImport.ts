@@ -21,14 +21,18 @@ export async function readGooglePages<T>(
   return rows;
 }
 
-type Calendar = { id: string; summary?: string; summaryOverride?: string; backgroundColor?: string; accessRole?: string; primary?: boolean };
+export type Calendar = { id: string; summary?: string; summaryOverride?: string; backgroundColor?: string; accessRole?: string; primary?: boolean };
+
+export function readCalendars(access: string) {
+  return readGooglePages<Calendar>(`${CALENDAR}/users/me/calendarList`, access,
+    new URLSearchParams({ showHidden: "true", maxResults: "250" }), "items");
+}
 
 export async function importGoogleAgenda(access: string, start: string, end: string) {
   const warnings: string[] = [];
   let calendars: Calendar[];
   try {
-    calendars = await readGooglePages<Calendar>(`${CALENDAR}/users/me/calendarList`, access,
-      new URLSearchParams({ showHidden: "true", maxResults: "250" }), "items");
+    calendars = await readCalendars(access);
   } catch (error) {
     if (!(error instanceof GoogleCalendarError) || error.message !== "reconnect_required") throw error;
     calendars = [{ id: "primary", summary: "Google Agenda", primary: true }];

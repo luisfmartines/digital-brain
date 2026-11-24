@@ -1,5 +1,5 @@
 import { admin } from "./common.ts";
-import { importGoogleAgenda } from "./googleAgendaImport.ts";
+import { importGoogleAgenda, readCalendars } from "./googleAgendaImport.ts";
 
 const EVENTS = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 
@@ -43,6 +43,7 @@ export interface GoogleEventInput {
   category?: string;
   reminderMinutes?: number | null;
   exportId?: string;
+  calendarId?: string;
 }
 
 export interface GoogleEvent {
@@ -62,7 +63,27 @@ export interface GoogleEvent {
 
 export async function createGoogleEvent(userId: string, input: GoogleEventInput) {
   const access = await googleAccessToken(userId);
-  return access ? insertGoogleEvent(access, input) : null;
+  if (!access) return null;
+  if (input.calendarId !== undefined) {
+    const calendars = await readCalendars(access);
+    if (!calendars.some((calendar) => calendar.id === input.calendarId && canWriteCalendar(calendar.accessRole))) {
+      throw new GoogleCalendarError("invalid_calendar", 400);
+    }
+  }
+  return insertGoogleEvent(access, input);
+}
+
+function canWriteCalendar(role?: string) {
+  return role === "owner" || role === "writer";
+}
+
+export async function listGoogleCalendars(userId: string) {
+  const access = await googleAccessToken(userId);
+  if (!access) return null;
+  return (await readCalendars(access)).map((calendar) => ({
+    id: calendar.id, name: calendar.summaryOverride || calendar.summary || "Google Agenda",
+    color: calendar.backgroundColor, primary: !!calendar.primary, writable: canWriteCalendar(calendar.accessRole),
+  }));
 }
 
 export async function insertGoogleEvent(access: string, input: GoogleEventInput) {
@@ -79,7 +100,8 @@ export async function insertGoogleEvent(access: string, input: GoogleEventInput)
     || (reminderMinutes !== null && (!Number.isInteger(reminderMinutes) || reminderMinutes < 0 || reminderMinutes > 40320))) {
     throw new GoogleCalendarError("invalid_event", 400);
   }
-  const response = await fetch(EVENTS, {
+  const endpoint = input.calendarId ? EVENTS.replace("/primary/", `/${encodeURIComponent(input.calendarId)}/`) : EVENTS;
+  const response = await fetch(endpoint, {
     method: "POST", signal: AbortSignal.timeout(9000),
     headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
     body: JSON.stringify({

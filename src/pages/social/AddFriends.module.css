@@ -47,3 +47,4 @@
 .connect:disabled, .connected:disabled { opacity: 0.6; }
 
 .empty { margin: 0; padding: 22px 16px; border: 1px dashed var(--color-border); border-radius: var(--radius-lg); text-align: center; font-size: 12px; line-height: 1.5; color: var(--color-text-muted); }
+.profileLink { color: var(--color-text); text-underline-offset: 3px; }

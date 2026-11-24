@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
+import { useGoogleCalendars, useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
 import type { AgendaItem } from '../../features/calendar/agenda'
 import { EVENT_CATEGORIES, useCalendarEvents, useCalendarSchedule, type CalendarEvent } from '../../features/calendar/queries'
 import { addDays, localDateStr, parseDate, startOfDay, startOfWeek } from '../../lib/date'
@@ -71,6 +71,7 @@ export default function CalendarPage() {
   const until = view === 'month' ? addDays(startOfWeek(last), 7) : addDays(week, 7)
   const events = useCalendarEvents(from, until)
   const connection = useGoogleConnection()
+  const calendars = useGoogleCalendars(!!connection.data)
   const google = useGoogleEvents(from, until, !!connection.data)
   const schedule = useCalendarSchedule(from, until)
   const rows = useMemo(() => {
@@ -152,7 +153,9 @@ export default function CalendarPage() {
         </div>
         {view === 'month' && (
           <div className={styles.legend}>
-            {Object.entries(EVENT_CATEGORIES).map(([category, label]) => <span key={category}><i data-category={category} />{label}</span>)}
+            {connection.data ? calendars.data?.map(({ id, name, color }) => (
+              <span key={id}><i style={{ backgroundColor: /^#[0-9a-f]{6}$/i.test(color ?? '') ? color : 'var(--color-primary)' }} />{name}</span>
+            )) : Object.entries(EVENT_CATEGORIES).map(([category, label]) => <span key={category}><i data-category={category} />{label}</span>)}
           </div>
         )}
         {showAgenda && <small className={styles.muted}>{visibleCount} {visibleCount === 1 ? 'compromisso' : 'compromissos'} no período</small>}

@@ -65,3 +65,11 @@
 .connectionChevron { color: var(--color-secondary); }
 .connectionRow[aria-expanded='true'] .connectionChevron { rotate: 90deg; }
 .connectionDetails:not([hidden]) { display: grid; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--color-border); }
+.backLink { display: inline-flex; align-items: center; gap: 6px; justify-self: start; color: var(--color-secondary); text-decoration: none; font-size: 13px; }
+.completion { color: var(--color-secondary); }
+.card .completion { font-size: 24px; }
+.sharedHeading { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.sharedHeading svg { color: var(--color-secondary); }
+.sharedExercises { display: grid; gap: 6px; margin: 0; padding-inline-start: 20px; font-size: 13px; }
+.sharedExercises li small { display: block; }
+.card a.button { text-decoration: none; color: var(--color-text); }
