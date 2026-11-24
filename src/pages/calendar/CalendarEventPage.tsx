@@ -1,3 +1,5 @@
+import ChoiceField from '../../components/ui/ChoiceField'
+import { useConfirmation } from '../../components/ui/useConfirmation'
 import { useState, type FormEvent } from 'react'
 import { ArrowLeft, CalendarPlus, Trash2 } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -30,7 +32,9 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
   const [reminder, setReminder] = useState(event ? String(event.alarm_minutes_before ?? '') : '10')
   const [error, setError] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const confirmation = useConfirmation()
+  const [calendarId, setCalendarId] = useState('')
+  const selectedCalendar = writable.find((item) => item.id === calendarId)?.id ?? writable.find((item) => item.primary)?.id ?? writable[0]?.id
 
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -81,11 +85,8 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
       {connected ? (
         <section className={styles.panel}>
           {writable.length > 0 ? (
-            <label>Calendário do Google
-              <select name="calendarId" defaultValue={writable.find((item) => item.primary)?.id ?? writable[0].id} required>
-                {writable.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </label>
+            <ChoiceField label="Calendário do Google" name="calendarId" value={selectedCalendar ?? ''}
+              onChange={setCalendarId} options={writable.map(({ id, name }) => ({ value: id, label: name }))} />
           ) : <p role="status">{calendars.isPending ? 'Carregando calendários…' : calendars.error?.message ?? 'Nenhum calendário permite criar eventos.'}</p>}
           {!writable.length && !calendars.isPending && <Link to="/profile?tab=connections">Conexões</Link>}
         </section>
@@ -132,15 +133,11 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
       {error && <p className={styles.error} role="alert">{error}</p>}
       <button className={styles.primary} type="submit" disabled={change.isPending || cannotSave}><CalendarPlus size={18} /> Salvar evento</button>
       <Link className={styles.soft} to={returnTo}>Cancelar</Link>
-      {event && (
-        confirmDelete ? (
-          <div className={styles.panel}>
-            <strong>Excluir este evento?</strong>
-            <button className={styles.danger} type="button" onClick={remove} disabled={change.isPending}>Confirmar exclusão</button>
-            <button className={styles.soft} type="button" onClick={() => setConfirmDelete(false)}>Manter evento</button>
-          </div>
-        ) : <button className={styles.danger} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} /> Excluir evento</button>
-      )}
+      {event && <button className={styles.danger} type="button" disabled={change.isPending}
+        onClick={() => confirmation.ask({ title: 'Excluir este evento?', danger: true, confirmLabel: 'Confirmar exclusão', onConfirm: remove })}>
+        <Trash2 size={16} /> Excluir evento
+      </button>}
+      {confirmation.dialog}
     </form>
   )
 }

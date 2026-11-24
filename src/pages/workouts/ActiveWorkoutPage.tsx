@@ -1,7 +1,12 @@
-import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
+import ChoiceField from '../../components/ui/ChoiceField'
+import Dialog from '../../components/ui/Dialog'
+import { useConfirmation } from '../../components/ui/useConfirmation'
+import dialogStyles from '../../components/ui/Dialog.module.css'
+import { SET_TYPES, REST_OPTIONS, MAX_REST_SECONDS, isPreparation, normalizeRest, setTypeOf, type SetType } from '../../features/workouts/setTypes'
 import { useProfile } from '../../features/profile/useProfile'
 import { usePrevious, useRoutine, useSession, useSessionActions, type Exercise, type SessionSet } from '../../features/workouts/queries'
 import { fmtClock, fmtNum, muscleLabel, volumeOf, workoutSeconds } from '../../features/workouts/utils'
@@ -15,7 +20,6 @@ import styles from './workouts.module.css'
 interface Group { exercise: Exercise; order: number; sets: SessionSet[] }
 const groupKey = (g: Group) => `${g.order}:${g.exercise.id}`
 
-const REST_LIMIT = 3600
 const restStorageKey = (id: string) => 'workout-rest:' + id
 
 function readRestDurations(id: string): Record<string, number> {
@@ -36,21 +40,11 @@ function storeRestDurations(id: string, durations?: Record<string, number>) {
 }
 
 function RestDurationField({ seconds, onApply }: { seconds: number; onApply: (value: number) => void }) {
-  const [draft, setDraft] = useState<string | null>(null)
-  const fieldId = useId()
   return (
-    <form className={styles.restDurationField} onSubmit={(event) => {
-      event.preventDefault()
-      const value = Number(draft ?? seconds)
-      if (draft === '' || !Number.isInteger(value) || value < 0 || value > REST_LIMIT) return
-      onApply(value)
-      setDraft(null)
-    }}>
-      <label htmlFor={fieldId}>Descanso entre séries (segundos)</label>
-      <input id={fieldId} className={styles.mini} type="number" inputMode="numeric" min={0} max={REST_LIMIT} step={1} required
-        value={draft ?? seconds} onChange={(event) => setDraft(event.currentTarget.value)} />
-      <button type="submit" className={styles.smallBtn} disabled={draft === null || Number(draft) === seconds}>Aplicar</button>
-    </form>
+    <div className={styles.restDurationField}>
+      <span>Descanso entre séries</span>
+      <ChoiceField label="Descanso entre séries" value={seconds} options={REST_OPTIONS} onChange={onApply} />
+    </div>
   )
 }
 
@@ -110,19 +104,14 @@ function ActiveGuidance({ exercise, onDetails }: { exercise: Exercise; onDetails
 function FinishOptions({ name, busy, error, onClose, onFinish }: {
   name: string; busy: boolean; error: boolean; onClose: () => void; onFinish: (update: boolean) => void
 }) {
-  const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => { dialog.current?.showModal() }, [])
-
   return (
-    <dialog ref={dialog} className={styles.finishDialog} aria-labelledby="finish-title"
-      onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
-      <h2 id="finish-title">Atualizar a rotina?</h2>
-      <p>Seu treino será registrado com as alterações. Você quer aplicá-las à rotina {name} para os próximos treinos?</p>
+    <Dialog title="Atualizar a rotina?" busy={busy} onClose={onClose}>
+      <p className={dialogStyles.description}>Seu treino será registrado com as alterações. Você quer aplicá-las à rotina {name} para os próximos treinos?</p>
       {error && <p role="alert">Não foi possível finalizar o treino. Tente novamente.</p>}
-      <button type="button" className={styles.primary} disabled={busy} onClick={() => onFinish(true)}>Atualizar rotina</button>
-      <button type="button" className={styles.addExBtn} disabled={busy} onClick={() => onFinish(false)}>Manter rotina original</button>
-      <button type="button" className={styles.addSet} disabled={busy} onClick={onClose}>Voltar ao treino</button>
-    </dialog>
+      <button type="button" className={dialogStyles.button + ' ' + dialogStyles.primary} disabled={busy} onClick={() => onFinish(true)}>Atualizar rotina</button>
+      <button type="button" className={dialogStyles.button} disabled={busy} onClick={() => onFinish(false)}>Manter rotina original</button>
+      <button type="button" className={dialogStyles.button} disabled={busy} onClick={onClose}>Voltar ao treino</button>
+    </Dialog>
   )
 }
 
@@ -151,21 +140,22 @@ interface RowProps {
   current: boolean
   onCommit: (patch: { weight_kg: number | null; reps: number | null }) => void
   onToggle: (weight: number | null, reps: number | null) => void
-  onCycle: () => void
+  onTypeChange: (type: SetType) => void
   onRemove: () => void
   busy: boolean
 }
 
-function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle, onRemove, busy }: RowProps) {
+function SetRow({ set, label, previous, current, onCommit, onToggle, onTypeChange, onRemove, busy }: RowProps) {
   const [w, setW] = useState(set.weight_kg === null ? '' : String(set.weight_kg))
   const [r, setR] = useState(set.reps === null ? '' : String(set.reps))
   const gesture = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null)
   const suppressClick = useRef(false)
   const [offset, setOffset] = useState(0)
+  const type = setTypeOf(set)
 
   function start(event: PointerEvent<HTMLDivElement>) {
     suppressClick.current = false
-    if (busy || !event.isPrimary || event.button !== 0) return
+    if (busy || !event.isPrimary || event.button !== 0 || (event.target instanceof Element && event.target.closest('dialog'))) return
     if (event.pointerType === 'mouse' && event.target instanceof Element && event.target.closest('input, button')) return
     gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false }
   }
@@ -216,7 +206,9 @@ function SetRow({ set, label, previous, current, onCommit, onToggle, onCycle, on
       <span hidden={offset === 0} className={styles.swipeDelete} aria-hidden="true"><Trash2 size={16} /></span>
       <div style={{ transform: offset ? `translateX(${offset}px)` : undefined }}
         className={`${styles.setRow} ${current ? styles.setCurrent : ''} ${set.completed ? styles.setDone : ''}`}>
-        <button type="button" className={styles.setIndex + ' ' + (set.is_warmup ? styles.setNumW : styles.setNum)} onClick={onCycle} aria-label="Alternar aquecimento">{set.is_warmup ? 'W' : label}</button>
+        <ChoiceField label="Tipo da série" value={type.value} options={SET_TYPES} onChange={onTypeChange} disabled={busy}
+          className={styles.setIndex + ' ' + (type.short ? styles.setNumW : styles.setNum)}
+          compactText={type.short || label} />
         <span className={styles.prev}><span className={styles.setFieldLabel}>Anterior</span>{previous ? `${previous.weight_kg ?? 0}kg × ${previous.reps ?? 0}` : '—'}</span>
         <label className={styles.setWeight}>
           <span className={styles.setFieldLabel}>Peso (kg)</span>
@@ -244,6 +236,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   const { data: session, isLoading, isError, refetch } = useSession(id)
   const routine = useRoutine(session?.routine_id ?? undefined)
   const actions = useSessionActions(id)
+  const confirmation = useConfirmation()
 
   const [now, setNow] = useState(() => Date.now())
   const [rest, setRest] = useState<{ group: string; endsAt: number; label: string } | null>(null)
@@ -303,7 +296,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   const currentSetId = currentGroup?.sets.find((s) => !s.completed)?.id
   const plan = routine.data?.routine_exercises
   const planFor = (g: Group) => plan?.[g.order]
-  const restFor = (g: Group) => restDurations[groupKey(g)] ?? planFor(g)?.rest_seconds ?? 90
+  const restFor = (g: Group) => normalizeRest(restDurations[groupKey(g)] ?? planFor(g)?.rest_seconds ?? 90)
 
   function changeRest(g: Group, seconds: number) {
     const key = groupKey(g)
@@ -314,7 +307,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     setNow(Date.now())
     setRest((current) => {
       if (current?.group !== key) return current
-      return seconds === 0 ? null : { ...current, endsAt: current.endsAt + changeMs }
+      return { ...current, endsAt: Math.min(current.endsAt + changeMs, Date.now() + MAX_REST_SECONDS * 1000) }
     })
   }
   const changed = !!plan && (plan.length !== groups.length || groups.some((g, i) =>
@@ -324,18 +317,14 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     actions.removeExercise.isPending || actions.replaceExercise.isPending
   const busy = editing || actions.finish.isPending || actions.discard.isPending
   const editFailed = actions.addSet.isError || actions.removeSet.isError || actions.removeExercise.isError ||
-    (actions.updateSet.isError && !actions.updateSet.isPending)
+    actions.discard.isError || (actions.updateSet.isError && !actions.updateSet.isPending)
   const remaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0
 
   function toggleSet(g: Group, s: SessionSet, weight: number | null, reps: number | null) {
     const completed = !s.completed
     actions.updateSet.mutate({ setId: s.id, patch: { completed, weight_kg: weight, reps } })
     const seconds = restFor(g)
-    if (completed && !s.is_warmup) {
-      if (seconds <= 0) {
-        setRest(null)
-        return
-      }
+    if (completed) {
       const startedAt = Date.now()
       setNow(startedAt)
       const next = g.sets.find((x) => x.set_number > s.set_number && !x.completed)
@@ -359,14 +348,14 @@ function ActiveWorkoutSession({ id }: { id: string }) {
 
   function finish() {
     if (done.length === 0) {
-      window.alert('Complete pelo menos uma série ou descarte o treino com o botão X.')
+      confirmation.ask({ title: 'Treino sem séries concluídas', description: 'Complete pelo menos uma série ou descarte o treino com o botão X.' })
       return
     }
     if (changed) {
       actions.finish.reset()
       setAskingToUpdate(true)
-    } else if (window.confirm('Finalizar este treino?')) {
-      complete(false)
+    } else {
+      confirmation.ask({ title: 'Finalizar este treino?', confirmLabel: 'Finalizar', onConfirm: () => complete(false) })
     }
   }
 
@@ -397,19 +386,24 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     if (picker === 'add') {
       actions.addExercise.mutate({ exerciseId: exercise.id, order: Math.max(plan?.length ?? 0, (groups.at(-1)?.order ?? -1) + 1) }, callbacks)
     } else if (picker) {
-      if (picker.sets.some((s) => s.completed) && !window.confirm('Substituir o exercício e apagar os registros das séries já concluídas?')) return
-      actions.replaceExercise.mutate({
+      const replace = () => actions.replaceExercise.mutate({
         exerciseId: picker.exercise.id, replacementId: exercise.id, order: picker.order,
       }, callbacks)
+      if (picker.sets.some((s) => s.completed)) {
+        confirmation.ask({ title: 'Substituir exercício?', description: 'Os registros das séries concluídas deste exercício serão apagados.',
+          confirmLabel: 'Substituir', danger: true, onConfirm: replace })
+      } else replace()
     }
   }
 
   function discard() {
-    if (!window.confirm('Descartar este treino? As séries registradas serão perdidas.')) return
-    actions.discard.mutate(undefined, { onSuccess: () => {
-      storeRestDurations(id)
-      navigate('/workouts', { replace: true })
-    } })
+    confirmation.ask({
+      title: 'Descartar este treino?', description: 'As séries registradas serão perdidas.', confirmLabel: 'Descartar treino', danger: true,
+      onConfirm: () => actions.discard.mutate(undefined, { onSuccess: () => {
+        storeRestDurations(id)
+        navigate('/workouts', { replace: true })
+      } }),
+    })
   }
 
   return (
@@ -496,7 +490,9 @@ function ActiveWorkoutSession({ id }: { id: string }) {
                         onRemove={() => { if (!busy) actions.removeSet.mutate(s.id) }}
                         onCommit={(patch) => actions.updateSet.mutate({ setId: s.id, patch })}
                         onToggle={(w, r) => toggleSet(g, s, w, r)}
-                        onCycle={() => actions.updateSet.mutate({ setId: s.id, patch: { is_warmup: !s.is_warmup } })}
+                        onTypeChange={(type) => actions.updateSet.mutate({
+                          setId: s.id, patch: { set_type: type, is_warmup: isPreparation(type) },
+                        })}
                       />
                     )
                   })}
@@ -528,7 +524,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
           </div>
           <div className={styles.restBtns}>
             <button type="button" onClick={() => setRest({ ...rest, endsAt: rest.endsAt - 15000 })}>−15s</button>
-            <button type="button" onClick={() => setRest({ ...rest, endsAt: rest.endsAt + 30000 })}>+30s</button>
+            <button type="button" onClick={() => setRest({ ...rest, endsAt: Math.min(rest.endsAt + 30000, Date.now() + MAX_REST_SECONDS * 1000) })}>+30s</button>
             <button type="button" className={styles.skip} onClick={() => setRest(null)}>Pular descanso <FastForward size={14} /></button>
           </div>
         </section>
@@ -544,6 +540,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
           onPick={selectExercise}
         />
       )}
+      {confirmation.dialog}
       {detail && <ExerciseDetail exercise={detail} onClose={() => setDetail(null)} />}
       {askingToUpdate && (
         <FinishOptions name={routine.data?.name ?? session.name} busy={actions.finish.isPending} error={actions.finish.isError}

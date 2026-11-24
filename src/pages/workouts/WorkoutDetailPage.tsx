@@ -1,3 +1,4 @@
+import { setTypeOf } from '../../features/workouts/setTypes'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -65,12 +66,15 @@ export default function WorkoutDetailPage() {
               <table className={styles.detTable}>
                 <thead><tr><th>SÉRIE</th><th>PESO E REPETIÇÕES</th></tr></thead>
                 <tbody>
-                  {ex.sets.map((s, i) => (
-                    <tr key={s.id}>
-                      <td>{s.is_warmup ? <span className={styles.detWarm}>A</span> : ex.sets.slice(0, i).filter((x) => !x.is_warmup).length + 1}</td>
-                      <td>{s.weight_kg ? `${kg(s.weight_kg)} x ${s.reps ?? '—'}` : `${s.reps ?? '—'} repetições`}</td>
-                    </tr>
-                  ))}
+                  {ex.sets.map((s, i) => {
+                    const type = setTypeOf(s)
+                    return (
+                      <tr key={s.id}>
+                        <td>{type.short ? <span className={styles.detWarm} title={type.label}>{type.short}</span> : ex.sets.slice(0, i).filter((x) => !x.is_warmup).length + 1}</td>
+                        <td>{s.weight_kg ? `${kg(s.weight_kg)} x ${s.reps ?? '—'}` : `${s.reps ?? '—'} repetições`}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

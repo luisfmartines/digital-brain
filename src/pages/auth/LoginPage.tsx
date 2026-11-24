@@ -183,7 +183,7 @@ export default function LoginPage() {
                     autoComplete="off"
                     autoCapitalize="none"
                     spellCheck={false}
-                    placeholder="luisfelipe"
+                    placeholder="seu usuário"
                   />
                   {userStatus === 'available' && <CheckCircle2 size={18} className={styles.ok} />}
                 </div>

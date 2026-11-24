@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, Copy, Dumbbell } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import Avatar from '../../components/ui/Avatar'
+import ProfileAvatar from './ProfileAvatar'
 import { useAuth } from '../../features/auth/useAuth'
 import { useCopySharedRoutine, useSharedProfile } from '../../features/social/sharedProfile'
 import styles from './Profile.module.css'
@@ -24,7 +24,7 @@ export default function SharedProfilePage() {
       <Link to="/friends/add" className={styles.backLink}><ArrowLeft size={16} /> Amigos</Link>
       <section className={`${styles.card} ${styles.identity}`}>
         <div className={styles.person}>
-          <Avatar url={avatar} name={name ?? username} size={64} ring />
+          <ProfileAvatar url={avatar} name={name ?? username} size={64} />
           <div>
             <h1>{name || username || 'Perfil'}</h1>
             {username && <small>@{username} · </small>}<small>Nível {level ?? 1}</small>

@@ -1,3 +1,5 @@
+import { setTypeOf } from '../../features/workouts/setTypes'
+import ChoiceField from '../../components/ui/ChoiceField'
 import { useState } from 'react'
 import { ArrowLeft, Link2, Search, Trophy, Unlink } from 'lucide-react'
 import { muscleName } from '../../features/exercisedb/api'
@@ -133,9 +135,8 @@ function Summary({ exercise, history, primary, secondary }: { exercise: Exercise
           <div className={styles.big}>
             {last ? <><b>{fmtNum(last.value)} {m.unit}</b> <span>{shortDate(last.at)}</span></> : <b>—</b>}
           </div>
-          <select value={range} onChange={(e) => setRange(e.target.value as RangeId)} aria-label="Período">
-            {RANGES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
-          </select>
+          <ChoiceField label="Período" value={range} onChange={setRange}
+            options={RANGES.map(({ id, label }) => ({ value: id, label }))} />
         </div>
         <Chart points={points} unit={m.unit} />
         <div className={styles.chips}>
@@ -176,9 +177,10 @@ function History({ history }: { history: HistSession[] }) {
             <ol>
               {s.sets.map((x) => {
                 if (!x.is_warmup) n += 1
+                const type = setTypeOf(x)
                 return (
                   <li key={x.id}>
-                    <span className={x.is_warmup ? styles.warm : styles.setNo}>{x.is_warmup ? 'A' : n}</span>
+                    <span title={type.label} className={type.short ? styles.warm : styles.setNo}>{type.short || n}</span>
                     {x.weight_kg ? `${kg(x.weight_kg)} × ${x.reps ?? '—'}` : `${x.reps ?? '—'} repetições`}
                   </li>
                 )

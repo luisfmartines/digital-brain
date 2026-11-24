@@ -4,11 +4,12 @@ import Connections from './Connections'
 import { useProfileSharing } from '../../features/social/sharedProfile'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Brain, Camera, Globe2, LogOut, Moon, Pencil, Sun, Trophy } from 'lucide-react'
-import Avatar from '../../components/ui/Avatar'
+import ProfileAvatar from './ProfileAvatar'
+import AvatarCropDialog from './AvatarCropDialog'
 import { MODULES } from '../../features/onboarding/modules'
 import { levelInfo } from '../../features/profile/level'
 import { useProfile } from '../../features/profile/useProfile'
-import { useUploadAvatar } from '../../features/profile/useUploadAvatar'
+import { useUploadAvatar, validateAvatarFile } from '../../features/profile/useUploadAvatar'
 import { supabase } from '../../lib/supabase'
 import styles from './Profile.module.css'
 
@@ -20,6 +21,8 @@ export default function ProfilePage() {
   const profile = query.data
   const cache = useQueryClient()
   const avatar = useUploadAvatar()
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoError, setPhotoError] = useState('')
   const [editing, setEditing] = useState(false)
   const [signOutError, setSignOutError] = useState(false)
   const update = useMutation({
@@ -73,7 +76,7 @@ export default function ProfilePage() {
       <section className={`${styles.card} ${styles.identity}`} aria-label="Dados do perfil">
         <div className={styles.row}>
           <div className={styles.person}>
-            <Avatar url={profile.avatar_url} name={profile.display_name} size={56} ring />
+            <ProfileAvatar url={profile.avatar_url} name={profile.display_name} size={56} />
             <div>
               <h2>{profile.display_name || 'Seu perfil'}</h2>
               {profile.username && <span className={styles.accent}>@{profile.username}</span>}
@@ -89,10 +92,16 @@ export default function ProfilePage() {
             onChange={(e) => {
               const file = e.currentTarget.files?.[0]
               e.currentTarget.value = ''
-              if (file) avatar.mutate(file)
+              if (!file) return
+              const message = validateAvatarFile(file)
+              setPhotoError(message)
+              avatar.reset()
+              if (!message) setPhotoFile(file)
             }} />
         </label>
-        {avatar.isError && <p className={styles.error} role="alert">{avatar.error.message}</p>}
+        {photoError && <p className={styles.error} role="alert">{photoError}</p>}
+        {photoFile && <AvatarCropDialog file={photoFile} uploading={avatar.isPending} uploadError={avatar.error?.message}
+          onClose={() => setPhotoFile(null)} onSave={(blob) => avatar.mutate(blob, { onSuccess: () => setPhotoFile(null) })} />}
         {editing ? (
           <form className={styles.form} onSubmit={save}>
             <label>Nome<input name="displayName" required maxLength={80} defaultValue={profile.display_name ?? ''}

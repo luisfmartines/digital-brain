@@ -1,3 +1,4 @@
+import type { SetType } from '../workouts/setTypes'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
@@ -184,7 +185,7 @@ export function useLeaderboard(weekStart: Date) {
 
 /* ---------- Detalhe completo de um treino (feed) ---------- */
 
-export interface WorkoutDetailSet { id: string; exercise_id: string; set_number: number; exercise_order: number; weight_kg: number | null; reps: number | null; is_warmup: boolean; completed: boolean; exercise: { name: string; muscle_group: string } | null }
+export interface WorkoutDetailSet { id: string; exercise_id: string; set_number: number; exercise_order: number; weight_kg: number | null; reps: number | null; is_warmup: boolean; set_type?: SetType | null; completed: boolean; exercise: { name: string; muscle_group: string } | null }
 export interface WorkoutDetail {
   id: string; name: string; started_at: string; ended_at: string | null; paused_seconds: number; photo_url: string | null
   author?: Profile
@@ -199,7 +200,7 @@ export function useWorkoutDetail(id?: string) {
     queryFn: async (): Promise<WorkoutDetail | null> => {
       const { data, error } = await supabase
         .from('workouts')
-        .select('id, user_id, name, started_at, ended_at, paused_seconds, photo_url, workout_sets(id, exercise_id, set_number, exercise_order, weight_kg, reps, is_warmup, completed, exercise:exercises(name, muscle_group))')
+        .select('id, user_id, name, started_at, ended_at, paused_seconds, photo_url, workout_sets(*, exercise:exercises(name, muscle_group))')
         .eq('id', id!).is('deleted_at', null).maybeSingle()
       if (error) throw error
       if (!data) return null

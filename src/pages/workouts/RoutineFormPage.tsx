@@ -4,11 +4,12 @@ import { ArrowDown, ArrowUp, ChevronLeft, Plus, Trash2 } from 'lucide-react'
 import { useRoutine, useSaveRoutine, type Exercise, type Routine } from '../../features/workouts/queries'
 import { muscleLabel } from '../../features/workouts/utils'
 import ExercisePicker from './ExercisePicker'
+import ChoiceField from '../../components/ui/ChoiceField'
+import { normalizeRest, REST_OPTIONS } from '../../features/workouts/setTypes'
 import styles from './workouts.module.css'
 import { parseSetCount } from '../../features/workouts/routineInput'
 
 interface Row { key: string; exercise: Exercise; target_sets: string; rest_seconds: number }
-const REST = [45, 60, 90, 120, 180]
 
 function RoutineForm({ routine }: { routine?: Routine }) {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
   const [focus, setFocus] = useState(routine?.focus ?? '')
   const [tags, setTags] = useState((routine?.tags ?? []).join(', '))
   const [rows, setRows] = useState<Row[]>(
-    routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), rest_seconds: r.rest_seconds })) ?? []
+    routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), rest_seconds: normalizeRest(r.rest_seconds) })) ?? []
   )
   const [picker, setPicker] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,9 +83,8 @@ function RoutineForm({ routine }: { routine?: Routine }) {
               </div>
               <div className={styles.ctrlRow}>
                 <label>Séries<input className={styles.mini} inputMode="numeric" value={r.target_sets} onFocus={(e) => e.currentTarget.select()} onChange={(e) => patch(r.key, { target_sets: e.target.value })} aria-invalid={r.target_sets !== '' && parseSetCount(r.target_sets) === null} /></label>
-                <label>Descanso<select className={styles.mini} value={r.rest_seconds} onChange={(e) => patch(r.key, { rest_seconds: Number(e.target.value) })}>
-                  {REST.map((s) => <option key={s} value={s}>{s}s</option>)}
-                </select></label>
+                <div><span>Descanso</span><ChoiceField label="Descanso" value={r.rest_seconds} options={REST_OPTIONS}
+                  onChange={(rest_seconds) => patch(r.key, { rest_seconds })} /></div>
               </div>
             </li>
           ))}

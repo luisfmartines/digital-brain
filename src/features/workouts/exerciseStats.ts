@@ -1,4 +1,6 @@
-export interface HistSet { id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean }
+import type { SetType } from './setTypes'
+
+export interface HistSet { id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean; set_type?: SetType | null }
 export interface HistSession { id: string; name: string; at: Date; sets: HistSet[] }
 
 export type MetricId = 'weight' | 'reps' | 'volume' | 'sessionReps'

@@ -1,3 +1,4 @@
+import { useConfirmation } from '../../components/ui/useConfirmation'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, Clock, History, Dumbbell, MoreVertical, Pencil, Play, PlayCircle, Plus, Timer, TrendingUp, Zap } from 'lucide-react'
@@ -23,6 +24,7 @@ export default function TrainingView() {
   const active = useActiveWorkout().data
   const start = useStartWorkout()
   const remove = useDeleteRoutine()
+  const confirmation = useConfirmation()
   const [menuId, setMenuId] = useState<string | null>(null)
 
   const go = (r?: Routine) => start.mutate(r, { onSuccess: (id) => navigate(`/workouts/active/${id}`) })
@@ -111,7 +113,11 @@ export default function TrainingView() {
                   <button type="button" className={styles.plainBtn} onClick={() => setMenuId(menuId === r.id ? null : r.id)} aria-label="Opções da rotina"><MoreVertical size={16} /></button>
                   {menuId === r.id && (
                     <div className={styles.menu}>
-                      <button type="button" onClick={() => { setMenuId(null); if (window.confirm(`Excluir “${r.name}”?`)) remove.mutate(r.id) }}>Excluir</button>
+                      <button type="button" onClick={() => {
+                        setMenuId(null)
+                        confirmation.ask({ title: 'Excluir rotina?', description: r.name, danger: true, confirmLabel: 'Excluir rotina',
+                          onConfirm: () => remove.mutate(r.id) })
+                      }}>Excluir</button>
                     </div>
                   )}
                 </div>
@@ -125,6 +131,9 @@ export default function TrainingView() {
           )
         })}
       </ul>
+
+      {confirmation.dialog}
+      {remove.isError && <p role="alert" className={styles.error}>Não foi possível excluir a rotina.</p>}
 
       {history.length > 0 && (
         <>

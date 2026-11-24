@@ -73,3 +73,27 @@
 .sharedExercises { display: grid; gap: 6px; margin: 0; padding-inline-start: 20px; font-size: 13px; }
 .sharedExercises li small { display: block; }
 .card a.button { text-decoration: none; color: var(--color-text); }
+
+.avatarViewerTrigger {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: zoom-in;
+}
+.avatarViewerImage, .avatarCrop {
+  justify-self: center;
+  display: block;
+  width: min(100%, 285px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-surface-2);
+}
+.avatarCrop { touch-action: none; cursor: grab; }
+.avatarCrop:active { cursor: grabbing; }
+.avatarZoom { display: grid; gap: 6px; color: var(--color-text); font-size: 14px; }
+.avatarZoom input { width: 100%; accent-color: var(--color-primary); }

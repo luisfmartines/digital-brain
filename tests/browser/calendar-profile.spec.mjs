@@ -77,7 +77,15 @@ test('profile persists the theme and the header keeps the friends action', async
 
 test('profile validates, uploads and replaces a photo', async ({ page }) => {
   await page.goto('/profile')
-  const encoded = await page.evaluate(() => document.createElement('canvas').toDataURL('image/png').split(',')[1])
+  const encoded = await page.evaluate(() => {
+    const stamp = document.createElement('canvas')
+    const paint = stamp.getContext('2d')
+    paint.fillStyle = '#b32b46'
+    paint.fillRect(0, 0, 120, stamp.height)
+    paint.fillStyle = '#165c83'
+    paint.fillRect(120, 0, stamp.width - 120, stamp.height)
+    return stamp.toDataURL('image/png').split(',')[1]
+  })
   const photo = Buffer.from(encoded, 'base64')
   await page.route('https://*.supabase.co/storage/v1/object/public/avatars/**', (route) =>
     route.fulfill({ contentType: 'image/png', body: photo }))
@@ -87,15 +95,30 @@ test('profile validates, uploads and replaces a photo', async ({ page }) => {
 
   const upload = page.waitForRequest((req) => req.url().includes('/storage/v1/object/avatars/') && req.method() === 'POST')
   await input.setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: photo })
+  const crop = page.getByRole('dialog', { name: 'Ajustar foto do perfil' })
+  const canvas = crop.getByLabel('Enquadramento da foto do perfil')
+  await expect(canvas).toHaveCSS('border-radius', '50%')
+  const original = await canvas.evaluate((element) => element.toDataURL())
+  await crop.getByLabel('Zoom').press('ArrowRight')
+  await expect.poll(() => canvas.evaluate((element) => element.toDataURL())).not.toBe(original)
+  const zoomed = await canvas.evaluate((element) => element.toDataURL())
+  await canvas.press('ArrowRight')
+  await expect.poll(() => canvas.evaluate((element) => element.toDataURL())).not.toBe(zoomed)
+  await crop.getByRole('button', { name: 'Salvar foto' }).click()
   const request = await upload
   expect(new URL(request.url()).pathname).toBe(`/storage/v1/object/avatars/${userId}/profile.jpg`)
   expect(request.headers()['x-upsert']).toBe('true')
 
-  const avatar = page.getByRole('button', { name: 'Perfil' }).locator('img')
+  const avatar = page.getByRole('button', { name: 'Perfil', exact: true }).locator('img')
   await expect(avatar).toHaveAttribute('src', /profile\.jpg\?v=/)
   await expect(avatar).toHaveJSProperty('naturalWidth', 300)
   const firstUrl = await avatar.getAttribute('src')
+  await page.getByRole('button', { name: 'Ampliar foto de perfil' }).click()
+  const viewer = page.getByRole('dialog', { name: 'Foto de Ana' })
+  await expect(viewer.getByRole('img')).toHaveCSS('border-radius', '50%')
+  await viewer.getByRole('button', { name: 'Fechar' }).click()
   await page.getByLabel('Trocar foto', { exact: true }).setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: photo })
+  await crop.getByRole('button', { name: 'Salvar foto' }).click()
   await expect(avatar).not.toHaveAttribute('src', firstUrl)
   await page.reload()
   await expect(avatar).toHaveAttribute('src', /profile\.jpg\?v=/)
@@ -186,7 +209,8 @@ test('connected calendar reads Google events and sends new events to the same ag
   await expect(page.getByRole('link', { name: /Feriado no Google/ })).toContainText('Dia inteiro · Google Agenda · Refeições')
   await page.getByRole('link', { name: 'Novo evento' }).click()
   await expect(page.getByRole('button', { name: 'Saúde', exact: true })).toHaveCount(0)
-  await page.getByLabel('Calendário do Google').selectOption('meals@google.test')
+  await page.getByRole('button', { name: /^Calendário do Google,/ }).click()
+  await page.getByRole('dialog', { name: 'Calendário do Google' }).getByRole('button', { name: 'Refeições' }).click()
   await expect(page.getByRole('option', { name: 'Feriados' })).toHaveCount(0)
   await page.getByLabel('Título do evento').fill('Enviado ao Google')
   await page.getByRole('button', { name: 'Salvar evento' }).click()
@@ -202,7 +226,7 @@ test('another profile shows shared details and copies a workout routine', async 
     const action = route.request().postDataJSON()
     calls.push(action)
     return route.fulfill({ json: action.action === 'copy' ? { id: 'copied-routine' } : {
-      id: otherId, name: 'Ana', username: 'ana', level: 7, bio: 'Corro e treino força.', sharing: true, completion: 85,
+      id: otherId, name: 'Ana', username: 'ana', avatar: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=', level: 7, bio: 'Corro e treino força.', sharing: true, completion: 85,
       routines: [{ id: 'test-routine', name: 'Treino de força', exercises: [{ name: 'Agachamento', sets: 3, reps: 10 }] }],
     } })
   })
@@ -210,6 +234,10 @@ test('another profile shows shared details and copies a workout routine', async 
   await expect(page.getByRole('heading', { name: 'Ana' })).toBeVisible()
   await expect(page.getByText('Nível 7')).toBeVisible()
   await expect(page.getByText('85%')).toBeVisible()
+  await page.getByRole('button', { name: 'Ampliar foto de perfil' }).click()
+  const viewer = page.getByRole('dialog', { name: 'Foto de Ana' })
+  await expect(viewer.getByRole('img')).toHaveCSS('border-radius', '50%')
+  await viewer.getByRole('button', { name: 'Fechar' }).click()
   await expect(page.getByText('Agachamento')).toBeVisible()
   await page.getByRole('button', { name: 'Copiar rotina' }).click()
   await expect(page.getByRole('link', { name: 'Abrir rotina copiada' })).toHaveAttribute('href', '/workouts/routines/copied-routine/edit')
@@ -243,4 +271,16 @@ test('home progress is left-aligned and the workout tabs share the full bar', as
   }
   await ranking.click()
   await expect(ranking).toHaveAttribute('aria-selected', 'true')
+})
+
+test('habit creation uses the theme picker and submits the chosen category', async ({ page }) => {
+  await page.goto('/routine?tab=habits')
+  await page.getByPlaceholder('Ex.: Ler por 20 minutos').fill('Caminhar depois do almoço')
+  await page.getByRole('button', { name: /^Categoria do hábito,/ }).click()
+  const choice = page.getByRole('dialog', { name: 'Categoria do hábito' })
+  await choice.getByRole('button', { name: 'Condicionamento e Movimento' }).click()
+  await expect(choice).toBeHidden()
+  const request = page.waitForRequest((req) => new URL(req.url()).pathname.endsWith('/rest/v1/habits') && req.method() === 'POST')
+  await page.getByRole('button', { name: 'Ativar hábito' }).click()
+  expect((await request).postDataJSON()).toMatchObject({ name: 'Caminhar depois do almoço', category: 'fitness' })
 })

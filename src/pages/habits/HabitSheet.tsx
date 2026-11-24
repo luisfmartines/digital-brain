@@ -1,5 +1,7 @@
+import { useConfirmation } from '../../components/ui/useConfirmation'
+import ChoiceField from '../../components/ui/ChoiceField'
 import { useState } from 'react'
-import { Clock, Droplet, Minus, Plus, Sprout, Trash2, X } from 'lucide-react'
+import { Clock, Droplet, Minus, Plus, Trash2, X } from 'lucide-react'
 import { CATEGORIES, type Habit } from '../../features/habits/stats'
 import { useDeleteHabit, useUpdateHabit } from '../../features/habits/queries'
 import { DAYS } from '../../features/onboarding/habitPresets'
@@ -25,7 +27,7 @@ export default function HabitSheet({ habit, onClose }: Props) {
   const [time, setTime] = useState(habit.reminder_time?.slice(0, 5) ?? '08:00')
   const [category, setCategory] = useState(habit.category)
   const [goal, setGoalLocal] = useState<number | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const confirmation = useConfirmation()
   const [error, setError] = useState('')
 
   const goalMl = goal ?? water?.goal ?? 2500
@@ -106,12 +108,8 @@ export default function HabitSheet({ habit, onClose }: Props) {
         <div className={isWater ? undefined : styles.twoCols}>
           <label className={styles.field}><Clock size={14} /><input type="time" value={time} onChange={(e) => e.target.value && setTime(e.target.value)} /></label>
           {!isWater && (
-            <label className={styles.field}>
-              <Sprout size={14} />
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
-            </label>
+            <ChoiceField label="Categoria do hábito" value={category} onChange={setCategory}
+              options={CATEGORIES.map(({ id, label }) => ({ value: id, label }))} />
           )}
         </div>
 
@@ -119,16 +117,11 @@ export default function HabitSheet({ habit, onClose }: Props) {
 
         <button type="button" className={styles.primary} onClick={save} disabled={busy || (!isWater && !name.trim())}>Salvar alterações</button>
 
-        {!isWater && (
-          confirmDelete ? (
-            <div className={styles.confirmRow}>
-              <button type="button" className={styles.ghostBtn} onClick={() => setConfirmDelete(false)}>Manter</button>
-              <button type="button" className={styles.dangerBtn} onClick={destroy} disabled={busy}><Trash2 size={14} /> Sim, excluir</button>
-            </div>
-          ) : (
-            <button type="button" className={styles.dangerLink} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Excluir hábito</button>
-          )
-        )}
+        {!isWater && <button type="button" className={styles.dangerLink} disabled={busy}
+          onClick={() => confirmation.ask({ title: 'Excluir hábito?', confirmLabel: 'Excluir hábito', danger: true, onConfirm: destroy })}>
+          <Trash2 size={14} /> Excluir hábito
+        </button>}
+        {confirmation.dialog}
       </div>
     </div>
   )

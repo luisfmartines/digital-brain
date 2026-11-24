@@ -86,8 +86,8 @@
 .input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
 .exRow { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
 .rowBtns { display: flex; }
-.ctrlRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.ctrlRow label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: var(--color-text-muted); }
+.ctrlRow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ctrlRow label, .ctrlRow > div { display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: var(--color-text-muted); }
 .mini { width: 100%; padding: 9px 6px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-2); color: var(--color-text); font-size: 14px; text-align: center; }
 .addExBtn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); background: transparent; color: var(--color-secondary); font-size: 12px; font-weight: 700; cursor: pointer; }
 .primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; border: 0; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-on-primary); font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(63, 166, 114, 0.25); }
@@ -398,24 +398,19 @@ button.activeThumbnail {
 
 .restDurationField {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.5rem auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 8px;
   border-radius: var(--radius-md);
   background: var(--color-surface-3);
 }
-.restDurationField label {
+.restDurationField > span {
   color: var(--color-text);
   font-size: 0.8rem;
 }
-.restDurationField .smallBtn { min-height: 38px; justify-content: center; }
-.restDurationField .smallBtn:disabled { cursor: default; }
 
 @media (max-width: 380px) {
-  .restDurationField { grid-template-columns: 4.5rem minmax(0, 1fr); }
-  .restDurationField label { grid-column: 1 / -1; }
-  .restDurationField .smallBtn { justify-self: start; }
   .setHead { display: none; }
   .setRow {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px 36px;

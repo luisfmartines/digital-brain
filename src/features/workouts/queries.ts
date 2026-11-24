@@ -5,13 +5,14 @@ import { addDays, startOfWeek } from '../../lib/date'
 import type { LogWorkout } from './stats'
 import type { HistSession, HistSet } from './exerciseStats'
 import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
+import type { SetType } from './setTypes'
 import { translateExercise } from '../exercisedb/translate'
 import { removeExercisePhoto, uploadExercisePhoto } from '../exercisedb/exercisePhoto'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null; photo_path?: string | null }
 export interface RoutineExercise { id: string; position: number; target_sets: number; rest_seconds: number; exercise: Exercise }
 export interface Routine { id: string; name: string; focus: string | null; notes: string | null; tags: string[]; created_at: string; routine_exercises: RoutineExercise[] }
-export interface SessionSet extends SetLike { id: string; exercise_id: string; set_number: number; exercise_order: number; exercise: Exercise }
+export interface SessionSet extends SetLike { id: string; exercise_id: string; set_number: number; exercise_order: number; set_type?: SetType | null; exercise: Exercise }
 export interface Session extends Timing { id: string; name: string; routine_id: string | null; photo_url: string | null; workout_sets: SessionSet[] }
 export interface PrevSet { exercise_id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean }
 
@@ -250,7 +251,7 @@ export function useSession(id?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workouts')
-        .select(`id, name, routine_id, started_at, ended_at, paused_seconds, paused_at, photo_url, workout_sets(id, exercise_id, set_number, exercise_order, weight_kg, reps, is_warmup, completed, exercise:exercises(${EX}))`)
+        .select(`id, name, routine_id, started_at, ended_at, paused_seconds, paused_at, photo_url, workout_sets(*, exercise:exercises(${EX}))`)
         .eq('id', id!).is('deleted_at', null).maybeSingle()
       if (error) throw error
       const session = data as Session | null
@@ -285,7 +286,7 @@ export function useSessionActions(id: string) {
 
   const updateSet = useMutation({
     scope,
-    mutationFn: async ({ setId, patch }: { setId: string; patch: Pick<Partial<SessionSet>, 'weight_kg' | 'reps' | 'completed' | 'is_warmup'> }) => {
+    mutationFn: async ({ setId, patch }: { setId: string; patch: Pick<Partial<SessionSet>, 'weight_kg' | 'reps' | 'completed' | 'is_warmup' | 'set_type'> }) => {
       const { error } = await supabase.from('workout_sets').update(patch).eq('id', setId)
       if (error) throw error
     },
@@ -469,7 +470,7 @@ export function useExerciseHistory(exerciseId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workout_sets')
-        .select('id, set_number, weight_kg, reps, is_warmup, workout:workouts(id, name, ended_at, deleted_at)')
+        .select('*, workout:workouts(id, name, ended_at, deleted_at)')
         .eq('exercise_id', exerciseId!).eq('completed', true)
         .limit(3000)
       if (error) throw error
@@ -479,7 +480,7 @@ export function useExerciseHistory(exerciseId?: string) {
         const w = r.workout
         if (!w || !w.ended_at || w.deleted_at) continue
         const cur = by.get(w.id) ?? { id: w.id, name: w.name, at: new Date(w.ended_at), sets: [] }
-        cur.sets.push({ id: r.id, set_number: r.set_number, weight_kg: r.weight_kg, reps: r.reps, is_warmup: r.is_warmup })
+        cur.sets.push({ id: r.id, set_number: r.set_number, weight_kg: r.weight_kg, reps: r.reps, is_warmup: r.is_warmup, set_type: r.set_type })
         by.set(w.id, cur)
       }
       // Do mais antigo para o mais recente

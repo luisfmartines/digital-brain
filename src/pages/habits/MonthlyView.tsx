@@ -1,5 +1,6 @@
+import ChoiceField from '../../components/ui/ChoiceField'
 import { useState } from 'react'
-import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, MoreVertical, PlusCircle, Sprout, TrendingUp, Zap, Check } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, MoreVertical, PlusCircle, TrendingUp, Zap, Check } from 'lucide-react'
 import { addDays, localDateStr, startOfDay, startOfWeek } from '../../lib/date'
 import {
   CATEGORIES, byTime, currentStreak, dayLevel, isDone, isScheduled, nextRun, rangeStats, rowSub,
@@ -210,12 +211,8 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
         </div>
         <div className={styles.twoCols}>
           <label className={styles.field}><Clock size={14} /><input type="time" value={time} onChange={(e) => e.target.value && setTime(e.target.value)} /></label>
-          <label className={styles.field}>
-            <Sprout size={14} />
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-          </label>
+          <ChoiceField label="Categoria do hábito" value={category} onChange={setCategory}
+              options={CATEGORIES.map(({ id, label }) => ({ value: id, label }))} />
         </div>
         <button type="button" className={styles.primary} onClick={ignite} disabled={!name.trim() || create.isPending}>
           <Zap size={14} /> Ativar hábito

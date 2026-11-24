@@ -1,3 +1,4 @@
+import ChoiceField from '../../components/ui/ChoiceField'
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus, Info, Plus, Search, X } from 'lucide-react'
 import { useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
@@ -129,9 +130,8 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
         {creating ? (
           <div className={styles.createBox}>
             <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do exercício" />
-            <select className={styles.input} value={newMuscle} onChange={(e) => setNewMuscle(e.target.value)}>
-              {Object.entries(MUSCLES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-            </select>
+            <ChoiceField label="Grupo muscular" value={newMuscle} onChange={setNewMuscle}
+              options={Object.entries(MUSCLES).map(([value, label]) => ({ value, label }))} />
             <label className={styles.exercisePhotoField} data-selected={!!photo}>
               {photo ? (
                 <>

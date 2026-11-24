@@ -1,3 +1,4 @@
+import ChoiceField from '../../components/ui/ChoiceField'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, ArrowDown, ArrowUp, Check, History, LineChart, Maximize2, RotateCw, Timer, Zap } from 'lucide-react'
@@ -177,10 +178,8 @@ function Charts({ metrics }: { metrics: Metric[] }) {
           <section className={styles.card}>
             <div className={styles.cardHead}>
               <span className={styles.cardTitle}><i className={styles.cardIcon}><RotateCw size={15} /></i> Repetições</span>
-              <select className={styles.select} value={mode} onChange={(e) => setMode(e.target.value as 'muscle' | 'exercise')} aria-label="Agrupar repetições por">
-                <option value="muscle">Por grupo muscular</option>
-                <option value="exercise">Por exercício</option>
-              </select>
+              <ChoiceField label="Agrupar repetições por" value={mode} onChange={setMode}
+                options={[{ value: 'muscle', label: 'Por grupo muscular' }, { value: 'exercise', label: 'Por exercício' }]} />
             </div>
             <div className={styles.bigRow}>
               <b className={styles.big}>{fmtNum(s.reps)}</b><span className={styles.unit}>repetições</span>
@@ -211,15 +210,14 @@ function Logbook({ metrics }: { metrics: Metric[] }) {
 
   if (metrics.length === 0) return <p className={w.empty}>Seu registro está vazio. Finalize um treino para salvá-lo aqui.</p>
 
-  let last = ''
   return (
     <>
       <p className={styles.count}>{metrics.length} {metrics.length === 1 ? 'treino registrado' : 'treinos registrados'}</p>
       <ul className={w.list}>
-        {list.map((m) => {
+        {list.map((m, index) => {
           const month = m.at.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-          const head = month !== last
-          last = month
+          const previous = list[index - 1]?.at
+          const head = !previous || m.at.getMonth() !== previous.getMonth() || m.at.getFullYear() !== previous.getFullYear()
           return (
             <li key={m.id} className={styles.logItem}>
               {head && <h3 className={styles.month}>{month}</h3>}

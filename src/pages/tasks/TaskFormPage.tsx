@@ -1,3 +1,4 @@
+import { useConfirmation } from '../../components/ui/useConfirmation'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -40,6 +41,7 @@ function TaskForm({ task }: { task?: Task }) {
   const { data: profile } = useProfile()
   const save = useSaveTask()
   const remove = useDeleteTask()
+  const confirmation = useConfirmation()
   const due = task?.due_at ? new Date(task.due_at) : null
 
   const [title, setTitle] = useState(task?.title ?? '')
@@ -73,13 +75,20 @@ function TaskForm({ task }: { task?: Task }) {
   }
 
   function destroy() {
-    if (!task || !window.confirm('Excluir esta tarefa?')) return
-    remove.mutate(task.id, { onSuccess: () => navigate('/routine?tab=tasks', { replace: true }) })
+    if (!task) return
+    setMenu(false)
+    confirmation.ask({ title: 'Excluir esta tarefa?', confirmLabel: 'Excluir tarefa', danger: true,
+      onConfirm: () => remove.mutate(task.id, {
+        onSuccess: () => navigate('/routine?tab=tasks', { replace: true }),
+        onError: () => setError('Não foi possível excluir a tarefa. Tente novamente.'),
+      }),
+    })
   }
 
   return (
     <div className={styles.page}>
       <div className={styles.frame}>
+        {confirmation.dialog}
         <header className={styles.header}>
           <button type="button" className={styles.back} onClick={() => navigate(-1)} aria-label="Voltar"><ChevronLeft size={22} /></button>
           <h1 className={styles.headerTitle}>{task ? 'Editar tarefa' : 'Nova tarefa'}</h1>

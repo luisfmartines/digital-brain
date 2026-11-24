@@ -152,7 +152,7 @@ for (const update of [false, true]) {
     if (update) {
       const firstSet = page.getByRole('button', { name: 'Remover série 1' }).locator('..')
       const [number, weight, reps, done] = await Promise.all([
-        firstSet.getByRole('button', { name: 'Alternar aquecimento' }).boundingBox(),
+        firstSet.getByRole('button', { name: /^Tipo da série/ }).boundingBox(),
         firstSet.getByLabel('Peso em kg').boundingBox(),
         firstSet.getByLabel('Repetições').boundingBox(),
         firstSet.getByRole('button', { name: 'Marcar série como concluída' }).boundingBox(),
@@ -401,16 +401,37 @@ test('an empty workout opens and lets the user change the rest for an exercise',
   await expect(reps).toHaveCount(4)
   await expect(reps.last()).toHaveValue('')
 
-  const rest = page.getByLabel('Descanso entre séries (segundos)')
-  await rest.fill('125')
-  await page.getByRole('button', { name: 'Aplicar' }).click()
+  const rest = page.getByRole('button', { name: /^Descanso entre séries,/ })
+  await rest.click()
+  const restChoices = page.getByRole('dialog', { name: 'Descanso entre séries' })
+  await expect(restChoices.getByRole('button', { name: '30 s', exact: true })).toBeVisible()
+  await expect(restChoices.getByRole('button', { name: '1 min 30 s', exact: true })).toBeVisible()
+  await restChoices.getByRole('button', { name: '5 min', exact: true }).click()
   await page.reload()
-  await expect(rest).toHaveValue('125')
-  await page.getByRole('button', { name: 'Marcar série como concluída' }).first().click()
-  await expect(page.getByText(/^02:0[0-5]$/)).toBeVisible()
-  await rest.fill('0')
-  await page.getByRole('button', { name: 'Aplicar' }).click()
-  await expect(page.getByRole('button', { name: /Pular descanso/ })).toHaveCount(0)
+  await expect(rest).toHaveAccessibleName('Descanso entre séries, 5 min')
+
+  const types = [['Aquecimento', 'warmup', true], ['Preparatória', 'preparatory', true], ['Drop-set', 'drop_set', false], ['Bi-set', 'bi_set', false]]
+  for (const [index, [label, type, warmup]] of types.entries()) {
+    const row = page.getByRole('button', { name: 'Remover série ' + (index + 1) }).locator('..')
+    await row.getByRole('button', { name: /^Tipo da série/ }).click()
+    await page.getByRole('dialog', { name: 'Tipo da série' }).getByRole('button', { name: label, exact: true }).click()
+    await expect.poll(() => active.workout_sets[index]).toMatchObject({ set_type: type, is_warmup: warmup })
+    await row.getByRole('button', { name: 'Marcar série como concluída', exact: true }).click()
+    const skip = page.getByRole('button', { name: /Pular descanso/ })
+    await expect(skip).toBeVisible()
+    await expect(page.getByText(/^(05:00|04:5[6-9])$/)).toBeVisible()
+    await skip.click()
+  }
+
+  await page.getByRole('button', { name: 'Finalizar', exact: true }).click()
+  const finish = page.getByRole('dialog', { name: 'Finalizar este treino?' })
+  await expect(finish).toBeVisible()
+  await finish.getByRole('button', { name: 'Cancelar' }).click()
+  await page.getByRole('button', { name: 'Descartar treino', exact: true }).click()
+  const discard = page.getByRole('dialog', { name: 'Descartar este treino?' })
+  await expect(discard).toBeVisible()
+  await discard.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(page).toHaveURL('/workouts/active/quick-test')
 })
 
 test('starting a saved routine leaves reps blank even when the prior session had reps', async ({ page }) => {
