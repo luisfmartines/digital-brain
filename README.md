@@ -33,9 +33,32 @@ criados no celular apontarem à versão web.
 
 Adicione `digitalbrain://auth/oauth`, `digitalbrain://auth/signup` e
 `digitalbrain://auth/reset-password` à lista de redirecionamentos permitidos do
-Supabase Auth. Publique as versões desta branch das Edge Functions
-`google-calendar-connect` e `google-calendar-callback` para retornar do consentimento
-do Google Agenda ao app. Os clientes web continuam usando o retorno HTTPS existente.
+Supabase Auth em **Authentication → URL Configuration → Redirect URLs**.
+Preserve a URL do site e as entradas já cadastradas. O retorno do Google Agenda
+ao app usa as Edge Functions `google-calendar-connect` e `google-calendar-callback`
+desta branch. Os clientes web continuam usando o retorno HTTPS existente.
+
+### Galaxy S22
+
+Use o APK Android do Digital Brain para acessar os fluxos que retornam pelo esquema
+`digitalbrain://`. Transfira o arquivo para o celular, abra-o no aplicativo
+**Meus Arquivos** e autorize a instalação por essa fonte quando o Android solicitar.
+O APK inclui o bundle JavaScript e funciona sem o Metro rodando no computador.
+
+Para gerar o APK no Windows, configure `JAVA_HOME` e `ANDROID_HOME` para as
+instalações locais do JDK e do Android SDK, depois execute:
+
+```powershell
+npm ci
+node scripts/expo.mjs prebuild --platform android --no-install
+Set-Location android
+.\gradlew.bat :app:assembleRelease '-PreactNativeArchitectures=arm64-v8a'
+```
+
+O APK sai em `android/app/build/outputs/apk/release/app-release.apk`. O Expo Go
+compatível com SDK 58 serve para uma prévia pela rede local usando
+`npm start -- --go`. Os retornos de login, recuperação de senha e Google Agenda
+precisam do app instalado com o esquema nativo.
 
 ## Exercícios
 

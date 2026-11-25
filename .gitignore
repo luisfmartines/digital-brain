@@ -15,6 +15,9 @@ dist-ssr
 .expo
 .parity-baseline
 dist-native
+/android/
+/ios/
+/artifacts/
 src/styles/fonts.generated.css
 *.local
 
