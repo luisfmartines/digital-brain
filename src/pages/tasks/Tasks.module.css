@@ -20,7 +20,7 @@
 .ringFg { fill: none; stroke: var(--color-secondary); stroke-width: 5; stroke-linecap: round; }
 .ringIcon { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-secondary); }
 
-.filters { display: flex; gap: 8px; margin: 0 -16px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
+.filters { display: flex; gap: 8px; margin-inline: calc(-1 * var(--page-gutter)); padding-inline: var(--page-gutter); overflow-x: auto; scrollbar-width: none; }
 .filter, .filterOn { flex-shrink: 0; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--color-surface); color: var(--color-text); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
 .filterOn { background: var(--color-secondary); color: var(--color-on-primary); }
 

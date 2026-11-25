@@ -1,6 +1,6 @@
 .page {
   position: relative; min-height: 100dvh; display: flex; justify-content: center; overflow: hidden;
-  padding: calc(36px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+  padding: calc(clamp(16px, 4dvh, 36px) + env(safe-area-inset-top)) var(--page-gutter) calc(28px + env(safe-area-inset-bottom));
 }
 .glow {
   position: absolute; top: -140px; left: 50%; width: 520px; height: 380px; transform: translateX(-50%);
@@ -9,7 +9,7 @@
 .card { position: relative; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
 
 .logoBox {
-  position: relative; width: 68px; height: 68px; border-radius: 20px;
+  position: relative; width: clamp(52px, 9dvh, 68px); aspect-ratio: 1; border-radius: 20px;
   border: 1px solid var(--color-border); box-shadow: 0 0 40px rgba(63, 166, 114, 0.35);
 }
 .logoBox img { width: 100%; height: 100%; display: block; border-radius: 19px; }
@@ -18,7 +18,7 @@
   background: var(--color-secondary); border: 3px solid var(--color-bg);
 }
 .titleRow { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-.title { font-size: 26px; }
+.title { font-size: clamp(1.375rem, 6.7vw, 1.75rem); }
 .badge {
   padding: 3px 8px; border-radius: var(--radius-full); background: var(--color-primary-soft);
   color: var(--color-secondary); font-size: 9px; font-weight: 700; letter-spacing: 0.06em;

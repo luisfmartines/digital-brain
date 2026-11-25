@@ -23,6 +23,14 @@
   --font-heading: 'Space Grotesk Variable', system-ui, sans-serif;
   --font-body: 'Manrope Variable', system-ui, sans-serif;
 
+  --app-width: 640px;
+  --page-gutter: clamp(12px, 4vw, 24px);
+  --card-padding: clamp(12px, 4vw, 20px);
+  --nav-height: 64px;
+  --fab-size: clamp(44px, 13vw, 56px);
+  --fab-offset: calc(var(--nav-height) + 8px + env(safe-area-inset-bottom));
+  --fab-right: max(var(--page-gutter), calc((100% - var(--app-width)) / 2 + var(--page-gutter)));
+
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-full: 999px;

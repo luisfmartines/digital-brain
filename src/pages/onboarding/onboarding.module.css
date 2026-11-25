@@ -1,7 +1,7 @@
 .page { min-height: 100dvh; display: flex; justify-content: center; background: var(--color-bg); }
 .frame {
-  width: 100%; max-width: 480px; display: flex; flex-direction: column;
-  padding: calc(12px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  width: 100%; max-width: var(--app-width); min-width: 0; display: flex; flex-direction: column;
+  padding: calc(12px + env(safe-area-inset-top)) var(--page-gutter) calc(28px + env(safe-area-inset-bottom));
 }
 .main { flex: 1; display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
 
@@ -28,7 +28,7 @@
 /* Texto */
 .tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-secondary); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; }
 .tagCenter { align-self: center; }
-.h1 { font-size: 28px; line-height: 1.15; }
+.h1 { font-size: clamp(1.5rem, 7.2vw, 2rem); line-height: 1.15; }
 .center { text-align: center; }
 .lead { margin: 0; color: var(--color-text-muted); font-size: 13px; line-height: 1.55; }
 .hint { margin: 0; font-size: 11px; color: var(--color-text-muted); }
@@ -103,8 +103,8 @@
 .fieldLabel { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--color-text-muted); }
 .input { flex: 1; min-width: 0; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-2); color: var(--color-text); font-size: 16px; }
 .input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
-.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.day, .dayOn { height: 36px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-2); color: var(--color-text-muted); font-weight: 700; cursor: pointer; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: clamp(3px, 1.5vw, 6px); }
+.day, .dayOn { min-height: 36px; padding-inline: 0; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-2); color: var(--color-text-muted); font-weight: 700; cursor: pointer; }
 .dayOn { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); }
 .removeBtn { align-self: flex-start; padding: 0; border: 0; background: transparent; color: var(--color-danger); font-size: 12px; cursor: pointer; }
 .smallBtn { padding: 0 16px; border: 0; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-on-primary); font-weight: 700; cursor: pointer; }
@@ -113,7 +113,7 @@
 .shield li { display: flex; align-items: center; gap: 12px; }
 .forecastXp { font-family: var(--font-heading); font-size: 24px; font-weight: 700; }
 .forecastXp small { font-family: var(--font-body); font-size: 11px; font-weight: 500; color: var(--color-text-muted); }
-.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: clamp(3px, 1.5vw, 6px); }
 .weekCol { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .tile, .tileOn { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px; background: var(--color-surface-3); color: var(--color-text-muted); }
 .tileOn { background: var(--color-primary); color: var(--color-on-primary); }

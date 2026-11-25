@@ -6,7 +6,7 @@
   padding: 14px; border-radius: var(--radius-lg);
   background: var(--color-surface); border: 1px solid var(--color-border);
 }
-.mascot { flex: 0 0 84px; width: 84px; height: 51px; }
+.mascot { width: clamp(60px, 21vw, 100px); aspect-ratio: 240 / 146; flex: none; }
 .heroText h1 { font-size: 20px; line-height: 1.1; }
 .heroText p { margin: 2px 0 8px; font-size: 12px; color: var(--color-text-muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -77,12 +77,12 @@
 .cardAmount b { font: 700 15px var(--font-heading); white-space: nowrap; }
 .neg { color: var(--color-danger); }
 .pos { color: var(--color-secondary); }
-.cardBottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cardBottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 700; color: var(--color-secondary);
 }
-.cardBtns { display: flex; gap: 6px; }
+.cardBtns { display: flex; flex-wrap: wrap; gap: 6px; }
 .cardBtn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 11px; border-radius: var(--radius-full);
@@ -98,9 +98,9 @@
 /* Campo de mensagem fixo, acima da barra inferior */
 .composerWrap {
   position: fixed; z-index: 7; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 480px; box-sizing: border-box;
-  bottom: calc(68px + env(safe-area-inset-bottom));
-  padding: 10px 16px 6px;
+  width: 100%; max-width: var(--app-width); box-sizing: border-box;
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  padding: 10px var(--page-gutter) 6px;
   background: color-mix(in srgb, var(--color-bg) 94%, transparent);
   backdrop-filter: blur(12px);
 }
@@ -119,7 +119,7 @@
 .composer:focus-within { border-color: var(--color-primary); }
 .composer textarea {
   flex: 1; min-width: 0; max-height: 96px; padding: 9px 0; resize: none;
-  font: 400 15px var(--font-body); color: var(--color-text);
+  font: 400 16px var(--font-body); color: var(--color-text);
   background: transparent; border: 0; outline: none; field-sizing: content;
 }
 .composer textarea::placeholder { color: var(--color-text-muted); }

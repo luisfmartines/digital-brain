@@ -383,3 +383,35 @@ test('account deletion requires explicit typed confirmation and signs out after 
   await expect(page).toHaveURL(/\/login$/)
   expect(calls).toBe(1)
 })
+
+test('mobile navigation and calendar fields adapt when the viewport changes', async ({ page }) => {
+  for (const width of [320, 390, 430, 768]) {
+    await page.setViewportSize({ width, height: 680 })
+    await page.goto('/calendar')
+    const navigation = page.getByRole('navigation')
+    await expect(navigation.getByRole('link', { name: 'Calendário' })).toBeVisible()
+    const bar = await navigation.boundingBox()
+    expect(bar.width).toBe(Math.min(width, 640))
+    expect(bar.x).toBe((width - bar.width) / 2)
+    expect(bar.y + bar.height).toBe(680)
+
+    await page.getByRole('tab', { name: 'Semana' }).click()
+    const agenda = page.getByRole('heading', { name: 'Agenda da semana' })
+    await expect(agenda).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+
+    await page.getByRole('link', { name: 'Novo evento' }).click()
+    const date = page.getByLabel('Data de início')
+    const time = page.getByLabel('Hora de início')
+    await expect(date).toBeVisible()
+    const [dateBox, timeBox] = await Promise.all([date.boundingBox(), time.boundingBox()])
+    if (width <= 375) {
+      expect(timeBox.x).toBe(dateBox.x)
+      expect(timeBox.y).toBeGreaterThanOrEqual(dateBox.y + dateBox.height)
+    } else {
+      expect(timeBox.y).toBe(dateBox.y)
+      expect(timeBox.x).toBeGreaterThan(dateBox.x + dateBox.width)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+  }
+})

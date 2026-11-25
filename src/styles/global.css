@@ -27,13 +27,17 @@ h3 {
   font-family: var(--font-heading);
 }
 
+fieldset {
+  min-inline-size: 0;
+}
+
 button {
   font: inherit;
   color: inherit;
 }
 .route-loading {
   display: grid;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   place-items: center;
   color: var(--color-text-muted);
