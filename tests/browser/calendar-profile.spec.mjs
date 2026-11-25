@@ -415,3 +415,47 @@ test('mobile navigation and calendar fields adapt when the viewport changes', as
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   }
 })
+
+test('Expo WebView keeps the home dashboard within the screen with all modules enabled', async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 320, height: 780 })
+  const homeUrl = new URL('/', baseURL).href
+  await page.route(homeUrl, async (route) => {
+    const response = await route.fetch()
+    const html = await response.text()
+    // Expo injects this style before loading the app's styles in a DOM component.
+    const rootStyle = '<style id="expo-dom-component-style">#root { display: flex; flex: 1; }</style>'
+    await route.fulfill({ response, body: html.replace(/<head>/i, '<head>' + rootStyle) })
+  })
+  await page.route('https://*.supabase.co/rest/v1/profiles?*', (route) => route.fulfill({ json: {
+    id: userId, onboarding_completed: true, display_name: 'Ana', theme: 'dark', xp: 201,
+    enabled_modules: ['calendar', 'habits', 'workouts', 'tasks', 'finance', 'assistant'],
+  } }))
+  const taskNotes = 'https://example.test/' + 'detalhesDaTarefa'.repeat(20)
+  await page.route('https://*.supabase.co/rest/v1/tasks?*', (route) => route.fulfill({ json: [{
+    id: 'next-task', title: 'Próxima tarefa', notes: taskNotes, due_at: null,
+  }] }))
+  await page.goto('/')
+  const notes = page.getByText(taskNotes, { exact: true })
+  await expect(notes).toBeVisible()
+  expect(await notes.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(320)
+  expect(await page.evaluate(() => document.scrollingElement.scrollWidth)).toBe(320)
+
+  const progress = page.getByRole('region', { name: 'Progresso de hoje' })
+  const water = page.getByRole('button', { name: 'Adicionar 500 ml de água' })
+  const send = page.getByRole('button', { name: 'Enviar', exact: true })
+  await expect(progress).toBeInViewport({ ratio: 1 })
+  await expect(water).toBeInViewport({ ratio: 1 })
+  await expect(send).toBeInViewport({ ratio: 1 })
+  expect(await page.evaluate(() => {
+    document.scrollingElement.scrollLeft = 500
+    return window.scrollX
+  })).toBe(0)
+
+  const suggestions = page.getByRole('button', { name: 'Reunião às 15h' }).locator('..')
+  await suggestions.scrollIntoViewIfNeeded()
+  expect(await suggestions.evaluate((rail) => {
+    rail.scrollLeft = rail.scrollWidth
+    return rail.scrollLeft
+  })).toBeGreaterThan(0)
+  await expect(page.getByRole('button', { name: 'Registrar 500 ml de água' })).toBeInViewport({ ratio: 0.95 })
+})

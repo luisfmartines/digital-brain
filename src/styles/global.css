@@ -10,6 +10,11 @@ body,
   min-height: 100%;
 }
 
+#root {
+  /* O HTML do Expo usa flex aqui, mas as telas precisam da largura do viewport. */
+  display: block;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
