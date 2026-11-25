@@ -159,29 +159,5 @@
 }
 .profileRoutineCard strong { font-family: var(--font-heading); overflow-wrap: anywhere; }
 .profileRoutineCard small, .profileRoutineCard span { color: var(--color-text-muted); }
-.weekTotal { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.weekTotal strong { font: 700 24px var(--font-heading); }
-.weekTotal small { color: var(--color-text-muted); }
-.weekBars {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.weekBars li { display: grid; gap: 5px; justify-items: center; min-width: 0; }
-.weekBars small { font-size: 10px; text-align: center; color: var(--color-text-muted); }
-.weekBarTrack {
-  display: flex;
-  align-items: flex-end;
-  width: min(24px, 100%);
-  height: 76px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--color-surface-2);
-}
-.weekBarTrack i { display: block; width: 100%; background: var(--color-primary); border-radius: 5px; }
-.weekBarTrack .weekBarCurrent { background: var(--color-secondary); }
 .activityMetrics { display: flex; flex-wrap: wrap; gap: 8px; }
 .activityMetrics span { padding: 4px 8px; border-radius: 8px; background: var(--color-surface-2); font-size: 12px; }

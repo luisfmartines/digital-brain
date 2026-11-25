@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Activity, CalendarCheck, Copy, Dumbbell } from 'lucide-react'
+import { CalendarCheck, Copy, Dumbbell } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Dialog from '../../components/ui/Dialog'
 import { useCopySharedRoutine, type ProfileActivity, type ProfileRoutine } from '../../features/social/sharedProfile'
 import { translateName } from '../../features/exercisedb/translate'
 import { restLabel } from '../../features/workouts/setTypes'
 import { useFeed } from '../../features/social/queries'
+import { parseDate } from '../../lib/date'
 import FeedPostCard from '../workouts/FeedPostCard'
+import VolumeChart from '../workouts/VolumeChart'
 import workoutStyles from '../workouts/workouts.module.css'
 import styles from './Profile.module.css'
 
@@ -65,9 +67,7 @@ export default function ProfileActivitySections({ routines, activity, own = fals
   const [selected, setSelected] = useState<Selected | null>(null)
   const copy = useCopySharedRoutine()
   const [copied, setCopied] = useState<Record<string, string>>({})
-  const weekTotals = activity?.weeks ?? []
-  const thisWeek = weekTotals.at(-1)
-  const maxSeconds = Math.max(1, ...weekTotals.map(({ seconds }) => seconds))
+  const weekVolume = activity?.weekVolume ?? []
   const selectedKey = selected && selected.type + ':' + selected.item.id
 
   function open(selection: Selected) {
@@ -77,21 +77,15 @@ export default function ProfileActivitySections({ routines, activity, own = fals
 
   return (
     <>
-      {!!thisWeek && <section className={styles.card}>
-        <h2><Activity size={18} /> Tempo na academia</h2>
-        <div className={styles.weekTotal}><strong>{duration(thisWeek.seconds)}</strong><small>Nesta semana</small></div>
-        <ul className={styles.weekBars} aria-label="Tempo por semana">
-          {weekTotals.map((week, index) => (
-            <li key={week.date} aria-label={dateLabel(week.date) + ': ' + duration(week.seconds)}>
-              <span className={styles.weekBarTrack} aria-hidden="true">
-                <i className={index === weekTotals.length - 1 ? styles.weekBarCurrent : undefined}
-                  style={{ height: week.seconds / maxSeconds * 100 + '%' }} />
-              </span>
-              <small aria-hidden="true">{dateLabel(week.date)}</small>
-            </li>
-          ))}
-        </ul>
-      </section>}
+      {weekVolume.length > 0 && (
+        <VolumeChart key={weekVolume[0].date} buckets={weekVolume.map((day) => ({
+          ...day,
+          label: parseDate(day.date).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+          long: dateLabel(day.date),
+        }))}
+          total={weekVolume.reduce((sum, day) => sum + day.volume, 0)}
+          workouts={weekVolume.reduce((sum, day) => sum + day.workouts, 0)} />
+      )}
 
       {!!routines && <section className={styles.activitySection}>
         <h2><Dumbbell size={18} /> Rotinas</h2>

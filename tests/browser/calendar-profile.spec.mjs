@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test'
 
 const userId = '11111111-1111-4111-8111-111111111111'
+const weekVolume = Array.from({ length: 7 }, (_, index) => ({
+  date: '2026-11-' + (23 + index),
+  volume: index === 1 ? 3088 : 0,
+  workouts: index === 1 ? 1 : 0,
+}))
+
 
 test.use({ timezoneId: 'America/Sao_Paulo' })
 
@@ -21,7 +27,7 @@ test.beforeEach(async ({ page }) => {
       return route.fulfill({ status: 409, json: { error: 'not_connected' } })
     }
     if (url.pathname.endsWith('/functions/v1/public-profile') && request.postDataJSON()?.action === 'activity') {
-      return route.fulfill({ json: { workoutCount: 0, followers: 0, following: 0, weeks: [], photos: [], workouts: [], posts: [] } })
+      return route.fulfill({ json: { workoutCount: 0, followers: 0, following: 0, weekVolume, photos: [], workouts: [], posts: [] } })
     }
     let body = []
     if (url.pathname.includes('/storage/v1/object/avatars/')) body = { Key: `avatars/${userId}/profile.jpg` }
@@ -243,7 +249,7 @@ test('another profile shows shared details and copies a workout routine', async 
     const action = route.request().postDataJSON()
     calls.push(action)
     if (action.action === 'activity') return route.fulfill({ json: {
-      workoutCount: 14, followers: 9, following: 6, weeks: [{ date: '2026-11-23', seconds: 5400 }],
+      workoutCount: 14, followers: 9, following: 6, weekVolume,
       photos: [{ url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=', name: 'Treino de força', at: '2026-11-24T17:00:00Z' }],
       workouts: [{ id: 'recent-workout', name: 'Treino recente A', ended_at: '2026-11-24T17:00:00Z', seconds: 1800, volume: 450,
         exercises: [{ name: 'Agachamento', sets: 3 }] }],
@@ -256,6 +262,12 @@ test('another profile shows shared details and copies a workout routine', async 
     } })
   })
   await page.goto('/profiles/' + otherId)
+  const volume = page.getByRole('region', { name: 'Volume', exact: true })
+  await expect(volume).toContainText('3.088')
+  await expect(volume.getByRole('button')).toHaveCount(7)
+  await volume.getByRole('button', { name: /23 de nov.*0 kg/ }).click()
+  await expect(volume).toContainText('nenhum treino')
+
   await expect(page.getByRole('heading', { name: 'Ana' })).toBeVisible()
   await expect(page.getByText('Nível 7')).toBeVisible()
   await expect(page.getByText('85%')).toBeVisible()
@@ -263,7 +275,6 @@ test('another profile shows shared details and copies a workout routine', async 
   const viewer = page.getByRole('dialog', { name: 'Foto de Ana' })
   await expect(viewer.getByRole('img')).toHaveCSS('border-radius', '50%')
   await viewer.getByRole('button', { name: 'Fechar' }).click()
-  await expect(page.getByText('1 h 30 min')).toBeVisible()
   await expect(page.getByText('Seguidores', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Ampliar foto de Treino de força' })).toBeVisible()
   await expect(page.getByText('Dia 100% concluído!')).toBeVisible()
@@ -334,6 +345,10 @@ test('own profile shows routines above the settings and its feed posts at the en
     }] })
   })
   await page.goto('/profile')
+  const volume = page.getByRole('region', { name: 'Volume', exact: true })
+  await expect(volume).toContainText('Semana atual')
+  await expect(volume).toContainText('3.088')
+  await expect(volume.getByRole('button')).toHaveCount(7)
   const routines = await page.getByRole('heading', { name: 'Rotinas', exact: true }).boundingBox()
   const settings = await page.getByRole('heading', { name: 'Preferências' }).boundingBox()
   const deleteButton = await page.getByRole('button', { name: 'Excluir conta', exact: true }).boundingBox()

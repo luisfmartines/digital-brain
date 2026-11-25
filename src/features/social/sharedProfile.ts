@@ -9,7 +9,7 @@ export interface ProfileRoutine {
 
 export interface ProfileActivity {
   workoutCount: number | null; followers: number; following: number
-  weeks: { date: string; seconds: number }[]
+  weekVolume?: { date: string; volume: number; workouts: number }[]
   photos: { url: string; name: string; at: string }[]
   workouts: {
     id: string; name: string; ended_at: string; seconds: number; volume: number

@@ -1,7 +1,7 @@
 import ChoiceField from '../../components/ui/ChoiceField'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Activity, ArrowDown, ArrowUp, Check, History, LineChart, Maximize2, RotateCw, Timer, Zap } from 'lucide-react'
+import { Activity, ArrowDown, ArrowUp, Check, History, LineChart, RotateCw, Timer, Zap } from 'lucide-react'
 import { useWorkoutLog } from '../../features/workouts/queries'
 import {
   bucketize, breakdown, makeBuckets, periodWindow, pctChange, summarize, toMetrics,
@@ -9,6 +9,7 @@ import {
 } from '../../features/workouts/stats'
 import { fmtNum, mins } from './helpers'
 import w from './workouts.module.css'
+import VolumeChart from './VolumeChart'
 import styles from './stats.module.css'
 
 const PERIODS: { id: Period; label: string }[] = [
@@ -57,7 +58,6 @@ const PAD = { l: 10, r: 10, t: 14, b: 8 }
 
 function Charts({ metrics }: { metrics: Metric[] }) {
   const [period, setPeriod] = useState<Period>('3m')
-  const [barSel, setBarSel] = useState<number | null>(null)
   const [ptSel, setPtSel] = useState<number | null>(null)
   const [mode, setMode] = useState<'muscle' | 'exercise'>('muscle')
 
@@ -75,10 +75,6 @@ function Charts({ metrics }: { metrics: Metric[] }) {
   const { s, p, buckets } = d
   const delta = (a: number, b: number) => (d.hasPrev ? pctChange(a, b) : null)
   const n = Math.max(1, s.workouts)
-
-  const maxVol = Math.max(1, ...buckets.map((b) => b.volume))
-  const volSel = barSel ?? buckets.length - 1
-  const vb = buckets[Math.min(volSel, buckets.length - 1)]
 
   const avgOf = (b: Bucket) => (b.workouts ? b.minutes / b.workouts : 0)
   const withData = buckets.map((b, i) => ({ b, i })).filter((x) => x.b.workouts > 0)
@@ -99,7 +95,7 @@ function Charts({ metrics }: { metrics: Metric[] }) {
     <>
       <div className={styles.periods}>
         {PERIODS.map((x) => (
-          <button key={x.id} type="button" className={period === x.id ? styles.periodOn : styles.period} onClick={() => { setPeriod(x.id); setBarSel(null); setPtSel(null) }}>{x.label}</button>
+          <button key={x.id} type="button" className={period === x.id ? styles.periodOn : styles.period} onClick={() => { setPeriod(x.id); setPtSel(null) }}>{x.label}</button>
         ))}
       </div>
 
@@ -116,29 +112,9 @@ function Charts({ metrics }: { metrics: Metric[] }) {
         <p className={w.empty}>Nenhum treino neste período. Finalize um treino para ver os gráficos aqui.</p>
       ) : (
         <>
-          <section className={styles.card}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardTitle}><i className={styles.cardIcon}><Maximize2 size={15} /></i> Volume</span>
-              <span className={styles.tag}>Tonelagem total</span>
-            </div>
-            <div className={styles.bigRow}>
-              <b className={styles.big}>{fmtNum(s.volume)}</b><span className={styles.unit}>kg</span>
-              <Delta value={delta(s.volume, p.volume)} />
-            </div>
-            <small className={styles.avg}>Média: {fmtNum(s.volume / n)} kg por treino • {s.weeks} {s.weeks === 1 ? 'semana ativa' : 'semanas ativas'}</small>
-            <p className={styles.hintStrip}><i /> {vb.workouts > 0 ? `${vb.long}: ${fmtNum(vb.volume)} kg • ${vb.workouts} ${vb.workouts === 1 ? 'treino' : 'treinos'}` : `${vb.long}: nenhum treino`}</p>
-            <div className={styles.bars}>
-              {buckets.map((b, i) => (
-                <button
-                  key={b.start.getTime()} type="button" aria-label={`${b.long}: ${fmtNum(b.volume)} kg`}
-                  className={i === volSel ? styles.barOn : styles.bar}
-                  style={{ height: `${Math.max(b.volume ? 5 : 2, (b.volume / maxVol) * 100)}%` }}
-                  onClick={() => setBarSel(i)}
-                />
-              ))}
-            </div>
-            <Axis buckets={buckets} />
-          </section>
+          <VolumeChart key={period} buckets={buckets} total={s.volume} workouts={s.workouts}
+            axis={<Axis buckets={buckets} />} comparison={<Delta value={delta(s.volume, p.volume)} />}
+            activeWeeks={s.weeks} />
 
           <section className={styles.card}>
             <div className={styles.cardHead}>
