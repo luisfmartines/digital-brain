@@ -7,11 +7,3 @@ document.getElementById('startup-retry')?.addEventListener('click', async (event
   ])
   window.location.reload()
 })
-
-if (!__DEV__ && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch((error: unknown) => {
-      console.error('Digital Brain offline setup failed', error)
-    })
-  }, { once: true })
-}
