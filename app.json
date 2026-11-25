@@ -8,6 +8,7 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#131318",
     "icon": "./public/icons/icon-512.png",
+    "plugins": ["./scripts/with-windows-cmake-paths.cjs"],
     "ios": {
       "bundleIdentifier": "app.digitalbrain.mobile",
       "infoPlist": {
