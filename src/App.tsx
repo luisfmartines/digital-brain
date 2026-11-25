@@ -1,12 +1,11 @@
 import { Suspense } from 'react'
 import { RouterProvider } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './features/auth/AuthProvider'
 import Splash from './components/layout/Splash'
 import ThemeSync from './features/profile/ThemeSync'
 import { router } from './routes/router'
-
-const queryClient = new QueryClient()
+import { queryClient } from './lib/queryClient'
 
 export default function App() {
   return (

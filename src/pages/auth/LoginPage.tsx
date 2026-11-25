@@ -3,9 +3,9 @@ import {
   ArrowRight, AtSign, CheckCircle2, ChevronRight, Circle, Eye, EyeOff, Lock,
   LogIn, RefreshCw, ShieldCheck, User, UserPlus,
 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { createBrowserEmailAuth, supabase } from '../../lib/supabase'
 import { PASSWORD_RULES, passwordStrength } from '../../features/auth/password'
-import { appIcon, AUTH_REDIRECT, useDevice } from '../../expo/device'
+import { appIcon, AUTH_REDIRECT, publicAppOrigin, useDevice } from '../../expo/device'
 import { handleAuthReturn } from '../../expo/authReturn'
 import styles from './LoginPage.module.css'
 
@@ -94,21 +94,31 @@ export default function LoginPage() {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
       if (authError) setError(authError.message)
     } else {
-      const { data, error: authError } = await supabase.auth.signUp({
+      const auth = device?.isExpoGo ? createBrowserEmailAuth() : supabase.auth
+      const { data, error: authError } = await auth.signUp({
         email,
         password,
         options: {
           data: { full_name: name, username },
-          emailRedirectTo: device ? `${AUTH_REDIRECT}/signup` : undefined,
+          emailRedirectTo: device?.isExpoGo ? publicAppOrigin() : device ? `${AUTH_REDIRECT}/signup` : undefined,
         },
       })
       if (authError) setError(authError.message)
       else if (!data.session) setInfo('Conta criada! Confirme seu e-mail para entrar.')
+      else if (device?.isExpoGo) {
+        const { error } = await supabase.auth.setSession(data.session)
+        if (error) setError(error.message)
+      }
     }
     setBusy(false)
   }
 
   async function handleGoogle() {
+    if (device?.isExpoGo) {
+      setError(null)
+      setInfo('Entre com e-mail e senha no Expo Go. Se sua conta é do Google, informe o mesmo e-mail e use “Esqueceu a senha?” para criar uma senha.')
+      return
+    }
     const redirectTo = device ? `${AUTH_REDIRECT}/oauth` : window.location.origin
     try {
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
@@ -132,8 +142,10 @@ export default function LoginPage() {
       setError('Informe seu endereço de e-mail primeiro.')
       return
     }
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${device ? AUTH_REDIRECT : window.location.origin}/reset-password`,
+    const auth = device?.isExpoGo ? createBrowserEmailAuth() : supabase.auth
+    const origin = device && !device.isExpoGo ? AUTH_REDIRECT : publicAppOrigin()
+    const { error: authError } = await auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/reset-password`,
     })
     if (authError) setError(authError.message)
     else setInfo('Link de redefinição enviado. Verifique seu e-mail.')

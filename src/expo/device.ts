@@ -1,12 +1,18 @@
 import { createContext, useContext } from 'react'
 import { IS_DOM } from 'expo/dom'
+import { Asset } from 'expo-asset'
+import icon from '../../public/icons/icon-192.png'
 
 export const isNative = IS_DOM
 export const AUTH_REDIRECT = 'digitalbrain://auth'
 export const CALENDAR_REDIRECT = 'digitalbrain://calendar'
-export const appIcon = `${process.env.EXPO_BASE_URL || (isNative ? './' : '/')}icons/icon-192.png`
+export const appIcon = isNative
+  ? Asset.fromModule(icon).uri
+  : `${process.env.EXPO_BASE_URL || '/'}icons/icon-192.png`
 
 interface DeviceActions {
+  isExpoGo: boolean
+  foregroundSequence: number
   openAuth: (url: string, redirect: string) => Promise<string | null>
   openLink: (url: string) => Promise<void>
   shareText: (text: string, url?: string) => Promise<void>

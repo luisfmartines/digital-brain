@@ -55,10 +55,24 @@ Set-Location android
 .\gradlew.bat :app:assembleRelease '-PreactNativeArchitectures=arm64-v8a'
 ```
 
-O APK sai em `android/app/build/outputs/apk/release/app-release.apk`. O Expo Go
-compatível com SDK 58 serve para uma prévia pela rede local usando
-`npm start -- --go`. Os retornos de login, recuperação de senha e Google Agenda
-precisam do app instalado com o esquema nativo.
+O APK sai em `android/app/build/outputs/apk/release/app-release.apk`.
+
+### Expo Go no Android e no iPhone
+
+Instale o Expo Go compatível com o SDK 58 e execute `npm run go`. Escaneie o QR
+com o computador e o celular na mesma rede. Para uma prévia fora da rede local,
+execute `npm run go -- --tunnel`.
+
+Em um iPhone físico, a Expo exige que o Expo Go e o servidor de desenvolvimento
+estejam autenticados com a mesma conta Expo. Para pessoas com contas diferentes,
+a Expo permite testar atualizações publicadas compatíveis com Expo Go. Isso
+requer uma conta Expo e um projeto vinculado ao EAS Update.
+
+No Expo Go, entre com e-mail e senha. Se a conta do Digital Brain foi criada pelo
+Google, use o mesmo e-mail em **Esqueceu a senha?** para criar uma senha no
+navegador e volte ao app. A confirmação do cadastro também acontece pelo site.
+Para conectar o Google Agenda, conclua a autorização no navegador e volte ao Expo Go
+para atualizar a conexão.
 
 ## Exercícios
 

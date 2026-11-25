@@ -25,11 +25,12 @@ export function useConnectGoogle() {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke<{ url: string }>('google-calendar-connect',
-        device ? { body: { client: 'native' } } : undefined)
+        device && !device.isExpoGo ? { body: { client: 'native' } } : undefined)
       if (error || !data?.url || new URL(data.url).origin !== 'https://accounts.google.com') {
         throw new Error('Não foi possível abrir a conexão com o Google.')
       }
-      if (device) await device.openAuth(data.url, CALENDAR_REDIRECT)
+      if (device?.isExpoGo) await device.openLink(data.url)
+      else if (device) await device.openAuth(data.url, CALENDAR_REDIRECT)
       else window.location.assign(data.url)
     },
   })

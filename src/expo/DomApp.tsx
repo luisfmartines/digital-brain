@@ -9,6 +9,7 @@ import App from '../App'
 import { router } from '../routes/router'
 import { AUTH_REDIRECT, CALENDAR_REDIRECT, DeviceContext } from './device'
 import { handleAuthReturn } from './authReturn'
+import { queryClient } from '../lib/queryClient'
 import type { ContextType } from 'react'
 
 type Props = NonNullable<ContextType<typeof DeviceContext>> & {
@@ -20,6 +21,7 @@ type Props = NonNullable<ContextType<typeof DeviceContext>> & {
 }
 
 export default function DomApp({ incomingUrl, incomingSequence, backRequest, setCanGoBack, ...device }: Props) {
+  const { isExpoGo, foregroundSequence } = device
   useEffect(() => {
     document.documentElement.lang = 'pt-BR'
     const reportHistory = () => {
@@ -32,6 +34,12 @@ export default function DomApp({ incomingUrl, incomingSequence, backRequest, set
   useEffect(() => {
     if (backRequest && window.history.state?.idx > 0) void router.navigate(-1)
   }, [backRequest])
+
+  useEffect(() => {
+    if (!isExpoGo || !foregroundSequence) return
+    void queryClient.invalidateQueries({ queryKey: ['google-calendar-connection'] })
+    void queryClient.invalidateQueries({ queryKey: ['calendar'] })
+  }, [isExpoGo, foregroundSequence])
 
   useEffect(() => {
     if (!incomingUrl || incomingSequence === 0) return

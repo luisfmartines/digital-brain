@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { BackHandler, Linking, Platform, Share, StatusBar, Vibration } from 'react-native'
+import { AppState, BackHandler, Linking, Platform, Share, StatusBar, Vibration } from 'react-native'
+import Constants, { ExecutionEnvironment } from 'expo-constants'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { setStringAsync } from 'expo-clipboard'
 import { File, Paths } from 'expo-file-system'
@@ -7,6 +8,8 @@ import { isAvailableAsync, shareAsync } from 'expo-sharing'
 import { openAuthSessionAsync } from 'expo-web-browser'
 import DomApp from './DomApp'
 import { CALENDAR_REDIRECT } from './device'
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient
 
 async function openLink(url: string) {
   if (new URL(url).protocol === 'https:') await Linking.openURL(url)
@@ -35,7 +38,7 @@ async function vibrate() {
 function allowNavigation({ url }: { url: string }) {
   const page = new URL(url)
   // The DOM bridge is scoped to the embedded app document.
-  if (page.protocol === 'file:') return /\/www\.bundle\/[a-f0-9]+\.html$/.test(page.pathname)
+  if (page.protocol === 'file:') return /\/(?:www\.bundle|\.expo-internal)\/[a-f0-9]+\.html$/.test(page.pathname)
   return __DEV__ && page.pathname === '/_expo/@dom/DomApp.tsx' &&
     (page.searchParams.get('file')?.endsWith('/src/expo/DomApp.tsx') ?? false)
 }
@@ -45,6 +48,7 @@ export default function NativeApp() {
   const [incomingLink, setIncomingLink] = useState({ url: '', sequence: 0 })
   const [canGoBack, setCanGoBack] = useState(false)
   const [backRequest, setBackRequest] = useState(0)
+  const [foregroundSequence, setForegroundSequence] = useState(0)
 
   async function openAuth(url: string, redirect: string) {
     const result = await openAuthSessionAsync(url, redirect)
@@ -79,11 +83,21 @@ export default function NativeApp() {
     return () => subscription.remove()
   }, [canGoBack])
 
+  useEffect(() => {
+    if (!isExpoGo) return
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setForegroundSequence((sequence) => sequence + 1)
+    })
+    return () => subscription.remove()
+  }, [])
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: theme === 'dark' ? '#111115' : '#f6faf7' }}>
         <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
         <DomApp
+          isExpoGo={isExpoGo}
+          foregroundSequence={foregroundSequence}
           dom={{
             style: { flex: 1 },
             useExpoDOMWebView: false,
