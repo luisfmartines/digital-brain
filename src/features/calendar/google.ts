@@ -4,6 +4,7 @@ import { localDateStr, parseDate } from '../../lib/date'
 import { useAuth } from '../auth/useAuth'
 import type { AgendaItem } from './agenda'
 import type { EventInput } from './queries'
+import { CALENDAR_REDIRECT, useDevice } from '../../expo/device'
 
 export function useGoogleConnection() {
   const { user } = useAuth()
@@ -20,13 +21,16 @@ export function useGoogleConnection() {
 }
 
 export function useConnectGoogle() {
+  const device = useDevice()
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke<{ url: string }>('google-calendar-connect')
+      const { data, error } = await supabase.functions.invoke<{ url: string }>('google-calendar-connect',
+        device ? { body: { client: 'native' } } : undefined)
       if (error || !data?.url || new URL(data.url).origin !== 'https://accounts.google.com') {
         throw new Error('Não foi possível abrir a conexão com o Google.')
       }
-      window.location.assign(data.url)
+      if (device) await device.openAuth(data.url, CALENDAR_REDIRECT)
+      else window.location.assign(data.url)
     },
   })
 }

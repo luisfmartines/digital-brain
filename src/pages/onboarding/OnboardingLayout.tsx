@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
+import { appIcon } from '../../expo/device'
 import { useProfile } from '../../features/profile/useProfile'
 import { defaultOnboardingData, type OnboardingData } from '../../features/onboarding/types'
 import styles from './onboarding.module.css'
@@ -31,7 +32,7 @@ export default function OnboardingLayout() {
           <>
             <div className={styles.topbar}>
               {back}
-              <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
+              <img src={appIcon} alt="" className={styles.miniLogo} />
               <span className={styles.topTitle}>Boas-vindas</span>
               {avatar}
             </div>
@@ -49,7 +50,7 @@ export default function OnboardingLayout() {
         ) : (
           <div className={styles.topbar}>
             {back}
-            <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
+            <img src={appIcon} alt="" className={styles.miniLogo} />
             <div className={styles.centerProgress}>
               <span className={styles.miniLabel}>ETAPA <b>{step} DE 4</b></span>
               <div className={styles.bar}><div className={styles.barFill} style={{ width: `${step * 25}%` }} /></div>

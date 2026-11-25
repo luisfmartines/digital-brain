@@ -1,9 +1,12 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, createHashRouter, Navigate } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import { PublicOnly, RequireAuth, RequireOnboarded } from './guards'
 import * as Pages from './lazyPages'
+import { isNative } from '../expo/device'
 
-export const router = createBrowserRouter([
+const createRouter = isNative ? createHashRouter : createBrowserRouter
+
+export const router = createRouter([
   { path: '/reset-password', element: <Pages.ResetPasswordPage /> },
   {
     element: <PublicOnly />,

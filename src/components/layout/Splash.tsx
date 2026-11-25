@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { appIcon } from '../../expo/device'
 import styles from './Splash.module.css'
 
 export default function Splash({ children }: { children: ReactNode }) {
@@ -19,7 +20,7 @@ export default function Splash({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.splash}>
-      <img src="/icons/icon-192.png" alt="" className={styles.logo} />
+      <img src={appIcon} alt="" className={styles.logo} />
       <h1 className={styles.name}>Digital Brain</h1>
     </div>
   )

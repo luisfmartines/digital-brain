@@ -2,16 +2,15 @@ import { admin, readState, REDIRECT_URI } from "../_shared/common.ts";
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const app = Deno.env.get("APP_URL")!;
-  const back = (status: string) =>
-    Response.redirect(`${app}/?calendar=${status}`, 302);
-
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
+  const connection = state ? await readState(state) : null;
+  const app = connection?.native ? "digitalbrain://calendar" : Deno.env.get("APP_URL")!;
+  const back = (status: string) =>
+    Response.redirect(`${app}/?calendar=${status}`, 302);
   if (url.searchParams.get("error") || !code || !state) return back("denied");
 
-  const uid = await readState(state);
-  if (!uid) return back("error");
+  if (!connection) return back("error");
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -28,7 +27,7 @@ Deno.serve(async (req) => {
   if (!res.ok || !tokens.refresh_token) return back("error");
 
   const { error } = await admin().from("google_tokens").upsert({
-    user_id: uid,
+    user_id: connection.uid,
     refresh_token: tokens.refresh_token,
     scope: tokens.scope,
     updated_at: new Date().toISOString(),

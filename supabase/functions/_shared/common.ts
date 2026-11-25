@@ -50,9 +50,9 @@ async function hmac(data: string) {
 }
 
 // "state" assinado: diz ao callback de quem é o código, sem precisar de login
-export async function makeState(uid: string) {
+export async function makeState(uid: string, native = false) {
   const payload = b64url(
-    btoa(JSON.stringify({ uid, exp: Date.now() + 10 * 60 * 1000 })),
+    btoa(JSON.stringify({ uid, exp: Date.now() + 10 * 60 * 1000, native })),
   );
   return `${payload}.${await hmac(payload)}`;
 }
@@ -61,5 +61,7 @@ export async function readState(state: string) {
   const [payload, sig] = state.split(".");
   if (!payload || !sig || sig !== (await hmac(payload))) return null;
   const data = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-  return data.exp > Date.now() ? (data.uid as string) : null;
+  return typeof data.uid === "string" && data.exp > Date.now()
+    ? { uid: data.uid as string, native: data.native === true }
+    : null;
 }

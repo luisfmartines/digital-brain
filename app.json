@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Digital Brain",
+    "slug": "digital-brain",
+    "version": "1.0.0",
+    "scheme": "digitalbrain",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#131318",
+    "icon": "./public/icons/icon-512.png",
+    "ios": {
+      "bundleIdentifier": "app.digitalbrain.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Use a câmera para adicionar fotos ao perfil, exercícios e treinos.",
+        "NSPhotoLibraryUsageDescription": "Selecione fotos para o perfil, exercícios e treinos."
+      }
+    },
+    "android": {
+      "package": "app.digitalbrain.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./public/icons/icon-512-maskable.png",
+        "backgroundColor": "#131318"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
+  }
+}

@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { ChevronRight, Heart, MessageCircle, Send, Trophy, Zap } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
+import { useDevice } from '../../expo/device'
 import { useAddComment, useToggleLike, type FeedPost } from '../../features/social/queries'
 import { ago, fmtNum, xpFor } from '../../features/workouts/utils'
 import styles from './workouts.module.css'
 
 export default function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
   const navigate = useNavigate()
+  const device = useDevice()
   const like = useToggleLike()
   const add = useAddComment()
   const [open, setOpen] = useState(false)
@@ -18,9 +20,10 @@ export default function PostCard({ post, userId }: { post: FeedPost; userId: str
 
   async function share() {
     const msg = post.caption ? (post.author?.display_name ?? 'Um amigo') + ' · ' + post.caption : `${post.author?.display_name ?? 'Um amigo'} concluiu ${w?.name ?? 'um treino'}${w ? ` (${fmtNum(w.volume)} kg de volume)` : ''} no Digital Brain.`
-    if (navigator.share) {
+    if (device || navigator.share) {
       try {
-        await navigator.share({ title: 'Digital Brain', text: msg })
+        if (device) await device.shareText(msg)
+        else await navigator.share({ title: 'Digital Brain', text: msg })
       } catch {
         // cancelado
       }

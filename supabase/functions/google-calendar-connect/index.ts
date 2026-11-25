@@ -7,6 +7,7 @@ Deno.serve(async (req) => {
 
   const user = await getUser(req);
   if (!user) return json({ error: "unauthorized" }, 401);
+  const body = await req.json().catch(() => null);
 
   const params = new URLSearchParams({
     client_id: Deno.env.get("GOOGLE_CLIENT_ID")!,
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
     ].join(" "),
     access_type: "offline",
     prompt: "consent select_account",
-    state: await makeState(user.id),
+    state: await makeState(user.id, body?.client === "native"),
   });
 
   return json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params}` });

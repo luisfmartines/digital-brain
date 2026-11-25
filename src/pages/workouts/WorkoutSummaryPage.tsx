@@ -1,6 +1,7 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Camera, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
+import { appIcon } from '../../expo/device'
 import PhotoPicker from '../../components/ui/PhotoPicker'
 import { useProfile } from '../../features/profile/useProfile'
 import { useSession, useSharePost, useSummaryExtras, useUploadPhoto } from '../../features/workouts/queries'
@@ -57,7 +58,7 @@ export default function WorkoutSummaryPage() {
       <div className={styles.frame}>
         <header className={styles.header}>
           <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Voltar"><ArrowLeft size={20} /></button>
-          <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
+          <img src={appIcon} alt="" className={styles.miniLogo} />
           <h1 className={styles.headerTitle}>Resumo do treino</h1>
           <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Fechar"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />

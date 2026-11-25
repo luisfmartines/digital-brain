@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { appIcon, useDevice } from '../../expo/device'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -231,6 +232,7 @@ export default function ActiveWorkoutPage() {
 }
 
 function ActiveWorkoutSession({ id }: { id: string }) {
+  const vibrateDevice = useDevice()?.vibrate
   const navigate = useNavigate()
   const { data: profile } = useProfile()
   const { data: session, isLoading, isError, refetch } = useSession(id)
@@ -262,12 +264,15 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   useEffect(() => {
     if (restEndsAt == null) return
     const timer = window.setTimeout(() => {
-      if (vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200])
+      if (vibrate) {
+        if (vibrateDevice) void vibrateDevice()
+        else navigator.vibrate?.([200, 100, 200])
+      }
       if (sound) beep()
       setRest(null)
     }, Math.max(0, restEndsAt - Date.now()))
     return () => window.clearTimeout(timer)
-  }, [restEndsAt, vibrate, sound])
+  }, [restEndsAt, vibrate, sound, vibrateDevice])
 
   if (isLoading) return <p className={styles.loading}>Carregando…</p>
   if (isError && !session) return (
@@ -411,7 +416,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
       <div className={styles.frame}>
         <header className={styles.header}>
           <button type="button" className={styles.back} onClick={() => navigate('/workouts')} aria-label="Voltar"><ArrowLeft size={20} /></button>
-          <img src="/icons/icon-192.png" alt="" className={styles.miniLogo} />
+          <img src={appIcon} alt="" className={styles.miniLogo} />
           <h1 className={styles.headerTitle}>Treino ativo</h1>
           <button type="button" className={styles.back} disabled={busy} onClick={discard} aria-label="Descartar treino"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />

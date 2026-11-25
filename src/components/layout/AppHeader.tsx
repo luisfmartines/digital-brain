@@ -1,6 +1,7 @@
 import { UserPlus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Avatar from '../ui/Avatar'
+import { appIcon } from '../../expo/device'
 import { useProfile } from '../../features/profile/useProfile'
 import styles from './AppHeader.module.css'
 
@@ -11,7 +12,7 @@ export default function AppHeader({ subtitle }: { subtitle: string }) {
   return (
     <header className={styles.header}>
       <div className={styles.brand}>
-        <img src="/icons/icon-192.png" alt="" className={styles.logo} />
+        <img src={appIcon} alt="" className={styles.logo} />
         <div>
           <div className={styles.title}>Digital Brain</div>
           <div className={styles.subtitle}>{subtitle}</div>

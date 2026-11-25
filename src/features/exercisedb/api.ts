@@ -4,7 +4,7 @@ import { originalSearchTerm, translateName, translateText } from './translate.ts
 import { catalogSearchEquipment, catalogSearchNames, prepareExerciseSearch, rankExercises } from './search.ts'
 
 const API_URL = (
-  import.meta.env?.VITE_EXERCISEDB_URL ||
+  process.env.EXPO_PUBLIC_EXERCISEDB_URL ||
   'https://oss.exercisedb.dev/api/v1'
 ).replace(/\/+$/, '')
 

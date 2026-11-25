@@ -3,6 +3,7 @@ import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucid
 import { Link, useSearchParams } from 'react-router-dom'
 import { useGoogleCalendars, useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
 import type { AgendaItem } from '../../features/calendar/agenda'
+import { useDevice } from '../../expo/device'
 import { EVENT_CATEGORIES, useCalendarEvents, useCalendarSchedule, type CalendarEvent } from '../../features/calendar/queries'
 import { addDays, localDateStr, parseDate, startOfDay, startOfWeek } from '../../lib/date'
 import styles from './Calendar.module.css'
@@ -32,8 +33,13 @@ function eventTime(event: AgendaItem, day: Date) {
 }
 
 function EventCard({ event, day, returnTo }: { event: AgendaItem; day: Date; returnTo: string }) {
+  const device = useDevice()
   return (
-    <Link to={event.href} state={event.kind === 'google' ? undefined : { returnTo }} target={event.kind === 'google' ? '_blank' : undefined} rel={event.kind === 'google' ? 'noopener noreferrer' : undefined} className={styles.event} data-category={event.category} style={event.originColor ? { '--event-color': event.originColor } as CSSProperties : undefined}>
+    <Link to={event.href} state={event.kind === 'google' ? undefined : { returnTo }} target={event.kind === 'google' ? '_blank' : undefined} rel={event.kind === 'google' ? 'noopener noreferrer' : undefined} className={styles.event} data-category={event.category} style={event.originColor ? { '--event-color': event.originColor } as CSSProperties : undefined}
+      onClick={device && event.kind === 'google' ? (click) => {
+        click.preventDefault()
+        void device.openLink(event.href)
+      } : undefined}>
       <span className={styles.eventInfo}>
         <strong>{event.title}</strong>
         <small>

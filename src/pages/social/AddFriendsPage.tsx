@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Check, ChevronLeft, Copy, Search, Share2, Sparkles, UserCheck, UserPlus } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
+import { publicAppOrigin, useDevice } from '../../expo/device'
 import { useProfile } from '../../features/profile/useProfile'
 import {
   useFollowers, useFollowingProfiles, useFollowToggle, useSearchProfiles, useSuggestedProfiles, type Profile,
@@ -47,6 +48,7 @@ function ConnectButton({ id, following, busy, onToggle }: { id: string; followin
 }
 
 export default function AddFriendsPage() {
+  const device = useDevice()
   const back = useBackNavigation('/')
   const [params] = useSearchParams()
   const { data: profile } = useProfile()
@@ -83,7 +85,8 @@ export default function AddFriendsPage() {
   async function copyHandle() {
     if (!handle) return
     try {
-      await navigator.clipboard.writeText(handle)
+      if (device) await device.copyText(handle)
+      else await navigator.clipboard.writeText(handle)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
@@ -92,11 +95,12 @@ export default function AddFriendsPage() {
   }
 
   async function sendLink() {
-    const url = `${window.location.origin}/friends/add?u=${profile?.username ?? ''}`
+    const url = `${publicAppOrigin()}/friends/add?u=${profile?.username ?? ''}`
     const text = `Me adiciona no Digital Brain: ${handle}`
-    if (navigator.share) {
+    if (device || navigator.share) {
       try {
-        await navigator.share({ title: 'Digital Brain', text, url })
+        if (device) await device.shareText(text, url)
+        else await navigator.share({ title: 'Digital Brain', text, url })
       } catch {
         // cancelado
       }

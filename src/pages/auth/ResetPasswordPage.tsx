@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { passwordStrength } from '../../features/auth/password'
+import { appIcon } from '../../expo/device'
 import styles from './LoginPage.module.css'
 
 export default function ResetPasswordPage() {
@@ -33,7 +34,7 @@ export default function ResetPasswordPage() {
     <div className={styles.page}>
       <div className={styles.glow} />
       <div className={styles.card}>
-        <div className={styles.logoBox}><img src="/icons/icon-192.png" alt="" /></div>
+        <div className={styles.logoBox}><img src={appIcon} alt="" /></div>
         <h1 className={styles.title} style={{ marginTop: 16 }}>Nova senha</h1>
         <p className={styles.subtitle}>6 ou mais caracteres, com maiúscula, minúscula e número</p>
         <form onSubmit={handleSubmit} className={styles.form}>

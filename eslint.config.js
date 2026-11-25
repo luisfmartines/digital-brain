@@ -6,14 +6,14 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'dist-native', '.expo', '.parity-baseline']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
+      { ...reactRefresh.configs.recommended, rules: { 'react-refresh/only-export-components': ['error', { allowConstantExport: true }] } },
     ],
     languageOptions: {
       globals: globals.browser,

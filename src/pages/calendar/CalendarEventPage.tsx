@@ -61,7 +61,7 @@ function EventForm({ event, date, returnTo }: { event?: CalendarEvent; date: str
         starts_at: starts.toISOString(), ends_at: ends?.toISOString() ?? null,
         alarm_minutes_before: allDay || !reminder ? null : Number(reminder),
       } })
-      const next = new URL(returnTo, window.location.origin)
+      const next = new URL(returnTo, 'https://digital-brain.invalid')
       next.searchParams.set('date', day)
       navigate(next.pathname + next.search, { replace: true })
     } catch (error) {

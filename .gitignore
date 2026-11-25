@@ -12,6 +12,10 @@ test-results
 playwright-report
 dist
 dist-ssr
+.expo
+.parity-baseline
+dist-native
+src/styles/fonts.generated.css
 *.local
 
 # Editor directories and files

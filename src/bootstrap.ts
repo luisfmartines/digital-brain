@@ -1,9 +1,3 @@
-const startup = document.getElementById('startup')
-
-function showStartupFailure() {
-  startup?.setAttribute('data-failed', '')
-}
-
 document.getElementById('startup-retry')?.addEventListener('click', async (event) => {
   event.preventDefault()
   const registration = navigator.serviceWorker?.getRegistration().catch(() => undefined)
@@ -14,7 +8,10 @@ document.getElementById('startup-retry')?.addEventListener('click', async (event
   window.location.reload()
 })
 
-void import('./main').catch((error: unknown) => {
-  showStartupFailure()
-  console.error('Digital Brain startup failed', error)
-})
+if (!__DEV__ && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch((error: unknown) => {
+      console.error('Digital Brain offline setup failed', error)
+    })
+  }, { once: true })
+}

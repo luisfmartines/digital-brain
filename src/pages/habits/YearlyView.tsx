@@ -8,6 +8,7 @@ import {
 import { HABIT_ICONS } from '../../features/onboarding/habitIcons'
 import { ViewSwitch, type View } from './common'
 import { heatClass } from './heat'
+import { useDevice } from '../../expo/device'
 import styles from './habits.module.css'
 
 interface Props {
@@ -32,6 +33,7 @@ function Ring({ pct }: { pct: number }) {
 }
 
 export default function YearlyView({ habits, ix, view, setView }: Props) {
+  const device = useDevice()
   const today = startOfDay()
   const todayStr = localDateStr(today)
   const [year, setYear] = useState(today.getFullYear())
@@ -90,7 +92,12 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
     const from = localDateStr(jan1)
     const to = localDateStr(dec31)
     const logs = ix.logs.filter((l) => l.log_date >= from && l.log_date <= to)
-    const blob = new Blob([JSON.stringify({ year, habits, logs }, null, 2)], { type: 'application/json' })
+    const json = JSON.stringify({ year, habits, logs }, null, 2)
+    if (device) {
+      void device.exportJson(year, json).catch((error: unknown) => console.error('Digital Brain export failed', error))
+      return
+    }
+    const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -101,9 +108,10 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
 
   async function share() {
     const text = `Meu Digital Brain ${year}: ${period.pct}% de consistência, ${active} dias ativos e ${completed} hábitos concluídos.`
-    if (navigator.share) {
+    if (device || navigator.share) {
       try {
-        await navigator.share({ title: 'Digital Brain', text })
+        if (device) await device.shareText(text)
+        else await navigator.share({ title: 'Digital Brain', text })
       } catch {
         // compartilhamento cancelado
       }

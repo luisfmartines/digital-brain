@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { PASSWORD_RULES, passwordStrength } from '../../features/auth/password'
+import { appIcon, AUTH_REDIRECT, useDevice } from '../../expo/device'
+import { handleAuthReturn } from '../../expo/authReturn'
 import styles from './LoginPage.module.css'
 
 type Mode = 'login' | 'signup'
@@ -24,6 +26,7 @@ function GoogleG() {
 }
 
 export default function LoginPage() {
+  const device = useDevice()
   const [mode, setMode] = useState<Mode>('login')
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
@@ -94,7 +97,10 @@ export default function LoginPage() {
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: name, username } },
+        options: {
+          data: { full_name: name, username },
+          emailRedirectTo: device ? `${AUTH_REDIRECT}/signup` : undefined,
+        },
       })
       if (authError) setError(authError.message)
       else if (!data.session) setInfo('Conta criada! Confirme seu e-mail para entrar.')
@@ -103,11 +109,20 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
-    const { error: authError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    })
-    if (authError) setError(authError.message)
+    const redirectTo = device ? `${AUTH_REDIRECT}/oauth` : window.location.origin
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: !!device },
+      })
+      if (authError) throw authError
+      if (device && data.url) {
+        const result = await device.openAuth(data.url, redirectTo)
+        if (result) await handleAuthReturn(new URL(result))
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Não foi possível entrar com o Google.')
+    }
   }
 
   async function handleForgot() {
@@ -118,7 +133,7 @@ export default function LoginPage() {
       return
     }
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${device ? AUTH_REDIRECT : window.location.origin}/reset-password`,
     })
     if (authError) setError(authError.message)
     else setInfo('Link de redefinição enviado. Verifique seu e-mail.')
@@ -129,7 +144,7 @@ export default function LoginPage() {
       <div className={styles.glow} />
       <div className={styles.card}>
         <div className={styles.logoBox}>
-          <img src="/icons/icon-192.png" alt="" />
+          <img src={appIcon} alt="" />
           {signup && <span className={styles.logoDot} />}
         </div>
         <div className={styles.titleRow}>
