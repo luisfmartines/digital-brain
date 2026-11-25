@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { AppState, BackHandler, Linking, Platform, Share, StatusBar, Vibration } from 'react-native'
+import { ActivityIndicator, AppState, BackHandler, Button, Linking, Platform, Share, StatusBar, StyleSheet, Text, Vibration, View } from 'react-native'
+import { requireOptionalNativeModule } from 'expo'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { setStringAsync } from 'expo-clipboard'
@@ -8,8 +9,16 @@ import { isAvailableAsync, shareAsync } from 'expo-sharing'
 import { openAuthSessionAsync } from 'expo-web-browser'
 import DomApp from './DomApp'
 import { CALENDAR_REDIRECT } from './device'
+import { allowsLocalDocument, resolveUpdateDocument } from './domDocument'
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+const isPublishedPreview = isExpoGo && !__DEV__
+
+function getUpdateDocument() {
+  if (!isPublishedPreview) return undefined
+  const updates = requireOptionalNativeModule<{ localAssets?: Record<string, string> }>('ExpoUpdates')
+  return resolveUpdateDocument(updates?.localAssets ?? {})
+}
 
 async function openLink(url: string) {
   if (new URL(url).protocol === 'https:') await Linking.openURL(url)
@@ -35,11 +44,11 @@ async function vibrate() {
   Vibration.vibrate([0, 200, 100, 200])
 }
 
-function allowNavigation({ url }: { url: string }) {
+function allowNavigation(url: string, updateDocument?: string) {
+  if (url.startsWith('file:')) return allowsLocalDocument(url, updateDocument)
+  if (!__DEV__ || !/^https?:\/\//.test(url)) return false
   const page = new URL(url)
-  // The DOM bridge is scoped to the embedded app document.
-  if (page.protocol === 'file:') return /\/(?:www\.bundle|\.expo-internal)\/[a-f0-9]+\.html$/.test(page.pathname)
-  return __DEV__ && page.pathname === '/_expo/@dom/DomApp.tsx' &&
+  return page.pathname === '/_expo/@dom/DomApp.tsx' &&
     (page.searchParams.get('file')?.endsWith('/src/expo/DomApp.tsx') ?? false)
 }
 
@@ -49,6 +58,15 @@ export default function NativeApp() {
   const [canGoBack, setCanGoBack] = useState(false)
   const [backRequest, setBackRequest] = useState(0)
   const [foregroundSequence, setForegroundSequence] = useState(0)
+  const [updateDocument] = useState(getUpdateDocument)
+  const [previewLoad, setPreviewLoad] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [previewAttempt, setPreviewAttempt] = useState(0)
+
+  useEffect(() => {
+    if (!isPublishedPreview || previewLoad !== 'loading') return
+    const timeout = setTimeout(() => setPreviewLoad('error'), 20000)
+    return () => clearTimeout(timeout)
+  }, [previewAttempt, previewLoad])
 
   async function openAuth(url: string, redirect: string) {
     const result = await openAuthSessionAsync(url, redirect)
@@ -96,6 +114,7 @@ export default function NativeApp() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme === 'dark' ? '#111115' : '#f6faf7' }}>
         <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
         <DomApp
+          key={previewAttempt}
           isExpoGo={isExpoGo}
           foregroundSequence={foregroundSequence}
           dom={{
@@ -103,12 +122,15 @@ export default function NativeApp() {
             useExpoDOMWebView: false,
             allowUniversalAccessFromFileURLs: Platform.OS === 'android',
             contentInsetAdjustmentBehavior: 'never',
-            onShouldStartLoadWithRequest: allowNavigation,
+            overrideUri: updateDocument,
+            onShouldStartLoadWithRequest: ({ url }) => allowNavigation(url, updateDocument),
+            onError: isPublishedPreview ? () => setPreviewLoad('error') : undefined,
           }}
           incomingUrl={incomingLink.url}
           incomingSequence={incomingLink.sequence}
           backRequest={backRequest}
           setCanGoBack={async (value) => setCanGoBack(value)}
+          onDomReady={isPublishedPreview ? async () => setPreviewLoad('ready') : undefined}
           setTheme={async (value) => setTheme(value)}
           openAuth={openAuth}
           openLink={openLink}
@@ -117,7 +139,37 @@ export default function NativeApp() {
           exportJson={exportJson}
           vibrate={vibrate}
         />
+        {isPublishedPreview && previewLoad !== 'ready' && (
+          <View style={styles.previewStatus}>
+            {previewLoad === 'loading' && <ActivityIndicator size="large" color="#fff" />}
+            <Text style={styles.statusText} accessibilityLiveRegion="polite">
+              {previewLoad === 'loading' ? 'Carregando o Digital Brain…' : 'Não foi possível abrir o Digital Brain.'}
+            </Text>
+            {previewLoad === 'error' && (
+              <Button title="Tentar novamente" onPress={() => {
+                setPreviewLoad('loading')
+                setPreviewAttempt((attempt) => attempt + 1)
+              }} />
+            )}
+          </View>
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  previewStatus: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: '#111115',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    padding: 24,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+})

@@ -18,10 +18,15 @@ type Props = NonNullable<ContextType<typeof DeviceContext>> & {
   incomingSequence: number
   backRequest: number
   setCanGoBack: (canGoBack: boolean) => Promise<void>
+  onDomReady?: () => Promise<void>
 }
 
-export default function DomApp({ incomingUrl, incomingSequence, backRequest, setCanGoBack, ...device }: Props) {
+export default function DomApp({ incomingUrl, incomingSequence, backRequest, setCanGoBack, onDomReady, ...device }: Props) {
   const { isExpoGo, foregroundSequence } = device
+  useEffect(() => {
+    void onDomReady?.()
+  }, [onDomReady])
+
   useEffect(() => {
     document.documentElement.lang = 'pt-BR'
     const reportHistory = () => {
