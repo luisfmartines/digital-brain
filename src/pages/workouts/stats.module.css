@@ -35,8 +35,6 @@
 .bar, .barOn { flex: 1; min-width: 0; padding: 0; border: 0; border-radius: 4px 4px 2px 2px; background: var(--color-tertiary); cursor: pointer; }
 .barOn { background: linear-gradient(180deg, var(--color-secondary), var(--color-primary)); }
 .axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-text-muted); }
-.dayAxis { display: flex; gap: 4px; text-align: center; font-size: 10px; color: var(--color-text-muted); }
-.dayAxis span { flex: 1; min-width: 0; }
 .axis span:last-child { color: var(--color-secondary); font-weight: 700; }
 
 .svg { width: 100%; height: auto; display: block; overflow: visible; }

@@ -1,13 +1,15 @@
 import { ArrowLeft } from 'lucide-react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import ProfileAvatar from './ProfileAvatar'
 import { useAuth } from '../../features/auth/useAuth'
 import { useProfileActivity, useSharedProfile } from '../../features/social/sharedProfile'
 import ProfileActivitySections, { ProfileCounts, ProfilePhotos } from './ProfileActivity'
+import { useBackNavigation } from '../../hooks/useBackNavigation'
 import styles from './Profile.module.css'
 
 export default function SharedProfilePage() {
   const { id } = useParams()
+  const back = useBackNavigation('/friends/add')
   const { user } = useAuth()
   const own = user?.id === id
   const profile = useSharedProfile(own ? undefined : id)
@@ -15,12 +17,12 @@ export default function SharedProfilePage() {
 
   if (own) return <Navigate to="/profile" replace />
   if (profile.isPending) return <p role="status">Carregando perfil…</p>
-  if (profile.isError) return <><Link to="/friends/add">Voltar para amigos</Link><p role="alert">{profile.error.message}</p></>
+  if (profile.isError) return <><button type="button" className={styles.backLink} onClick={back}><ArrowLeft size={16} /> Voltar</button><p role="alert">{profile.error.message}</p></>
 
   const { name, username, avatar, bio, level, sharing, completion, routines } = profile.data
   return (
     <div className={styles.page}>
-      <Link to="/friends/add" className={styles.backLink}><ArrowLeft size={16} /> Amigos</Link>
+      <button type="button" className={styles.backLink} onClick={back}><ArrowLeft size={16} /> Voltar</button>
       <ProfilePhotos photos={activity.data?.photos} />
       <section className={`${styles.card} ${styles.identity}`}>
         <div className={styles.person}>

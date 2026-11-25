@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Check, ChevronLeft, Copy, Search, Share2, Sparkles, UserCheck, UserPlus } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
 import { useProfile } from '../../features/profile/useProfile'
 import {
   useFollowers, useFollowingProfiles, useFollowToggle, useSearchProfiles, useSuggestedProfiles, type Profile,
 } from '../../features/social/queries'
+import { useBackNavigation } from '../../hooks/useBackNavigation'
 import styles from './AddFriends.module.css'
 
 const DISMISS_KEY = 'db:dismissed-followers'
@@ -46,7 +47,7 @@ function ConnectButton({ id, following, busy, onToggle }: { id: string; followin
 }
 
 export default function AddFriendsPage() {
-  const navigate = useNavigate()
+  const back = useBackNavigation('/')
   const [params] = useSearchParams()
   const { data: profile } = useProfile()
   const { following, profiles: friends, loading, error } = useFollowingProfiles()
@@ -110,7 +111,7 @@ export default function AddFriendsPage() {
     <div className={styles.page}>
       <div className={styles.frame}>
         <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={() => navigate(-1)} aria-label="Voltar"><ChevronLeft size={24} /></button>
+          <button type="button" className={styles.back} onClick={back} aria-label="Voltar"><ChevronLeft size={24} /></button>
           <h2>Adicionar amigos</h2>
         </header>
 

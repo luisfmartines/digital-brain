@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarCheck, Copy, Dumbbell } from 'lucide-react'
+import { Activity, CalendarCheck, Copy, Dumbbell } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Dialog from '../../components/ui/Dialog'
 import { useCopySharedRoutine, type ProfileActivity, type ProfileRoutine } from '../../features/social/sharedProfile'
@@ -8,7 +8,6 @@ import { restLabel } from '../../features/workouts/setTypes'
 import { useFeed } from '../../features/social/queries'
 import { parseDate } from '../../lib/date'
 import FeedPostCard from '../workouts/FeedPostCard'
-import VolumeChart from '../workouts/VolumeChart'
 import workoutStyles from '../workouts/workouts.module.css'
 import styles from './Profile.module.css'
 
@@ -67,7 +66,9 @@ export default function ProfileActivitySections({ routines, activity, own = fals
   const [selected, setSelected] = useState<Selected | null>(null)
   const copy = useCopySharedRoutine()
   const [copied, setCopied] = useState<Record<string, string>>({})
-  const weekVolume = activity?.weekVolume ?? []
+  const weekDays = activity?.weekVolume?.filter((day) => day.seconds !== undefined) ?? []
+  const totalSeconds = weekDays.reduce((sum, day) => sum + (day.seconds ?? 0), 0)
+  const maxSeconds = Math.max(1, ...weekDays.map((day) => day.seconds ?? 0))
   const selectedKey = selected && selected.type + ':' + selected.item.id
 
   function open(selection: Selected) {
@@ -77,14 +78,24 @@ export default function ProfileActivitySections({ routines, activity, own = fals
 
   return (
     <>
-      {weekVolume.length > 0 && (
-        <VolumeChart key={weekVolume[0].date} buckets={weekVolume.map((day) => ({
-          ...day,
-          label: parseDate(day.date).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
-          long: dateLabel(day.date),
-        }))}
-          total={weekVolume.reduce((sum, day) => sum + day.volume, 0)}
-          workouts={weekVolume.reduce((sum, day) => sum + day.workouts, 0)} />
+      {weekDays.length > 0 && (
+        <section className={styles.card} aria-label="Tempo na academia">
+          <h2><Activity size={18} /> Tempo na academia</h2>
+          <div className={styles.weekTotal}><strong>{duration(totalSeconds)}</strong><small>Nesta semana</small></div>
+          <ul className={styles.weekBars} aria-label="Tempo por dia">
+            {weekDays.map((day) => {
+              const seconds = day.seconds ?? 0
+              return (
+                <li key={day.date} aria-label={dateLabel(day.date) + ': ' + duration(seconds)}>
+                  <span className={styles.weekBarTrack} aria-hidden="true">
+                    <i style={{ height: seconds / maxSeconds * 100 + '%' }} />
+                  </span>
+                  <small aria-hidden="true">{parseDate(day.date).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</small>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       )}
 
       {!!routines && <section className={styles.activitySection}>

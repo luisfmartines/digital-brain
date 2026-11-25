@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 const userId = '11111111-1111-4111-8111-111111111111'
 const weekVolume = Array.from({ length: 7 }, (_, index) => ({
   date: '2026-11-' + (23 + index),
-  volume: index === 1 ? 3088 : 0,
+  seconds: index === 1 ? 5400 : 0,
   workouts: index === 1 ? 1 : 0,
 }))
 
@@ -262,11 +262,10 @@ test('another profile shows shared details and copies a workout routine', async 
     } })
   })
   await page.goto('/profiles/' + otherId)
-  const volume = page.getByRole('region', { name: 'Volume', exact: true })
-  await expect(volume).toContainText('3.088')
-  await expect(volume.getByRole('button')).toHaveCount(7)
-  await volume.getByRole('button', { name: /23 de nov.*0 kg/ }).click()
-  await expect(volume).toContainText('nenhum treino')
+  const time = page.getByRole('region', { name: 'Tempo na academia', exact: true })
+  await expect(time).toContainText('1 h 30 min')
+  await expect(time.getByRole('listitem')).toHaveCount(7)
+  await expect(time.getByRole('listitem').nth(1)).toHaveAttribute('aria-label', /1 h 30 min/)
 
   await expect(page.getByRole('heading', { name: 'Ana' })).toBeVisible()
   await expect(page.getByText('Nível 7')).toBeVisible()
@@ -345,10 +344,10 @@ test('own profile shows routines above the settings and its feed posts at the en
     }] })
   })
   await page.goto('/profile')
-  const volume = page.getByRole('region', { name: 'Volume', exact: true })
-  await expect(volume).toContainText('Semana atual')
-  await expect(volume).toContainText('3.088')
-  await expect(volume.getByRole('button')).toHaveCount(7)
+  const time = page.getByRole('region', { name: 'Tempo na academia', exact: true })
+  await expect(time).toContainText('Nesta semana')
+  await expect(time).toContainText('1 h 30 min')
+  await expect(time.getByRole('listitem')).toHaveCount(7)
   const routines = await page.getByRole('heading', { name: 'Rotinas', exact: true }).boundingBox()
   const settings = await page.getByRole('heading', { name: 'Preferências' }).boundingBox()
   const deleteButton = await page.getByRole('button', { name: 'Excluir conta', exact: true }).boundingBox()

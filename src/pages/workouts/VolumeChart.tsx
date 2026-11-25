@@ -4,7 +4,6 @@ import { fmtNum } from '../../features/workouts/utils'
 import styles from './stats.module.css'
 
 interface VolumeBucket {
-  label: string
   long: string
   volume: number
   workouts: number
@@ -16,12 +15,11 @@ export default function VolumeChart({ buckets, total, workouts, activeWeeks, com
   workouts: number
   activeWeeks?: number
   comparison?: ReactNode
-  axis?: ReactNode
+  axis: ReactNode
 }) {
   const [selected, setSelected] = useState<number | null>(null)
   const maxVolume = Math.max(1, ...buckets.map((bucket) => bucket.volume))
-  const lastWorkout = buckets.reduce((last, bucket, index) => bucket.workouts ? index : last, 0)
-  const currentIndex = selected ?? (axis ? buckets.length - 1 : lastWorkout)
+  const currentIndex = selected ?? buckets.length - 1
   const current = buckets[currentIndex]
   if (!current) return null
 
@@ -29,7 +27,7 @@ export default function VolumeChart({ buckets, total, workouts, activeWeeks, com
     <section className={styles.card} aria-label="Volume">
       <div className={styles.cardHead}>
         <h2 className={styles.cardTitle}><i className={styles.cardIcon}><Maximize2 size={15} /></i> Volume</h2>
-        <span className={styles.tag}>{axis ? 'Tonelagem total' : 'Semana atual'}</span>
+        <span className={styles.tag}>Tonelagem total</span>
       </div>
       <div className={styles.bigRow}>
         <b className={styles.big}>{fmtNum(total)}</b><span className={styles.unit}>kg</span>
@@ -50,9 +48,7 @@ export default function VolumeChart({ buckets, total, workouts, activeWeeks, com
             onClick={() => setSelected(index)} />
         ))}
       </div>
-      {axis ?? <div className={styles.dayAxis} aria-hidden="true">
-        {buckets.map((bucket) => <span key={bucket.long}>{bucket.label}</span>)}
-      </div>}
+      {axis}
     </section>
   )
 }
