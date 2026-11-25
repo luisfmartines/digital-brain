@@ -10,7 +10,7 @@ import AvatarCropDialog from './AvatarCropDialog'
 import Dialog from '../../components/ui/Dialog'
 import dialogStyles from '../../components/ui/Dialog.module.css'
 import { useRoutines } from '../../features/workouts/queries'
-import ProfileActivitySections, { ProfileCounts, ProfilePhotos } from './ProfileActivity'
+import ProfileActivitySections, { OwnProfileFeed, ProfileCounts, ProfilePhotos } from './ProfileActivity'
 import { MODULES } from '../../features/onboarding/modules'
 import { levelInfo } from '../../features/profile/level'
 import { useProfile } from '../../features/profile/useProfile'
@@ -137,6 +137,14 @@ export default function ProfilePage() {
         ) : profile.bio && <p className={styles.bio}>{profile.bio}</p>}
       </section>
 
+      {activity.isError && <p className={styles.connectionDetail} role="alert">Não foi possível carregar o resumo de treinos. <button type="button" onClick={() => activity.refetch()}>Tentar novamente</button></p>}
+      <ProfileActivitySections own activity={activity.data} routines={routines.data?.map((routine) => ({
+        id: routine.id, name: routine.name, focus: routine.focus,
+        exercises: routine.routine_exercises.map(({ exercise, target_sets, rest_seconds }) => ({
+          name: exercise.name, sets: target_sets, rest: rest_seconds, reps: null,
+        })),
+      }))} />
+
       <section className={styles.card}>
         <div className={styles.person}>
           <span className={styles.icon}><Trophy size={19} /></span>
@@ -204,13 +212,7 @@ export default function ProfilePage() {
         </form>
       </Dialog>}
 
-      {activity.isError && <p className={styles.connectionDetail} role="alert">Não foi possível carregar a atividade. <button type="button" onClick={() => activity.refetch()}>Tentar novamente</button></p>}
-      <ProfileActivitySections own activity={activity.data} routines={routines.data?.map((routine) => ({
-        id: routine.id, name: routine.name, focus: routine.focus,
-        exercises: routine.routine_exercises.map(({ exercise, target_sets, rest_seconds }) => ({
-          name: exercise.name, sets: target_sets, rest: rest_seconds, reps: null,
-        })),
-      }))} />
+      <OwnProfileFeed userId={profile.id} />
       </>}
     </div>
   )

@@ -5,6 +5,9 @@ import Dialog from '../../components/ui/Dialog'
 import { useCopySharedRoutine, type ProfileActivity, type ProfileRoutine } from '../../features/social/sharedProfile'
 import { translateName } from '../../features/exercisedb/translate'
 import { restLabel } from '../../features/workouts/setTypes'
+import { useFeed } from '../../features/social/queries'
+import FeedPostCard from '../workouts/FeedPostCard'
+import workoutStyles from '../workouts/workouts.module.css'
 import styles from './Profile.module.css'
 
 const dateLabel = (value: string) => new Date(value.length === 10 ? value + 'T12:00:00' : value)
@@ -107,7 +110,7 @@ export default function ProfileActivitySections({ routines, activity, own = fals
         </ul> : <p className={styles.connectionDetail}>Nenhuma rotina criada.</p>}
       </section>}
 
-      {activity?.workoutCount != null && <section className={styles.activitySection}>
+      {!own && activity?.workoutCount != null && <section className={styles.activitySection}>
         <h2><CalendarCheck size={18} /> Treinos recentes</h2>
         {activity.workouts.length ? activity.workouts.map((workout) => (
           <article key={workout.id} className={styles.card}>
@@ -127,7 +130,7 @@ export default function ProfileActivitySections({ routines, activity, own = fals
         )) : <p className={styles.connectionDetail}>Nenhum treino concluído.</p>}
       </section>}
 
-      {activity && <section className={styles.activitySection}>
+      {!own && activity && <section className={styles.activitySection}>
         <h2>Publicações recentes</h2>
         {activity.posts.length ? activity.posts.map((post) => (
           <article className={styles.card} key={post.id}>
@@ -151,7 +154,6 @@ export default function ProfileActivitySections({ routines, activity, own = fals
           </li>
         ))}</ol>
         {!selected.item.exercises.length && <p className={styles.connectionDetail}>Nenhum exercício.</p>}
-        {selected.type === 'workout' && own && <Link className={styles.button} to={'/workouts/view/' + selected.item.id}>Abrir registro</Link>}
         {selected.type === 'routine' && own ? (
           <Link className={styles.button} to={'/workouts/routines/' + selected.item.id + '/edit'}>Editar rotina</Link>
         ) : copied[selectedKey] ? (
@@ -168,5 +170,24 @@ export default function ProfileActivitySections({ routines, activity, own = fals
         {copy.isError && <p role="alert" className={styles.error}>{copy.error.message}</p>}
       </Dialog>}
     </>
+  )
+}
+
+export function OwnProfileFeed({ userId }: { userId: string }) {
+  const feed = useFeed(userId)
+
+  return (
+    <section className={styles.activitySection} aria-labelledby="own-profile-activity">
+      <h2 id="own-profile-activity">Atividade recente</h2>
+      {feed.isPending && <p role="status" className={styles.connectionDetail}>Carregando atividade…</p>}
+      {feed.isError && <p role="alert" className={styles.connectionDetail}>
+        Não foi possível carregar a atividade. <button type="button" className={styles.button} onClick={() => feed.refetch()}>Tentar novamente</button>
+      </p>}
+      {feed.data && (feed.data.length ? (
+        <ul className={workoutStyles.list}>
+          {feed.data.map((post) => <FeedPostCard key={post.id} post={post} userId={userId} />)}
+        </ul>
+      ) : <p className={styles.connectionDetail}>Nenhuma publicação ainda.</p>)}
+    </section>
   )
 }

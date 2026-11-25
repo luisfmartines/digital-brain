@@ -90,16 +90,18 @@ export interface FeedPost {
   likes: number; liked: boolean; comments: FeedComment[]
 }
 
-export function useFeed() {
+export function useFeed(authorId?: string) {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['social', 'feed', user?.id],
+    queryKey: ['social', 'feed', user?.id, authorId],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('posts')
         .select('id, user_id, caption, photo_url, created_at, workout:workouts(id, name, started_at, ended_at, paused_seconds, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name)))')
-        .is('deleted_at', null).order('created_at', { ascending: false }).limit(20)
+        .is('deleted_at', null)
+      if (authorId) query.eq('user_id', authorId)
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(20)
       if (error) throw error
       const posts = (data ?? []) as unknown as RawPost[]
       const ids = posts.map((p) => p.id)

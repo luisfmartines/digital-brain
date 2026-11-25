@@ -27,7 +27,7 @@ test.beforeEach(async ({ page }) => {
     if (url.pathname.includes('/storage/v1/object/avatars/')) body = { Key: `avatars/${userId}/profile.jpg` }
     if (url.pathname.endsWith('/profiles')) {
       if (request.method() === 'PATCH') Object.assign(profile, request.postDataJSON())
-      body = profile
+      body = url.searchParams.get('id')?.startsWith('in.') ? [profile] : profile
     }
     if (url.pathname.endsWith('/calendar_events')) {
       if (request.method() === 'POST') events.push({ id: 'test-event', ...request.postDataJSON() })
@@ -324,6 +324,26 @@ test('habit creation uses the theme picker and submits the chosen category', asy
   expect((await request).postDataJSON()).toMatchObject({ name: 'Caminhar depois do almoço', category: 'fitness' })
 })
 
+test('own profile shows routines above the settings and its feed posts at the end', async ({ page }) => {
+  await page.route('**/rest/v1/posts?*', (route) => {
+    expect(new URL(route.request().url()).searchParams.get('user_id')).toBe('eq.' + userId)
+    return route.fulfill({ json: [{
+      id: 'own-post', user_id: userId, created_at: '2026-11-24T17:30:00Z', photo_url: null, caption: null,
+      workout: { id: 'own-workout', name: 'Treino publicado', started_at: '2026-11-24T17:00:00Z',
+        ended_at: '2026-11-24T17:30:00Z', paused_seconds: 0, workout_sets: [] },
+    }] })
+  })
+  await page.goto('/profile')
+  const routines = await page.getByRole('heading', { name: 'Rotinas', exact: true }).boundingBox()
+  const settings = await page.getByRole('heading', { name: 'Preferências' }).boundingBox()
+  const deleteButton = await page.getByRole('button', { name: 'Excluir conta', exact: true }).boundingBox()
+  const activity = page.getByRole('region', { name: 'Atividade recente' })
+  expect(routines.y).toBeLessThan(settings.y)
+  expect((await activity.boundingBox()).y).toBeGreaterThan(deleteButton.y + deleteButton.height)
+  await expect(activity.getByRole('button', { name: 'Ver treino completo: Treino publicado' })).toBeVisible()
+  await expect(activity.getByRole('button', { name: 'Comentários' })).toBeVisible()
+})
+
 test('account deletion requires explicit typed confirmation and signs out after success', async ({ page }) => {
   let calls = 0
   await page.route('**/functions/v1/delete-account', (route) => {
@@ -337,10 +357,6 @@ test('account deletion requires explicit typed confirmation and signs out after 
   const deleteButton = page.getByRole('button', { name: 'Excluir conta', exact: true })
   const deletion = await deleteButton.boundingBox()
   expect(deletion).toMatchObject({ width: signOut.width, height: signOut.height })
-  for (const name of ['Rotinas', 'Treinos recentes', 'Publicações recentes']) {
-    const heading = await page.getByRole('heading', { name, exact: true }).boundingBox()
-    expect(heading.y).toBeGreaterThan(deletion.y + deletion.height)
-  }
   await deleteButton.click()
   const dialog = page.getByRole('dialog', { name: 'Excluir sua conta?' })
   const confirm = dialog.getByRole('button', { name: 'Excluir permanentemente' })
