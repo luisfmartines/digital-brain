@@ -1,0 +1,66 @@
+diff --git a/node_modules/expo/node_modules/@expo/cli/build/src/export/exportDomComponents.js b/node_modules/expo/node_modules/@expo/cli/build/src/export/exportDomComponents.js
+index 5f23cf6..3397665 100644
+--- a/node_modules/expo/node_modules/@expo/cli/build/src/export/exportDomComponents.js
++++ b/node_modules/expo/node_modules/@expo/cli/build/src/export/exportDomComponents.js
+@@ -115,12 +115,12 @@ async function exportDomComponentAsync({ filePath, projectRoot, dev, devServer,
+             artifact.filename = `${md5}.${artifact.type}`;
+         }
+     }
+-    const html = await (0, _serializeHtml.serializeHtmlWithAssets)({
++    const html = (0, _serializeHtml.serializeHtmlWithAssets)({
+         isExporting: true,
+         resources: bundle.artifacts,
+         template: (0, _DomComponentsMiddleware.getDomComponentHtml)(),
+         baseUrl: './'
+-    });
++    }).replaceAll(/<script src="([^"]+)" defer><\/script>/g, '<script type="application/expo-dom-entry" src="$1"></script>');
+     const serialAssets = bundle.artifacts.map((a)=>{
+         return {
+             ...a,
+diff --git a/node_modules/expo/node_modules/@expo/cli/build/src/start/server/middleware/DomComponentsMiddleware.js b/node_modules/expo/node_modules/@expo/cli/build/src/start/server/middleware/DomComponentsMiddleware.js
+index 30ec488..52cf605 100644
+--- a/node_modules/expo/node_modules/@expo/cli/build/src/start/server/middleware/DomComponentsMiddleware.js
++++ b/node_modules/expo/node_modules/@expo/cli/build/src/start/server/middleware/DomComponentsMiddleware.js
+@@ -136,16 +136,33 @@ function getDomComponentHtml(src, { title } = {}) {
+         <div id="root"></div>
+         <script>${_domPolyfills.DOM_POLYFILLS_SCRIPT}</script>
+         <script>
+-          var injectedObject = {};
+-          try {
+-            injectedObject = JSON.parse(window.ReactNativeWebView.injectedObjectJson());
+-          } catch (e) {
+-            throw new Error('Failed to parse injectedObjectJson: ' + e.message);
+-          }
+-          window.$$EXPO_DOM_HOST_OS = injectedObject.EXPO_DOM_HOST_OS;
+-          window.$$EXPO_INITIAL_PROPS = injectedObject.initialProps;
++          document.addEventListener('DOMContentLoaded', function () {
++            var deadline = Date.now() + 15000;
++            // Android react-native-webview may inject the object in onPageFinished.
++            function startWhenBridgeIsReady() {
++              var injectedObject;
++              try {
++                injectedObject = JSON.parse(window.ReactNativeWebView?.injectedObjectJson?.());
++              } catch {}
++              if (!injectedObject?.EXPO_DOM_HOST_OS || !injectedObject?.initialProps) {
++                if (Date.now() < deadline) return setTimeout(startWhenBridgeIsReady, 16);
++                console.error('Expo DOM did not receive its initial properties from the WebView.');
++                return;
++              }
++              window.$$EXPO_DOM_HOST_OS = injectedObject.EXPO_DOM_HOST_OS;
++              window.$$EXPO_INITIAL_PROPS = injectedObject.initialProps;
++              for (var entry of document.querySelectorAll('script[type="application/expo-dom-entry"][src]')) {
++                var script = document.createElement('script');
++                script.async = false;
++                if (entry.hasAttribute('crossorigin')) script.crossOrigin = entry.crossOrigin;
++                script.src = entry.src;
++                entry.replaceWith(script);
++              }
++            }
++            startWhenBridgeIsReady();
++          });
+         </script>
+-        ${src ? `<script crossorigin src="${src.replace(/^https?:/, '')}"></script>` : ''}
++        ${src ? `<script type="application/expo-dom-entry" crossorigin src="${src.replace(/^https?:/, '')}"></script>` : ''}
+     </body>
+ </html>`;
+ }
