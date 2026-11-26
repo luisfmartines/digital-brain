@@ -125,7 +125,7 @@ export default function AssistantPage() {
     }
   }, [busy, qc])
 
-  // Pergunta vinda da barra "Pergunte ao Digital Brain" da Home
+  // Pergunta vinda da barra do Neural no início
   useEffect(() => {
     const prompt = (state as { prompt?: string } | null)?.prompt
     if (prompt && !sentInitial.current) {

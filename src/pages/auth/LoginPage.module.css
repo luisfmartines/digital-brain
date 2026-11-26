@@ -8,26 +8,12 @@
 }
 .card { position: relative; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
 
-.logoBox {
-  position: relative; width: clamp(52px, 9dvh, 68px); aspect-ratio: 1; border-radius: 20px;
-  border: 1px solid var(--color-border); box-shadow: 0 0 40px rgba(63, 166, 114, 0.35);
-}
-.logoBox img { width: 100%; height: 100%; display: block; border-radius: 19px; }
-.logoDot {
-  position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%;
-  background: var(--color-secondary); border: 3px solid var(--color-bg);
-}
-.titleRow { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
 .title { font-size: clamp(1.375rem, 6.7vw, 1.75rem); }
-.badge {
-  padding: 3px 8px; border-radius: var(--radius-full); background: var(--color-primary-soft);
-  color: var(--color-secondary); font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
-}
 .subtitle { margin: 8px 0 22px; color: var(--color-text-muted); font-size: 13px; text-align: center; }
 
 .tabs {
   width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px;
-  background: var(--color-surface); border-radius: var(--radius-full);
+  background: var(--color-surface); border-radius: var(--radius-full); margin-top: 16px;
 }
 .tab {
   display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px;

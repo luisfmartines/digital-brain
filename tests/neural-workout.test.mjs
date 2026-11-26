@@ -13,6 +13,7 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
     const { hostname, pathname } = new URL(request.url)
     if (hostname === 'generativelanguage.googleapis.com') {
       const body = await request.json()
+      const latest = body.contents.at(-1).parts[0].text
       if (body.contents.some(({ parts }) => parts.some(({ text }) => text === 'Marque uma reunião'))) {
         return Response.json({ candidates: [{ content: { parts: [{ functionCall: {
           name: 'criar_evento', args: { titulo: 'Reunião', inicio: '2026-11-30T18:00:00-03:00', lembrete_minutos: 10 },
@@ -20,6 +21,24 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
       }
       const declarations = body.tools[0].functionDeclarations.map(({ name }) => name)
       modelCalls++
+      if (latest === 'Monte meu treino de peito e costas') {
+        if (declarations.includes('buscar_exercicios')) {
+          return Response.json({ candidates: [{ content: { parts: [{ text: 'Posso ajudar a montar.' }] } }] })
+        }
+        assert.deepEqual(body.toolConfig.functionCallingConfig, { mode: 'ANY', allowedFunctionNames: ['criar_treino'] })
+        const options = JSON.parse(body.systemInstruction.parts[0].text.match(/somente para consulta: (.*)/)[1])
+        const selected = [
+          ...options.filter(({ grupo }) => grupo === 'chest').slice(0, 2),
+          ...options.filter(({ grupo }) => grupo === 'back').slice(0, 2),
+        ]
+        assert.equal(selected.length, 4)
+        return Response.json({ candidates: [{ content: { parts: [{ functionCall: {
+          name: 'criar_treino', args: {
+            nome: 'Peito e costas',
+            exercicios: selected.map(({ ref }) => ({ exercicio_id: ref, series: 3, repeticoes: 10 })),
+          },
+        } }] } }] })
+      }
       if (modelCalls === 1) {
         assert.ok(declarations.includes('buscar_exercicios'))
         assert.ok(!declarations.includes('criar_treino'))
@@ -48,6 +67,9 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
     if (pathname === '/rest/v1/google_tokens') {
       assert.equal(request.headers.get('Authorization'), 'Bearer service-key')
       return Response.json([{ refresh_token: 'refresh-test' }])
+    }
+    if (pathname === '/auth/v1/user' && request.headers.get('Authorization') !== 'Bearer test-token') {
+      return Response.json({ message: 'invalid token' }, { status: 401 })
     }
     assert.equal(request.headers.get('Authorization'), 'Bearer test-token')
     if (pathname === '/auth/v1/user') return Response.json({ id: userId })
@@ -85,6 +107,36 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
   assert.ok(exercises.every(({ id, user_id }) => id.startsWith(userId + ':') && user_id === userId))
   assert.deepEqual(inserts.get('exercise_media_links').map(({ exercise_id }) => exercise_id), exercises.map(({ id }) => id))
   assert.deepEqual(inserts.get('routine_exercises').map(({ exercise_id }) => exercise_id), exercises.map(({ id }) => id))
+
+  async function send(text) {
+    const response = await handler(new Request('https://app.test/neural', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer test-token' },
+      body: JSON.stringify({ messages: [{ role: 'user', text }] }),
+    }))
+    assert.equal(response.status, 200)
+    return response.json()
+  }
+
+  const combined = await send('Monte meu treino de peito e costas')
+  assert.equal(combined.reply, 'Treino salvo em Treinos.')
+  assert.equal(combined.actions[0].title, 'Peito e costas')
+  assert.deepEqual(new Set(inserts.get('exercises').map(({ muscle_group }) => muscle_group)), new Set(['chest', 'back']))
+  assert.equal(inserts.get('routine_exercises').length, 4)
+
+  const previousCalls = modelCalls
+  const programming = await send('Me dê um código de programação em Python')
+  assert.match(programming.reply, /^Posso ajudar com tarefas/)
+  assert.deepEqual(programming.actions, [])
+  assert.equal(modelCalls, previousCalls)
+
+  const unauthorized = await handler(new Request('https://app.test/neural', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer invalid-token' },
+    body: JSON.stringify({ messages: [{ role: 'user', text: 'Monte meu treino de peito e costas' }] }),
+  }))
+  assert.equal(unauthorized.status, 401)
+  assert.equal(modelCalls, previousCalls)
 
   const calendarResponse = await handler(new Request('https://app.test/neural', {
     method: 'POST',

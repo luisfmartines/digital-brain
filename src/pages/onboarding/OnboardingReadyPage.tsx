@@ -48,7 +48,7 @@ export default function OnboardingReadyPage() {
   return (
     <>
       <span className={`${styles.tag} ${styles.tagCenter}`}><i className={styles.dot} /> SISTEMA PRONTO · SINCRONIZAÇÃO CONCLUÍDA</span>
-      <h1 className={`${styles.h1} ${styles.center}`}>Seu Digital Brain está pronto</h1>
+      <h1 className={`${styles.h1} ${styles.center}`}>Configuração concluída</h1>
       <p className={`${styles.lead} ${styles.center}`}>
         Este é seu painel personalizado, {profile?.display_name?.split(' ')[0] ?? ''}. Os módulos não selecionados podem ser ativados quando você precisar.
       </p>
@@ -135,7 +135,7 @@ export default function OnboardingReadyPage() {
       {error && <p className={styles.error}>{error}</p>}
 
       <button type="button" className={styles.primary} onClick={finish} disabled={busy}>
-        {busy ? 'Salvando…' : 'Entrar no Digital Brain'} <Zap size={16} />
+        {busy ? 'Salvando…' : 'Ir para o início'} <Zap size={16} />
       </button>
       <button type="button" className={styles.ghost} onClick={() => navigate('/onboarding/setup')}>
         <SlidersHorizontal size={14} /> Ajustar parâmetros

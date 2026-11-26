@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { createBrowserEmailAuth, supabase } from '../../lib/supabase'
 import { PASSWORD_RULES, passwordStrength } from '../../features/auth/password'
-import { appIcon, AUTH_REDIRECT, publicAppOrigin, useDevice } from '../../expo/device'
+import { AUTH_REDIRECT, publicAppOrigin, useDevice } from '../../expo/device'
 import { handleAuthReturn } from '../../expo/authReturn'
 import styles from './LoginPage.module.css'
 
@@ -155,15 +155,7 @@ export default function LoginPage() {
     <div className={styles.page}>
       <div className={styles.glow} />
       <div className={styles.card}>
-        <div className={styles.logoBox}>
-          <img src={appIcon} alt="" />
-          {signup && <span className={styles.logoDot} />}
-        </div>
-        <div className={styles.titleRow}>
-          <h1 className={styles.title}>Digital Brain</h1>
-          <span className={styles.badge}>SISTEMA PESSOAL</span>
-        </div>
-        <p className={styles.subtitle}>Sincronize sua vida, foco e desempenho</p>
+        <h1 className={styles.title}>{signup ? 'Criar conta' : 'Entrar'}</h1>
 
         <div className={styles.tabs}>
           <button type="button" className={`${styles.tab} ${!signup ? styles.tabOn : ''}`} onClick={() => switchMode('login')}>

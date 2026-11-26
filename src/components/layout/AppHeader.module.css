@@ -5,10 +5,7 @@
   background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   backdrop-filter: blur(12px);
 }
-.brand { display: flex; align-items: center; gap: clamp(6px, 2vw, 10px); }
-.logo { width: clamp(30px, 8.5vw, 40px); aspect-ratio: 1; flex: none; border-radius: 10px; }
 .title { font-family: var(--font-heading); font-weight: 700; font-size: 16px; line-height: 1.1; }
-.subtitle { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-secondary); }
 .actions { display: flex; align-items: center; gap: clamp(2px, 1.5vw, 10px); }
 .iconBtn { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--color-text); cursor: pointer; }
 .avatarBtn { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; padding: 0; cursor: pointer; }

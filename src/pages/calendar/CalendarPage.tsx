@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Link2, Plus } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useGoogleCalendars, useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
+import { useConnectGoogle, useGoogleCalendars, useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
 import type { AgendaItem } from '../../features/calendar/agenda'
 import { useDevice } from '../../expo/device'
 import { EVENT_CATEGORIES, useCalendarEvents, useCalendarSchedule, type CalendarEvent } from '../../features/calendar/queries'
@@ -77,6 +77,8 @@ export default function CalendarPage() {
   const until = view === 'month' ? addDays(startOfWeek(last), 7) : addDays(week, 7)
   const events = useCalendarEvents(from, until)
   const connection = useGoogleConnection()
+  const connect = useConnectGoogle()
+  const device = useDevice()
   const calendars = useGoogleCalendars(!!connection.data)
   const google = useGoogleEvents(from, until, !!connection.data)
   const schedule = useCalendarSchedule(from, until)
@@ -122,6 +124,19 @@ export default function CalendarPage() {
       <div className={styles.heading}>
         <h1>Calendário</h1>
         <button className={styles.soft} type="button" onClick={() => go(today)}><CalendarDays size={15} /> Hoje</button>
+      </div>
+      <div className={styles.googleShortcut}>
+        {connection.data ? (
+          <Link className={styles.soft} to="/profile?tab=connections&show=google"><Link2 size={16} /> Gerenciar Google Agenda</Link>
+        ) : (
+          <button className={styles.soft} type="button" disabled={connection.isPending || connect.isPending} onClick={() => connect.mutate()}>
+            <Link2 size={16} /> {connect.isPending ? 'Abrindo Google…' : 'Conectar Google Agenda'}
+          </button>
+        )}
+        {connect.isError && <p className={styles.error} role="alert">{connect.error.message}</p>}
+        {device?.isExpoGo && connect.isSuccess && !connection.data && (
+          <p className={styles.muted} role="status">Conclua a autorização no navegador e volte ao aplicativo.</p>
+        )}
       </div>
       {google.data?.warnings.map((warning) => <p key={warning} className={styles.muted} role="status">{warning} <Link to="/profile?tab=connections">Conexões</Link></p>)}
       {google.isError && <p className={styles.error} role="alert">{google.error.message} <Link to="/profile?tab=connections">Conexões</Link></p>}

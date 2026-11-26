@@ -104,7 +104,6 @@ function TaskForm({ task }: { task?: Task }) {
         <section className={styles.workspace}>
           <div className={styles.rowBetween}>
             <span className={styles.kicker}><i /> ÁREA DE TRABALHO ATIVA</span>
-            <span className={styles.hint}>Digital Brain OS</span>
           </div>
           <p>Registre seu objetivo no segundo cérebro com programação natural e categorias cognitivas.</p>
         </section>

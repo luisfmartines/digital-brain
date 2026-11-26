@@ -78,7 +78,6 @@
 /* Telas cheias (cabeçalho e formulários) */
 .header { display: flex; align-items: center; gap: 10px; }
 .back { display: grid; place-items: center; width: 32px; height: 32px; border: 0; background: transparent; color: var(--color-text); cursor: pointer; }
-.miniLogo { width: 24px; height: 24px; border-radius: 7px; }
 .headerTitle { flex: 1; font-size: 16px; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; }
 .field small { font-weight: 500; color: var(--color-text-muted); }

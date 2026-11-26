@@ -9,7 +9,6 @@
 .topbar { display: flex; align-items: center; gap: 10px; }
 .iconBtn { width: 36px; height: 36px; display: grid; place-items: center; flex-shrink: 0; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-text); cursor: pointer; }
 .iconBtn:disabled { opacity: 0.35; }
-.miniLogo { width: 26px; height: 26px; border-radius: 8px; }
 .topTitle { flex: 1; font-family: var(--font-heading); font-weight: 700; font-size: 15px; }
 .centerProgress { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .miniLabel { font-size: 9px; letter-spacing: 0.08em; color: var(--color-text-muted); }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
-import { appIcon, useDevice } from '../../expo/device'
+import { useDevice } from '../../expo/device'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -416,7 +416,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
       <div className={styles.frame}>
         <header className={styles.header}>
           <button type="button" className={styles.back} onClick={() => navigate('/workouts')} aria-label="Voltar"><ArrowLeft size={20} /></button>
-          <img src={appIcon} alt="" className={styles.miniLogo} />
           <h1 className={styles.headerTitle}>Treino ativo</h1>
           <button type="button" className={styles.back} disabled={busy} onClick={discard} aria-label="Descartar treino"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />

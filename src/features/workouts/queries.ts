@@ -40,11 +40,12 @@ export function useRoutines() {
 }
 
 export function useRoutine(id?: string) {
+  const { user } = useAuth()
   return useQuery({
-    queryKey: ['workouts', 'routine', id],
-    enabled: !!id,
+    queryKey: ['workouts', 'routine', id, user?.id],
+    enabled: !!id && !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from('workout_routines').select(ROUTINE).eq('id', id!).is('deleted_at', null).single()
+      const { data, error } = await supabase.from('workout_routines').select(ROUTINE).eq('id', id!).eq('user_id', user!.id).is('deleted_at', null).single()
       if (error) throw error
       return sortRoutine(data as unknown as Routine)
     },
@@ -59,6 +60,7 @@ export function useLastPerformed() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workouts').select('routine_id, ended_at')
+        .eq('user_id', user!.id)
         .not('routine_id', 'is', null).not('ended_at', 'is', null).is('deleted_at', null)
         .order('ended_at', { ascending: false }).limit(200)
       if (error) throw error
@@ -78,6 +80,7 @@ export function useWeekStats() {
       const thisStart = startOfWeek(new Date())
       const { data, error } = await supabase
         .from('workouts').select('ended_at, workout_sets(weight_kg, reps, completed, is_warmup)')
+        .eq('user_id', user!.id)
         .not('ended_at', 'is', null).is('deleted_at', null)
         .gte('ended_at', addDays(thisStart, -7).toISOString())
       if (error) throw error
@@ -103,6 +106,7 @@ export function useHistory(limit = 5) {
       const { data, error } = await supabase
         .from('workouts')
         .select('id, name, started_at, ended_at, paused_seconds, paused_at, workout_sets(weight_kg, reps, completed, is_warmup)')
+        .eq('user_id', user!.id)
         .not('ended_at', 'is', null).is('deleted_at', null)
         .order('ended_at', { ascending: false }).limit(limit)
       if (error) throw error
@@ -242,17 +246,18 @@ export function useStartWorkout() {
   })
 }
 
-export const sessionKey = (id?: string) => ['workouts', 'session', id]
+export const sessionKey = (id?: string, userId?: string) => ['workouts', 'session', id, userId]
 
 export function useSession(id?: string) {
+  const { user } = useAuth()
   return useQuery({
-    queryKey: sessionKey(id),
-    enabled: !!id,
+    queryKey: sessionKey(id, user?.id),
+    enabled: !!id && !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workouts')
         .select(`id, name, routine_id, started_at, ended_at, paused_seconds, paused_at, photo_url, workout_sets(*, exercise:exercises(${EX}))`)
-        .eq('id', id!).is('deleted_at', null).maybeSingle()
+        .eq('id', id!).eq('user_id', user!.id).is('deleted_at', null).maybeSingle()
       if (error) throw error
       const session = data as Session | null
       return session ? { ...session, workout_sets: session.workout_sets.map((row) => ({ ...row, exercise: translateExercise(row.exercise) })) } : null
@@ -261,9 +266,10 @@ export function useSession(id?: string) {
 }
 
 export function usePrevious(exerciseIds: string[]) {
+  const { user } = useAuth()
   return useQuery({
-    queryKey: ['workouts', 'previous', [...exerciseIds].sort().join(',')],
-    enabled: exerciseIds.length > 0,
+    queryKey: ['workouts', 'previous', user?.id, [...exerciseIds].sort().join(',')],
+    enabled: !!user && exerciseIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('previous_sets', { exercise_ids: exerciseIds })
       if (error) throw error
@@ -275,8 +281,9 @@ export function usePrevious(exerciseIds: string[]) {
 }
 
 export function useSessionActions(id: string) {
+  const { user } = useAuth()
   const qc = useQueryClient()
-  const key = sessionKey(id)
+  const key = sessionKey(id, user?.id)
   const scope = { id: `workout-session:${id}` }
   const refresh = () => qc.invalidateQueries({ queryKey: key })
   const patchSet = (setId: string, patch: Partial<SessionSet>) =>
@@ -385,9 +392,10 @@ export function useSessionActions(id: string) {
 /* ---------- Resumo do treino ---------- */
 
 export function useSummaryExtras(session?: Session | null) {
+  const { user } = useAuth()
   return useQuery({
-    queryKey: ['workouts', 'summary', session?.id, session?.ended_at],
-    enabled: !!session?.ended_at,
+    queryKey: ['workouts', 'summary', user?.id, session?.id, session?.ended_at],
+    enabled: !!user && !!session?.ended_at,
     queryFn: async () => {
       const s = session!
       const ids = [...new Set(s.workout_sets.map((x) => x.exercise_id))]
@@ -398,6 +406,7 @@ export function useSummaryExtras(session?: Session | null) {
       if (s.routine_id) {
         const prev = await supabase
           .from('workouts').select('id, workout_sets(weight_kg, reps, completed, is_warmup)')
+          .eq('user_id', user!.id)
           .eq('routine_id', s.routine_id).neq('id', s.id).lt('ended_at', s.ended_at!).is('deleted_at', null)
           .order('ended_at', { ascending: false }).limit(1)
         const row = (prev.data ?? [])[0] as { workout_sets: SetLike[] } | undefined
@@ -424,7 +433,7 @@ export function useUploadPhoto(workoutId: string) {
       if (error) throw error
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: sessionKey(workoutId) })
+      void qc.invalidateQueries({ queryKey: sessionKey(workoutId, user?.id) })
       void qc.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
     },
   })
@@ -455,6 +464,7 @@ export function useWorkoutLog() {
       const { data, error } = await supabase
         .from('workouts')
         .select('id, name, started_at, ended_at, paused_seconds, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name, muscle_group))')
+        .eq('user_id', user!.id)
         .not('ended_at', 'is', null).is('deleted_at', null)
         .order('ended_at', { ascending: false }).limit(1000)
       if (error) throw error
@@ -474,7 +484,7 @@ export function useExerciseHistory(exerciseId?: string) {
       const { data, error } = await supabase
         .from('workout_sets')
         .select('*, workout:workouts(id, name, ended_at, deleted_at)')
-        .eq('exercise_id', exerciseId!).eq('completed', true)
+        .eq('user_id', user!.id).eq('exercise_id', exerciseId!).eq('completed', true)
         .limit(3000)
       if (error) throw error
       type Row = HistSet & { workout: { id: string; name: string; ended_at: string | null; deleted_at: string | null } | null }

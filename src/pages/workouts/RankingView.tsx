@@ -104,7 +104,7 @@ export default function RankingView() {
                 <Link to={profilePath(r)} className={`${styles.rosterRow} ${styles.profileLink}`}>
                   <span className={styles.rankNum}>{i + 4}</span>
                   <Avatar url={r.avatar_url} name={r.display_name} size={36} />
-                  <div className={styles.rText}><strong>{r.display_name ?? r.username ?? 'Atleta'}</strong><small>● {r.last_workout ?? 'Nenhum treino ainda'}</small></div>
+                  <div className={styles.rText}><strong>{r.display_name ?? r.username ?? 'Atleta'}</strong>{r.last_workout && <small>● {r.last_workout}</small>}</div>
                   <div className={styles.prRight}><strong>{fmtValue(valueOf(r, metric), metric)}</strong><em>+{r.xp} XP</em></div>
                 </Link>
               </li>

@@ -198,7 +198,7 @@ export interface WorkoutDetail {
 export function useWorkoutDetail(id?: string) {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['social', 'workout-detail', id],
+    queryKey: ['social', 'workout-detail', user?.id, id],
     enabled: !!user && !!id,
     queryFn: async (): Promise<WorkoutDetail | null> => {
       const { data, error } = await supabase

@@ -112,6 +112,7 @@ export function useWorkoutsToday() {
       start.setHours(0, 0, 0, 0)
       const { count, error } = await supabase
         .from('workouts').select('id', { count: 'exact', head: true })
+        .eq('user_id', user!.id)
         .gte('ended_at', start.toISOString()).is('deleted_at', null)
       if (error) throw error
       return count ?? 0

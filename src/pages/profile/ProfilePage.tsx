@@ -94,7 +94,7 @@ export default function ProfilePage() {
         <Link className={styles.button} to="/profile" aria-current={!connections ? 'page' : undefined}>Geral</Link>
         <Link className={styles.button} to="/profile?tab=connections" aria-current={connections ? 'page' : undefined}>Conexões</Link>
       </nav>
-      {connections ? <Connections /> : <>
+      {connections ? <Connections key={params.get('show')} expandGoogle={params.get('show') === 'google'} /> : <>
       <ProfilePhotos photos={activity.data?.photos} />
       <section className={`${styles.card} ${styles.identity}`} aria-label="Dados do perfil">
         <div className={styles.row}>

@@ -46,6 +46,11 @@ test.beforeEach(async ({ page }) => {
 
 test('calendar switches periods and saves an event on the selected day', async ({ page }) => {
   await page.goto('/calendar?date=2026-11-24')
+  const header = page.getByRole('banner')
+  await expect(header.getByText('Calendário', { exact: true })).toBeVisible()
+  await expect(header).not.toContainText('Digital Brain')
+  await expect(header.locator('img')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Conectar Google Agenda' })).toBeEnabled()
   await expect(page.getByRole('tab', { name: 'Mês', exact: true })).toHaveAttribute('aria-selected', 'true')
   await page.getByRole('tab', { name: 'Semana' }).click()
   await expect(page.getByRole('heading', { name: 'Agenda da semana' })).toBeVisible()
@@ -69,6 +74,14 @@ test('calendar switches periods and saves an event on the selected day', async (
   await page.getByRole('button', { name: 'Excluir evento' }).click()
   await page.getByRole('button', { name: 'Confirmar exclusão' }).click()
   await expect(page.getByText('Nenhum compromisso neste dia.')).toBeVisible()
+})
+
+test('calendar opens Google connection settings directly', async ({ page }) => {
+  await page.route('https://*.supabase.co/rest/v1/google_tokens**', (route) =>
+    route.fulfill({ json: [{ user_id: userId }] }))
+  await page.goto('/calendar')
+  await page.getByRole('link', { name: 'Gerenciar Google Agenda' }).click()
+  await expect(page.getByRole('button', { name: 'Reconectar Google Agenda' })).toBeVisible()
 })
 
 test('profile persists the theme and the header keeps the friends action', async ({ page }) => {

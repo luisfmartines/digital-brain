@@ -116,7 +116,7 @@ export default function ProfileActivitySections({ routines, activity, own = fals
       </section>}
 
       {!own && activity?.workoutCount != null && <section className={styles.activitySection}>
-        <h2><CalendarCheck size={18} /> Treinos recentes</h2>
+        <h2><CalendarCheck size={18} /> Treinos compartilhados</h2>
         {activity.workouts.length ? activity.workouts.map((workout) => (
           <article key={workout.id} className={styles.card}>
             <small>{dateLabel(workout.ended_at)}</small>
@@ -132,7 +132,7 @@ export default function ProfileActivitySections({ routines, activity, own = fals
               Ver treino completo
             </button>
           </article>
-        )) : <p className={styles.connectionDetail}>Nenhum treino concluído.</p>}
+        )) : <p className={styles.connectionDetail}>Nenhum treino compartilhado.</p>}
       </section>}
 
       {!own && activity && <section className={styles.activitySection}>

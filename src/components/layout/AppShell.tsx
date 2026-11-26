@@ -10,15 +10,15 @@ import { useActiveWorkout } from '../../features/workouts/useActiveWorkout'
 import { useEnsureWaterHabit } from '../../features/water/queries'
 import styles from './AppShell.module.css'
 
-const SUBTITLES: Record<string, string> = {
-  '/': 'INÍCIO',
-  '/routine': 'ROTINA',
-  '/workouts': 'TREINOS',
-  '/workouts/stats': 'TREINOS',
-  '/finance': 'FINANÇAS',
-  '/calendar': 'CALENDÁRIO',
-  '/assistant': 'ASSISTENTE IA',
-  '/profile': 'PERFIL',
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Início',
+  '/routine': 'Rotina',
+  '/workouts': 'Treinos',
+  '/workouts/stats': 'Estatísticas',
+  '/finance': 'Finanças',
+  '/calendar': 'Calendário',
+  '/assistant': 'Assistente IA',
+  '/profile': 'Perfil',
 }
 
 // true = o botão escuro de treino aparece sempre (fora de /workouts).
@@ -73,7 +73,7 @@ export default function AppShell() {
   return (
     <div className={styles.shell}>
       <div className={styles.frame}>
-        <AppHeader subtitle={SUBTITLES[pathname] ?? 'INÍCIO'} />
+        <AppHeader title={PAGE_TITLES[pathname] ?? 'Perfil'} />
         <main className={`${styles.content} ${fabCount === 1 ? styles.contentFab : ''} ${fabCount === 2 ? styles.contentFab2 : ''}`}>
           <CalendarConnectionNotice />
           <Outlet />

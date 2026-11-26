@@ -4,12 +4,12 @@ import { useConnectGoogle, useGoogleConnection, useSyncGoogleAgenda } from '../.
 import { useDevice } from '../../expo/device'
 import styles from './Profile.module.css'
 
-export default function Connections() {
+export default function Connections({ expandGoogle = false }: { expandGoogle?: boolean }) {
   const device = useDevice()
   const connection = useGoogleConnection()
   const connect = useConnectGoogle()
   const sync = useSyncGoogleAgenda()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(expandGoogle)
   const status = connection.isPending ? 'Verificando…' : connection.isError ? 'Status indisponível'
     : connection.data ? 'Conta vinculada' : 'Desconectado'
   return (
@@ -32,7 +32,7 @@ export default function Connections() {
             {connect.isPending ? 'Abrindo Google…' : connection.data ? 'Reconectar Google Agenda' : 'Conectar Google Agenda'}
           </button>
           {device?.isExpoGo && connect.isSuccess && !connection.data && <p role="status" className={styles.connectionDetail}>
-            Conclua a autorização no navegador e volte ao Digital Brain para atualizar a conexão.
+            Conclua a autorização no navegador e volte ao aplicativo para atualizar a conexão.
           </p>}
           {sync.isSuccess && <p role="status" className={styles.connectionDetail}>
             {sync.data.sent} novos itens enviados.{sync.data.failed ? ` ${sync.data.failed} itens falharam. Você pode tentar novamente.` : ''}

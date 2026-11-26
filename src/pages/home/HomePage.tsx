@@ -158,7 +158,7 @@ function Overview() {
         <>
           <form className={styles.command} onSubmit={submit}>
             <Sparkles size={18} className={styles.cmdIcon} />
-            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Pergunte ao Digital Brain ou registre uma tarefa..." />
+            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Pergunte ao Neural ou registre uma tarefa..." />
             <button type="submit" className={styles.send} aria-label="Enviar"><ArrowUp size={18} /></button>
           </form>
           <div className={styles.chips}>
@@ -259,7 +259,7 @@ function Overview() {
         <Lightbulb size={16} />
         <div>
           <p>“{QUOTES[dayOfYear() % QUOTES.length]}”</p>
-          <small>Resumo do Digital Brain · Dia {dayOfYear()}</small>
+          <small>Resumo · Dia {dayOfYear()}</small>
         </div>
       </section>
     </>
