@@ -31,7 +31,6 @@ export default function ResetPasswordPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.glow} />
       <div className={styles.card}>
         <h1 className={styles.title}>Nova senha</h1>
         <p className={styles.subtitle}>6 ou mais caracteres, com maiúscula, minúscula e número</p>

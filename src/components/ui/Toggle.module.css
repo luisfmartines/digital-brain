@@ -7,5 +7,5 @@
   display: block; width: 20px; height: 20px; margin: 2px;
   border-radius: 50%; background: #fff; transition: transform 0.2s;
 }
-.on { background: var(--color-secondary); border-color: var(--color-secondary); }
-.on span { transform: translateX(20px); }
+.on { background: var(--color-primary); border-color: var(--color-secondary); }
+.on span { background: var(--color-on-primary); transform: translateX(20px); }

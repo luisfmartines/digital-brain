@@ -1,3 +1,4 @@
+import { eventCategory } from '../../../supabase/functions/_shared/planningCategories'
 import type { Task } from '../tasks/queries'
 import type { CalendarEvent } from './queries'
 
@@ -6,6 +7,7 @@ export type AgendaTask = Pick<Task, 'id' | 'title' | 'notes' | 'due_at' | 'compl
 export interface AgendaItem extends CalendarEvent {
   kind: 'event' | 'task' | 'google'
   href: string
+  external?: boolean
   completed?: boolean
   origin?: string
   originColor?: string
@@ -22,7 +24,7 @@ export function scheduleItems(tasks: AgendaTask[]): AgendaItem[] {
       href: `/tasks/${task.id}/edit`,
       title: task.title,
       description: task.notes,
-      category: task.category === 'work' ? 'work' : task.category === 'fitness' ? 'health' : 'personal',
+      category: eventCategory(task.category),
       starts_at: task.due_at,
       ends_at: null,
       all_day: false,

@@ -26,8 +26,8 @@ export function Hero({ summary: s, label, chip, pace }: HeroProps) {
       </div>
 
       <div className={styles.split} role="img" aria-label={`Gastos ${s.spentPct}%, livre ${s.freePct}%`}>
-        <i className={styles.splitSpent} style={{ width: `${s.spentPct}%` }} />
-        <i className={styles.splitFree} style={{ width: `${s.freePct}%` }} />
+        <i style={{ background: GROUPS.fixed.color, width: `${s.spentPct}%` }} />
+        <i style={{ background: FREE_COLOR, width: `${s.freePct}%` }} />
       </div>
       <div className={styles.splitLegend}>
         <span><i style={{ background: GROUPS.fixed.color }} /> Gastos: <b>{formatBRL(s.spent)}</b> ({s.spentPct}%)</span>

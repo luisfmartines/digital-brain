@@ -52,6 +52,7 @@ export async function importGoogleAgenda(access: string, start: string, end: str
       }), "items");
     return events.map((event) => ({
       ...event,
+      calendarId: calendar.id,
       calendarName: calendar.summaryOverride || calendar.summary || "Google Agenda",
       calendarColor: calendar.backgroundColor,
     }));

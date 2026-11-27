@@ -46,12 +46,12 @@
   font-size: 14px;
   font-weight: 700;
 }
-.choice[aria-pressed="true"] { border-color: var(--color-primary); color: var(--color-secondary); background: var(--color-primary-soft); }
+.choice[aria-pressed="true"] { border-color: var(--color-secondary); color: var(--color-text); background: var(--color-surface-2); }
 .choice svg { flex: 0 0 auto; }
 .close:hover, .choice:hover, .trigger:hover, .button:hover { border-color: var(--color-secondary); }
 .button:disabled, .trigger:disabled, .close:disabled { opacity: 0.55; cursor: default; }
 .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .button { padding: 9px 13px; min-height: 40px; background: var(--color-surface-2); font-size: 13px; font-weight: 700; }
-.primary { color: var(--color-on-primary); background: var(--color-primary); border-color: var(--color-primary); }
+.primary { color: var(--color-text); background: var(--color-surface-2); border-color: var(--color-border); }
 .danger { color: var(--color-danger); }
 .description { margin: 0; color: var(--color-text-muted); font-size: 14px; line-height: 1.5; }

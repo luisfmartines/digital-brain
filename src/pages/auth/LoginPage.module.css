@@ -2,10 +2,6 @@
   position: relative; min-height: 100dvh; display: flex; justify-content: center; overflow: hidden;
   padding: calc(clamp(16px, 4dvh, 36px) + env(safe-area-inset-top)) var(--page-gutter) calc(28px + env(safe-area-inset-bottom));
 }
-.glow {
-  position: absolute; top: -140px; left: 50%; width: 520px; height: 380px; transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(63, 166, 114, 0.28), transparent); pointer-events: none;
-}
 .card { position: relative; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
 
 .title { font-size: clamp(1.375rem, 6.7vw, 1.75rem); }
@@ -20,7 +16,7 @@
   border: 1px solid transparent; border-radius: var(--radius-full); background: transparent;
   color: var(--color-text-muted); font-size: 13px; font-weight: 600; cursor: pointer;
 }
-.tabOn { background: rgba(63, 166, 114, 0.16); border-color: rgba(63, 166, 114, 0.28); color: var(--color-secondary); }
+.tabOn { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-text); }
 
 .form { width: 100%; margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 8px; }
@@ -31,7 +27,7 @@
   display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px;
   border: 1px solid transparent; border-radius: var(--radius-md); background: var(--color-surface);
 }
-.inputWrap:focus-within { border-color: var(--color-primary); }
+.inputWrap:focus-within { border-color: var(--color-secondary); }
 .inputWrap svg { flex-shrink: 0; color: var(--color-text-muted); }
 .input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font-size: 16px; }
 .inputWrap .ok { color: var(--color-secondary); }
@@ -48,9 +44,10 @@
 .primary {
   display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px;
   border: 0; border-radius: var(--radius-md); cursor: pointer; font-weight: 700;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: var(--color-on-primary);
-  box-shadow: 0 8px 24px rgba(63, 166, 114, 0.25);
+  background: var(--color-surface-2); color: var(--color-text);
+  box-shadow: var(--action-outline);
 }
+.primary svg, .rules .ruleOk svg { color: var(--color-secondary); }
 .primary:disabled { opacity: 0.6; }
 
 .divider { width: 100%; display: flex; align-items: center; gap: 12px; margin: 22px 0 14px; font-size: 10px; letter-spacing: 0.12em; color: var(--color-text-muted); }
@@ -64,7 +61,7 @@
 .googleText small { font-size: 11px; color: var(--color-text-muted); }
 .google > svg:last-child { color: var(--color-text-muted); }
 .sync { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; align-self: flex-start; font-size: 11px; color: var(--color-text-muted); }
-.sync svg { color: var(--color-secondary); }
+.sync svg { color: var(--color-text-muted); }
 
 .already { margin: 20px 0 10px; font-size: 12px; color: var(--color-text-muted); }
 .secure {
@@ -81,4 +78,4 @@
 .bad { font-size: 11px; font-weight: 600; color: var(--color-danger); }
 .rules { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
 .rules li { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--color-text-muted); }
-.rules li.ruleOk { color: var(--color-secondary); }
+.rules li.ruleOk { color: var(--color-text); }

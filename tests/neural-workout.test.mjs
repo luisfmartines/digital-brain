@@ -8,15 +8,25 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
   let modelCalls = 0
   let googleInsert
   const inserts = new Map()
+  const taskInserts = []
   t.mock.method(globalThis, 'fetch', async (input, init) => {
     const request = new Request(input, init)
     const { hostname, pathname } = new URL(request.url)
     if (hostname === 'generativelanguage.googleapis.com') {
       const body = await request.json()
       const latest = body.contents.at(-1).parts[0].text
+      if (latest === 'Crie uma tarefa de reunião e outra de saúde') {
+        const task = body.tools[0].functionDeclarations.find(({ name }) => name === 'criar_tarefa')
+        assert.ok(task.parameters.required.includes('categoria'))
+        assert.deepEqual(task.parameters.properties.categoria.enum, ['work', 'meeting', 'health', 'personal', 'fitness', 'mindset'])
+        return Response.json({ candidates: [{ content: { parts: [
+          { functionCall: { name: 'criar_tarefa', args: { titulo: 'Preparar reunião', categoria: 'meeting' } } },
+          { functionCall: { name: 'criar_tarefa', args: { titulo: 'Marcar exames', categoria: 'health' } } },
+        ] } }] })
+      }
       if (body.contents.some(({ parts }) => parts.some(({ text }) => text === 'Marque uma reunião'))) {
         return Response.json({ candidates: [{ content: { parts: [{ functionCall: {
-          name: 'criar_evento', args: { titulo: 'Reunião', inicio: '2026-11-30T18:00:00-03:00', lembrete_minutos: 10 },
+          name: 'criar_evento', args: { titulo: 'Reunião', categoria: 'meeting', inicio: '2026-11-30T18:00:00-03:00', lembrete_minutos: 10 },
         } }] } }] })
       }
       const declarations = body.tools[0].functionDeclarations.map(({ name }) => name)
@@ -75,7 +85,12 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
     if (pathname === '/auth/v1/user') return Response.json({ id: userId })
     if (request.method === 'GET') return Response.json([])
     const table = pathname.split('/').pop()
-    inserts.set(table, await request.json())
+    const row = await request.json()
+    inserts.set(table, row)
+    if (table === 'tasks') {
+      taskInserts.push(row)
+      return Response.json([{ id: 'task-' + taskInserts.length }])
+    }
     return Response.json(table === 'workout_routines' ? [{ id: 'routine-id' }] : [])
   })
   globalThis.Deno = {
@@ -147,7 +162,14 @@ test('Neural imports catalog exercises and saves a routine for an empty account'
   assert.equal(event.badge, 'Google Agenda')
   assert.equal(event.link, '/calendar?view=day&date=2026-11-30')
   assert.equal(googleInsert.summary, 'Reunião')
+  assert.equal(googleInsert.extendedProperties.private.digitalBrainCategory, 'meeting')
   assert.equal(googleInsert.start.dateTime, '2026-11-30T21:00:00.000Z')
   assert.deepEqual(googleInsert.reminders.overrides, [{ method: 'popup', minutes: 10 }])
   assert.equal(inserts.has('calendar_events'), false)
+
+  const planning = await send('Crie uma tarefa de reunião e outra de saúde')
+  assert.deepEqual(planning.actions.map(({ badge }) => badge), ['Reunião', 'Saúde'])
+  assert.deepEqual(taskInserts.map(({ title, category }) => [title, category]), [
+    ['Preparar reunião', 'meeting'], ['Marcar exames', 'health'],
+  ])
 })

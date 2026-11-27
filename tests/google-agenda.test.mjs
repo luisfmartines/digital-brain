@@ -7,6 +7,7 @@ test('Google agenda imports custom calendars, and exports local plans without du
   const taskId = '33333333-3333-4333-8333-333333333333'
   const sent = new Map()
   const selected = []
+  const edited = []
   globalThis.Deno = { env: { get: (key) => ({
     SUPABASE_URL: 'https://supabase.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test',
   })[key] } }
@@ -50,13 +51,24 @@ test('Google agenda imports custom calendars, and exports local plans without du
       sent.set(event.id, event)
       return Response.json({ id: event.id })
     }
+    if (url.pathname.endsWith('/events/lunch')) {
+      assert.match(url.pathname, /meals%40example\.test/)
+      if (request.method === 'GET') return Response.json({ id: 'lunch', etag: '"v1"', summary: 'Almoço' })
+      assert.equal(request.headers.get('if-match'), '"v1"')
+      if (request.method === 'PATCH') {
+        edited.push(await request.json())
+        return Response.json({ id: 'lunch' })
+      }
+      assert.equal(request.method, 'DELETE')
+      return new Response(null, { status: 204 })
+    }
     assert.doesNotMatch(url.pathname, /calendars\/(senac|rotinas|shared)\/events/)
     if (url.pathname.includes('meals%40example.test')) {
       return Response.json({ items: [{ id: 'lunch', summary: 'Almoço', start: { date: '2026-11-24' } }] })
     }
     return Response.json({ items: [] })
   })
-  const { createGoogleEvent, listGoogleEvents } = await import('../supabase/functions/_shared/googleCalendar.ts')
+  const { createGoogleEvent, listGoogleEvents, manageGoogleEvent } = await import('../supabase/functions/_shared/googleCalendar.ts')
   const { exportGoogleAgenda } = await import('../supabase/functions/_shared/googleAgendaExport.ts')
   const listing = await listGoogleEvents(userId, '2026-11-24T03:00:00Z', '2026-11-25T03:00:00Z')
   assert.deepEqual(listing.warnings, [])
@@ -70,4 +82,15 @@ test('Google agenda imports custom calendars, and exports local plans without du
   await createGoogleEvent(userId, { calendarId: 'meals@example.test', title: 'Jantar', start: '2026-11-24T22:00:00Z' })
   await assert.rejects(createGoogleEvent(userId, { calendarId: 'unlisted@example.test', title: 'Jantar', start: '2026-11-24T22:00:00Z' }), /invalid_calendar/)
   assert.deepEqual(selected, ['/calendar/v3/calendars/meals%40example.test/events'])
+  const ref = { calendarId: listing.events[0].calendarId, eventId: 'lunch', etag: '"v1"' }
+  assert.equal((await manageGoogleEvent(userId, ref, { method: 'GET' })).summary, 'Almoço')
+  await manageGoogleEvent(userId, ref, { method: 'PATCH', input: {
+    title: 'Almoço de trabalho', description: null, start: '2026-11-25', allDay: true, category: 'work',
+  } })
+  assert.deepEqual(edited, [{
+    summary: 'Almoço de trabalho', description: '', start: { date: '2026-11-25' }, end: { date: '2026-11-26' },
+    extendedProperties: { private: { digitalBrainCategory: 'work' } },
+  }])
+  assert.deepEqual(await manageGoogleEvent(userId, ref, { method: 'DELETE' }), { id: 'lunch' })
+  await assert.rejects(manageGoogleEvent(userId, { ...ref, eventId: '..' }, { method: 'DELETE' }), /invalid_event/)
 })

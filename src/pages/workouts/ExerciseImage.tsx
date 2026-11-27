@@ -28,8 +28,9 @@ export default function ExerciseImage({ src, externalId, name, loading = false, 
   return <span className={styles.placeholder} role="img" aria-label={pending ? 'Carregando demonstração' : `Demonstração indisponível: ${name}`}>{pending ? 'Carregando…' : 'Sem demonstração'}</span>
 }
 
-export function CustomExercisePhoto({ path, name, thumbnail = false }: { path: string; name: string; thumbnail?: boolean }) {
+export function CustomExercisePhoto({ path, name, thumbnail = false, fallback }: { path: string; name: string; thumbnail?: boolean; fallback?: ReactNode }) {
   const photo = useExercisePhoto(path)
+  if (fallback !== undefined) return <ExerciseImage src={photo.data} name={name} fallback={fallback} />
   if (!photo.data) return (
     <span className={thumbnail ? styles.placeholder : styles.photoMessage} role="img"
       aria-label={photo.isLoading ? 'Carregando foto' : `Foto indisponível: ${name}`}>
@@ -40,14 +41,14 @@ export function CustomExercisePhoto({ path, name, thumbnail = false }: { path: s
     loading="lazy" alt={`Foto de ${name}`} />
 }
 
-export function SavedExerciseImage({ exercise }: { exercise: Exercise }) {
+export function SavedExerciseImage({ exercise, fallback }: { exercise: Exercise; fallback?: ReactNode }) {
   const { id, name, photo_path } = exercise
-  return photo_path ? <CustomExercisePhoto path={photo_path} name={name} thumbnail /> :
-    <CatalogExerciseImage exerciseId={id} name={name} />
+  return photo_path ? <CustomExercisePhoto path={photo_path} name={name} thumbnail fallback={fallback} /> :
+    <CatalogExerciseImage exerciseId={id} name={name} fallback={fallback} />
 }
 
-function CatalogExerciseImage({ exerciseId, name }: { exerciseId: string; name: string }) {
+function CatalogExerciseImage({ exerciseId, name, fallback }: { exerciseId: string; name: string; fallback?: ReactNode }) {
   const link = useExerciseLink(exerciseId)
   const media = useExerciseMedia(link.data)
-  return <ExerciseImage key={link.data ?? exerciseId} src={media.data?.imageUrl} externalId={link.data} name={name} loading={link.isLoading || media.isLoading} />
+  return <ExerciseImage key={link.data ?? exerciseId} src={media.data?.imageUrl} externalId={link.data} name={name} loading={link.isLoading || media.isLoading} fallback={fallback} />
 }

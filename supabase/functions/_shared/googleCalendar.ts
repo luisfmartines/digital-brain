@@ -52,6 +52,14 @@ export interface GoogleEvent {
   summary?: string;
   description?: string;
   location?: string;
+  calendarId?: string;
+  etag?: string;
+  status?: string;
+  locked?: boolean;
+  organizer?: { self?: boolean };
+  guestsCanModify?: boolean;
+  recurringEventId?: string;
+  reminders?: { useDefault?: boolean; overrides?: { method: string; minutes: number }[] };
   iCalUID?: string;
   calendarName?: string;
   calendarColor?: string;
@@ -86,32 +94,49 @@ export async function listGoogleCalendars(userId: string) {
   }));
 }
 
-export async function insertGoogleEvent(access: string, input: GoogleEventInput) {
-  const { title, start, allDay = false, description, category, reminderMinutes = 10 } = input;
+function eventSchedule({ start, allDay = false, end: inputEnd }: Pick<GoogleEventInput, "start" | "end" | "allDay">) {
   const startMs = Date.parse(start);
-  const end = input.end ?? (Number.isFinite(startMs)
+  const end = inputEnd ?? (Number.isFinite(startMs)
     ? new Date(startMs + (allDay ? 86_400_000 : 3_600_000)).toISOString().slice(0, allDay ? 10 : undefined)
     : "");
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
   const dateTime = /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/i;
   const format = allDay ? dateOnly : dateTime;
-  if (typeof title !== "string" || !title.trim() || typeof start !== "string" || typeof end !== "string"
-    || !format.test(start) || !format.test(end) || !(Date.parse(end) > startMs)
-    || (reminderMinutes !== null && (!Number.isInteger(reminderMinutes) || reminderMinutes < 0 || reminderMinutes > 40320))) {
+  if (typeof start !== "string" || typeof end !== "string"
+    || !format.test(start) || !format.test(end) || !(Date.parse(end) > startMs)) {
     throw new GoogleCalendarError("invalid_event", 400);
   }
+  return {
+    start: allDay ? { date: start } : { dateTime: start },
+    end: allDay ? { date: end } : { dateTime: end },
+  };
+}
+
+function eventTitle(title: string) {
+  if (typeof title !== "string" || !title.trim()) throw new GoogleCalendarError("invalid_event", 400);
+  return title.trim();
+}
+
+function eventReminders(minutes: number | null) {
+  if (minutes !== null && (!Number.isInteger(minutes) || minutes < 0 || minutes > 40320)) {
+    throw new GoogleCalendarError("invalid_event", 400);
+  }
+  return { useDefault: false, overrides: minutes ? [{ method: "popup", minutes }] : [] };
+}
+
+export async function insertGoogleEvent(access: string, input: GoogleEventInput) {
+  const { title, description, category, reminderMinutes = 10 } = input;
   const endpoint = input.calendarId ? EVENTS.replace("/primary/", `/${encodeURIComponent(input.calendarId)}/`) : EVENTS;
   const response = await fetch(endpoint, {
     method: "POST", signal: AbortSignal.timeout(9000),
     headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       id: input.exportId,
-      summary: title.trim(),
+      summary: eventTitle(title),
       description,
-      start: allDay ? { date: start } : { dateTime: start },
-      end: allDay ? { date: end } : { dateTime: end },
+      ...eventSchedule(input),
       extendedProperties: category ? { private: { digitalBrainCategory: category } } : undefined,
-      reminders: { useDefault: false, overrides: reminderMinutes ? [{ method: "popup", minutes: reminderMinutes }] : [] },
+      reminders: eventReminders(reminderMinutes),
     }),
   });
   if (response.status === 401 || response.status === 403) throw new GoogleCalendarError("reconnect_required", 409);
@@ -119,6 +144,59 @@ export async function insertGoogleEvent(access: string, input: GoogleEventInput)
   if (!response.ok) throw new GoogleCalendarError("calendar_error");
   const event: GoogleEvent = await response.json();
   return { id: event.id, link: event.htmlLink, existing: false };
+}
+
+type GoogleEventRef = { calendarId: string; eventId: string; etag?: string };
+type GoogleEventUpdate = Pick<GoogleEventInput, "title" | "description" | "category" | "reminderMinutes">
+  & Partial<Pick<GoogleEventInput, "start" | "end" | "allDay">>;
+
+export async function manageGoogleEvent(
+  userId: string, event: GoogleEventRef,
+  operation: { method: "GET" | "DELETE" } | { method: "PATCH"; input: GoogleEventUpdate },
+) {
+  const { calendarId, eventId, etag } = event;
+  const validSegment = (value: unknown) => typeof value === "string" && value.length > 0
+    && value.length <= 1024 && !/^[.]{1,2}$|[\\/]/.test(value);
+  if (!validSegment(calendarId) || !validSegment(eventId)) throw new GoogleCalendarError("invalid_event", 400);
+
+  const body = operation.method === "PATCH" ? {
+    summary: eventTitle(operation.input.title),
+    description: operation.input.description === null ? "" : operation.input.description,
+    ...(operation.input.start !== undefined ? eventSchedule({ ...operation.input, start: operation.input.start }) : {}),
+    extendedProperties: operation.input.category ? { private: { digitalBrainCategory: operation.input.category } } : undefined,
+    reminders: operation.input.reminderMinutes === undefined ? undefined : eventReminders(operation.input.reminderMinutes),
+  } : undefined;
+
+  const access = await googleAccessToken(userId);
+  if (!access) return null;
+  const endpoint = EVENTS.replace("/primary/", `/${encodeURIComponent(calendarId)}/`) + "/" + encodeURIComponent(eventId);
+  const headers = new Headers({ Authorization: `Bearer ${access}` });
+  if (body) headers.set("Content-Type", "application/json");
+  if (operation.method !== "GET" && typeof etag === "string") headers.set("If-Match", etag);
+  const response = await fetch(endpoint, {
+    method: operation.method, headers, signal: AbortSignal.timeout(9000),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (response.status === 401) throw new GoogleCalendarError("reconnect_required", 409);
+  if (response.status === 403) {
+    const details = await response.json().catch(() => null);
+    if (details?.error?.errors?.some((error: { reason?: string }) =>
+      error.reason === "insufficientPermissions") || response.headers.get("WWW-Authenticate")?.includes("insufficient_scope")) {
+      throw new GoogleCalendarError("reconnect_required", 409);
+    }
+    throw new GoogleCalendarError("event_forbidden", 403);
+  }
+  if (response.status === 412) throw new GoogleCalendarError("event_changed", 409);
+  if (response.status === 404 || response.status === 410) {
+    if (operation.method === "DELETE") return { id: eventId };
+    throw new GoogleCalendarError("event_not_found", 404);
+  }
+  if (!response.ok) throw new GoogleCalendarError("calendar_error");
+  if (operation.method === "DELETE") return { id: eventId };
+  const result: GoogleEvent = await response.json();
+  if (result.status === "cancelled") throw new GoogleCalendarError("event_not_found", 404);
+  return { ...result, calendarId };
 }
 
 export async function listGoogleEvents(userId: string, start: string, end: string): Promise<{ events: GoogleEvent[]; warnings: string[] }> {

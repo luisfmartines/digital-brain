@@ -1,15 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
-import { createConnectedEvent } from './google'
+import { changeConnectedEvent, createConnectedEvent, type GoogleEventRef } from './google'
 import { scheduleItems, type AgendaTask } from './agenda'
 
-export const EVENT_CATEGORIES = {
-  work: 'Trabalho',
-  meeting: 'Reunião',
-  health: 'Saúde',
-  personal: 'Pessoal',
-} as const
+import type { EventCategory } from '../../../supabase/functions/_shared/planningCategories'
+export { EVENT_CATEGORIES } from '../../../supabase/functions/_shared/planningCategories'
 
 export interface EventInput {
   title: string
@@ -18,7 +14,7 @@ export interface EventInput {
   ends_at: string | null
   all_day: boolean
   alarm_minutes_before: number | null
-  category: keyof typeof EVENT_CATEGORIES
+  category: EventCategory
 }
 
 export interface CalendarEvent extends EventInput {
@@ -92,7 +88,9 @@ export function useCalendarEvent(id?: string) {
 export function useChangeEvent() {
   const cache = useQueryClient()
   return useMutation({
-    mutationFn: async (change: { id?: string; input: EventInput; calendarId?: string } | { id: string; remove: true }) => {
+    mutationFn: async (change: { id?: string; input: EventInput; calendarId?: string } | { id: string; remove: true }
+      | ({ google: GoogleEventRef } & ({ remove: true } | { input: EventInput; scheduleChanged: boolean; reminderChanged: boolean }))) => {
+      if ('google' in change) return changeConnectedEvent(change.google, change)
       if (!change.id && 'input' in change) {
         if (await createConnectedEvent(change.input, change.calendarId)) return
         if (change.calendarId) throw new Error('Reconecte o Google Agenda para salvar neste calendário.')

@@ -1,7 +1,7 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowRight, ArrowUp, Banknote, Check, CheckCircle2, ChevronRight, Clock, Droplet, Flame, Lightbulb, Dumbbell, Play, Sparkles, Trophy, TrendingUp, Wallet,
+  ArrowRight, Check, CheckCircle2, ChevronRight, Clock, Droplet, Flame, Lightbulb, Dumbbell, Play, Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { useProfile } from '../../features/profile/useProfile'
@@ -9,7 +9,6 @@ import {
   useMonthFinance, useTasksSummary, useTodayHabits, useToggleHabit, useWorkoutsToday,
 } from '../../features/home/queries'
 import { WATER_STEP, litersLabel, useAddWater, useWater } from '../../features/water/queries'
-import { levelInfo } from '../../features/profile/level'
 import FeedView from '../workouts/FeedView'
 import { useLastPerformed, useRoutines, useStartWorkout } from '../../features/workouts/queries'
 import { estimateMinutes, muscleLabel } from '../../features/workouts/utils'
@@ -51,7 +50,6 @@ function Overview() {
   const startWorkout = useStartWorkout()
   const online = useOnline()
   const navigate = useNavigate()
-  const [prompt, setPrompt] = useState('')
 
   const modules: string[] = profile?.enabled_modules ?? []
   const has = (m: string) => modules.includes(m)
@@ -86,7 +84,6 @@ function Overview() {
     action: <button type="button" className={styles.heroPlus} onClick={() => addWater.mutate(WATER_STEP)} disabled={addWater.isPending} aria-label={`Adicionar ${WATER_STEP} ml de água`}>+{WATER_STEP}</button>,
   })
   if (has('workouts')) rows.push({ key: 'workout', icon: Dumbbell, label: 'Treino', text: `${Math.min(workoutsToday, 1)}/1 treino`, ratio: Math.min(workoutsToday, 1), counts: true })
-  const lv = levelInfo(profile?.xp, profile?.level)
   const counted = rows.filter((r) => r.counts)
   const overall = counted.length ? Math.round((counted.reduce((a, r) => a + Math.min(1, r.ratio), 0) / counted.length) * 100) : 0
 
@@ -94,13 +91,6 @@ function Overview() {
   const ready = [...routines].sort((a, b) => (last[a.id] ?? '').localeCompare(last[b.id] ?? ''))[0]
   const readyMuscles = ready ? [...new Set(ready.routine_exercises.map((x) => muscleLabel(x.exercise.muscle_group)))].slice(0, 2).join(' & ') : ''
 
-  function goAssistant(text: string) {
-    navigate('/assistant', { state: { prompt: text } })
-  }
-  function submit(e: FormEvent) {
-    e.preventDefault()
-    if (prompt.trim()) goAssistant(prompt.trim())
-  }
   function startReady() {
     if (!ready) return navigate('/workouts/routines/new')
     startWorkout.mutate(ready, { onSuccess: (id) => navigate(`/workouts/active/${id}`) })
@@ -111,13 +101,13 @@ function Overview() {
       <div className={styles.topRow}>
         <span className={styles.pill}>
           <i className={online ? styles.dot : styles.dotOff} />
-          {online ? 'SINCRONIZAÇÃO NEURAL ÓTIMA · 100%' : 'OFFLINE · SINCRONIZAÇÃO PENDENTE'}
+          {online ? 'Online' : 'Sem conexão'}
         </span>
         <span className={styles.date}>{dateLabel}</span>
       </div>
 
-      <h1 className={styles.hello}>Olá, <span>{firstName}</span></h1>
-      <p className={styles.sub}>Sua mente está clara. {today} {today === 1 ? 'prioridade' : 'prioridades'} agendada(s) hoje.</p>
+      <h1 className={styles.hello}>Olá{firstName && <>{', '}<span>{firstName}</span></>}</h1>
+      <p className={styles.sub}>Sua mente está limpa, {today} {today === 1 ? 'prioridade agendada' : 'prioridades agendadas'} para hoje.</p>
 
       <section className={styles.hero} aria-label="Progresso de hoje">
         <div className={styles.heroPct}>
@@ -142,36 +132,8 @@ function Overview() {
         </ul>
       </section>
 
-      <section className={styles.level} aria-label="Nível">
-        <span className={styles.levelBadge}><Trophy size={14} /><b>LVL {lv.level}</b></span>
-        <div className={styles.levelBody}>
-          <div className={styles.levelTop}>
-            <strong>{lv.rank}</strong>
-            <span>{lv.xp.toLocaleString('pt-BR')} XP</span>
-          </div>
-          <span className={styles.levelBar}><i style={{ width: `${lv.pct}%` }} /></span>
-          <small>{lv.toNext.toLocaleString('pt-BR')} XP para o nível {lv.level + 1}</small>
-        </div>
-      </section>
-
-      {has('assistant') && (
-        <>
-          <form className={styles.command} onSubmit={submit}>
-            <Sparkles size={18} className={styles.cmdIcon} />
-            <input className={styles.cmdInput} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Pergunte ao Neural ou registre uma tarefa..." />
-            <button type="submit" className={styles.send} aria-label="Enviar"><ArrowUp size={18} /></button>
-          </form>
-          <div className={styles.chips}>
-            <button type="button" className={styles.chip} onClick={() => goAssistant('Reunião com o Produto às 15h')}><CheckCircle2 size={14} /> Reunião às 15h</button>
-            <button type="button" className={styles.chip} onClick={() => goAssistant('Gastei R$ 50 no McDonald’s')}><Banknote size={14} /> Gastei R$ 50 no McDonald’s</button>
-            <button type="button" className={styles.chip} onClick={() => addWater.mutate(500)}><Droplet size={14} /> Registrar 500 ml de água</button>
-          </div>
-        </>
-      )}
-
       <div className={styles.sectionRow}>
-        <span className={styles.label}>SINAPSES ATIVAS</span>
-        <span className={styles.live}>Visão geral ao vivo</span>
+        <h2>Resumo do dia</h2>
       </div>
 
       {has('tasks') && (
@@ -179,10 +141,10 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><CheckCircle2 size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>A SEGUIR · PRIORIDADE</span>
+              <span className={styles.cap}>Próxima tarefa</span>
               <strong>{tasks.data?.next?.title ?? 'Nenhuma tarefa ainda'}</strong>
             </div>
-            <span className={styles.badge}>{tasks.data?.pending ?? 0} pendentes</span>
+            <span className={styles.badge}>{tasks.data?.pending ?? 0} {tasks.data?.pending === 1 ? 'pendente' : 'pendentes'}</span>
           </div>
           <Link to="/routine?tab=tasks" className={styles.strip}>
             <Clock size={14} />
@@ -197,8 +159,8 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Flame size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>CICLO DE HÁBITOS</span>
-              <strong>{streak > 0 ? `Sequência ativa de ${streak} dias` : 'Comece sua sequência hoje'}</strong>
+              <span className={styles.cap}>Hábitos</span>
+              <strong>{streak > 0 ? `Sequência ativa de ${streak} dias` : 'Hábitos de hoje'}</strong>
             </div>
             <span className={styles.meta}>{doneCount} de {habitList.length} concluídos</span>
           </div>
@@ -225,7 +187,7 @@ function Overview() {
           <div className={styles.cardHead}>
             <span className={styles.iconBox}><Dumbbell size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>MOTOR FÍSICO</span>
+              <span className={styles.cap}>Treino sugerido</span>
               <strong>{ready?.name ?? 'Nenhuma rotina ainda'}</strong>
             </div>
             <button type="button" className={styles.start} onClick={startReady} disabled={startWorkout.isPending}><Play size={11} /> {ready ? 'Iniciar' : 'Criar'}</button>
@@ -239,13 +201,13 @@ function Overview() {
 
       {has('finance') && (
         <section className={styles.card}>
-          <div className={styles.cardHead}>
+          <div className={`${styles.cardHead} ${styles.financeHead}`}>
             <span className={styles.iconBox}><Wallet size={18} /></span>
             <div className={styles.titleBox}>
-              <span className={styles.cap}>MARGEM DE CAPITAL</span>
+              <span className={styles.cap}>Saldo do mês</span>
               <strong>{formatBRL(margin)}</strong>
             </div>
-            <span className={styles.badge}><TrendingUp size={10} /> {onTrack ? 'No orçamento' : 'Acima do orçamento'}</span>
+            <span className={styles.badge}>{onTrack ? 'No orçamento' : 'Acima do orçamento'}</span>
           </div>
           <div className={styles.progress}><div style={{ width: `${Math.round(elapsed * 100)}%` }} /></div>
           <div className={styles.footRow}>

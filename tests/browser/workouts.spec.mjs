@@ -195,7 +195,7 @@ for (const update of [false, true]) {
 }
 
 test('friends and ranking open a profile with copyable routines even without workouts', async ({ page }) => {
-  const friend = { id: '22222222-2222-4222-8222-222222222222', username: 'marina', display_name: 'Marina', avatar_url: null }
+  const friend = { id: '22222222-2222-4222-8222-222222222222', username: 'marina', display_name: 'Marina Albuquerque de Vasconcelos e Oliveira', avatar_url: null }
   await page.route('**/rest/v1/follows?*', (route) => {
     const outgoing = new URL(route.request().url()).searchParams.has('follower_id')
     return route.fulfill({ json: outgoing ? [{ following_id: friend.id }] : [] })
@@ -215,10 +215,17 @@ test('friends and ranking open a profile with copyable routines even without wor
     },
   }))
 
+  await page.setViewportSize({ width: 320, height: 800 })
   await page.goto('/')
   await page.getByRole('button', { name: 'Adicionar amigos' }).click()
   await expect(page.getByRole('heading', { name: 'Amigos adicionados' })).toBeVisible()
-  await page.getByRole('link', { name: 'Ver perfil de Marina' }).click()
+  const friendLink = page.getByRole('link', { name: friend.display_name, exact: true })
+  const connected = page.getByRole('button', { name: 'Conectado', exact: true })
+  await expect(friendLink).toHaveCSS('text-decoration-line', 'none')
+  await expect(connected).toHaveCSS('white-space', 'nowrap')
+  const [nameBox, actionBox] = await Promise.all([friendLink.boundingBox(), connected.boundingBox()])
+  expect(nameBox.x + nameBox.width).toBeLessThan(actionBox.x)
+  await friendLink.click()
   await page.getByRole('button', { name: /Rotina sem treinos.*1 exercício/ }).click()
   await expect(page.getByRole('dialog', { name: 'Rotina sem treinos' })).toBeVisible()
   await page.getByRole('button', { name: 'Copiar rotina' }).click()
@@ -362,8 +369,25 @@ test('a saved routine appears on the hub when the exercise photo column is unava
   await page.getByRole('button', { name: /Supino salvo/ }).filter({ hasText: 'Supino salvo' }).click()
   await page.getByRole('button', { name: 'Salvar rotina', exact: true }).click()
   await expect(page).toHaveURL('/workouts')
-  await expect(page.getByRole('listitem').filter({ hasText: 'Rotina recém-salva' })).toBeVisible()
-  await expect(page.getByText(/1\. Supino salvo/)).toBeVisible()
+  const grid = page.getByRole('list', { name: 'Rotinas de treino' })
+  const routineCard = grid.getByRole('listitem').filter({ hasText: 'Rotina recém-salva' })
+  await expect(routineCard.getByRole('heading', { name: 'Rotina recém-salva' })).toBeVisible()
+  await expect(routineCard.getByText('1 exercício', { exact: true })).toBeVisible()
+  await expect(routineCard.getByRole('button', { name: 'Iniciar Rotina recém-salva' })).toBeEnabled()
+  await expect(routineCard).toHaveCSS('background-image', 'none')
+  const featured = page.getByRole('region', { name: 'Treino de hoje' })
+  await expect(featured.getByRole('heading', { name: 'Rotina recém-salva' })).toBeVisible()
+  await expect(featured.getByText('1. Supino salvo')).toBeVisible()
+  await expect(featured).toHaveCSS('background-image', 'none')
+  const [featureBox, routineBox] = await Promise.all([featured.boundingBox(), routineCard.boundingBox()])
+  expect(featureBox.width).toBeGreaterThan(routineBox.width)
+  expect(featureBox.height).toBeGreaterThan(routineBox.height)
+  const options = routineCard.getByRole('button', { name: 'Opções de Rotina recém-salva' })
+  await options.click()
+  await expect(routineCard.getByRole('link', { name: 'Editar rotina' })).toHaveAttribute('href', '/workouts/routines/routine-new/edit')
+  await expect(routineCard.getByRole('button', { name: 'Excluir rotina' })).toBeVisible()
+  await options.press('Escape')
+  await expect(options).toHaveAttribute('aria-expanded', 'false')
 })
 
 test('an empty workout opens and lets the user change the rest for an exercise', async ({ page }) => {

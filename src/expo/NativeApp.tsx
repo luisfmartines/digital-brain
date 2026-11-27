@@ -111,7 +111,7 @@ export default function NativeApp() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme === 'dark' ? '#111115' : '#f6faf7' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme === 'dark' ? '#111115' : '#f8faf3' }}>
         <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
         <DomApp
           key={previewAttempt}

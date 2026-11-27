@@ -153,7 +153,6 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.glow} />
       <div className={styles.card}>
         <h1 className={styles.title}>{signup ? 'Criar conta' : 'Entrar'}</h1>
 

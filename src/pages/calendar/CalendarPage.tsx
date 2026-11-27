@@ -35,16 +35,19 @@ function eventTime(event: AgendaItem, day: Date) {
 function EventCard({ event, day, returnTo }: { event: AgendaItem; day: Date; returnTo: string }) {
   const device = useDevice()
   return (
-    <Link to={event.href} state={event.kind === 'google' ? undefined : { returnTo }} target={event.kind === 'google' ? '_blank' : undefined} rel={event.kind === 'google' ? 'noopener noreferrer' : undefined} className={styles.event} data-category={event.category} style={event.originColor ? { '--event-color': event.originColor } as CSSProperties : undefined}
-      onClick={device && event.kind === 'google' ? (click) => {
+    <Link to={event.href} state={event.external ? undefined : { returnTo }} target={event.external ? '_blank' : undefined} rel={event.external ? 'noopener noreferrer' : undefined} className={styles.event} data-category={event.category} style={event.originColor ? { '--event-color': event.originColor } as CSSProperties : undefined}
+      onClick={device && event.external ? (click) => {
         click.preventDefault()
         void device.openLink(event.href)
       } : undefined}>
       <span className={styles.eventInfo}>
         <strong>{event.title}</strong>
         <small>
-          {eventTime(event, day)} · {event.kind === 'task' ? 'Tarefa' : event.kind === 'google' ? 'Google Agenda' : EVENT_CATEGORIES[event.category]}
-          {event.origin && ` · ${event.origin}`}
+          {eventTime(event, day)}
+          {event.kind === 'task' && ' · Tarefa'}
+          {event.kind === 'google' && ' · Google Agenda'}
+          {event.origin && event.origin !== 'Google Agenda' && ` · ${event.origin}`}
+          {` · ${EVENT_CATEGORIES[event.category]}`}
           {event.completed && ' · Concluída'}
         </small>
         {event.description && <small className={styles.description}>{event.description}</small>}
@@ -123,16 +126,18 @@ export default function CalendarPage() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <h1>Calendário</h1>
-        <button className={styles.soft} type="button" onClick={() => go(today)}><CalendarDays size={15} /> Hoje</button>
       </div>
       <div className={styles.googleShortcut}>
-        {connection.data ? (
-          <Link className={styles.soft} to="/profile?tab=connections&show=google"><Link2 size={16} /> Gerenciar Google Agenda</Link>
-        ) : (
-          <button className={styles.soft} type="button" disabled={connection.isPending || connect.isPending} onClick={() => connect.mutate()}>
-            <Link2 size={16} /> {connect.isPending ? 'Abrindo Google…' : 'Conectar Google Agenda'}
-          </button>
-        )}
+        <div className={styles.calendarActions}>
+          {connection.data ? (
+            <Link className={styles.soft} to="/profile?tab=connections&show=google"><Link2 size={16} /> Gerenciar Google Agenda</Link>
+          ) : (
+            <button className={styles.soft} type="button" disabled={connection.isPending || connect.isPending} onClick={() => connect.mutate()}>
+              <Link2 size={16} /> {connect.isPending ? 'Abrindo Google…' : 'Conectar Google Agenda'}
+            </button>
+          )}
+          <button className={styles.soft} type="button" onClick={() => go(today)}><CalendarDays size={15} /> Hoje</button>
+        </div>
         {connect.isError && <p className={styles.error} role="alert">{connect.error.message}</p>}
         {device?.isExpoGo && connect.isSuccess && !connection.data && (
           <p className={styles.muted} role="status">Conclua a autorização no navegador e volte ao aplicativo.</p>

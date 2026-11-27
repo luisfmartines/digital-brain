@@ -33,10 +33,13 @@ export const router = createRouter([
           { path: '/tasks/new', element: <Pages.TaskFormPage /> },
           { path: '/tasks/:id/edit', element: <Pages.TaskFormPage /> },
 
+          { path: '/calendar/google/edit', element: <Pages.CalendarEventPage google /> },
           { path: '/calendar/new', element: <Pages.CalendarEventPage /> },
           { path: '/calendar/:id/edit', element: <Pages.CalendarEventPage /> },
 
           // Amigos
+          { path: '/profile/followers', element: <Pages.ProfileConnectionsPage direction="followers" /> },
+          { path: '/profile/following', element: <Pages.ProfileConnectionsPage direction="following" /> },
           { path: '/friends/add', element: <Pages.AddFriendsPage /> },
 
           // Treino ativo

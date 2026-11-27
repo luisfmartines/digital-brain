@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { FormEvent, KeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -96,15 +96,16 @@ export default function AssistantPage() {
   const firstName = (profile?.display_name ?? '').split(' ')[0]
 
   const [bubbles, setBubbles] = useState<Bubble[]>([])
-  const [text, setText] = useState('')
+  const prompt = (state as { prompt?: string } | null)?.prompt
+  const [text, setText] = useState(() => prompt ?? '')
   const [busy, setBusy] = useState(false)
   const nextId = useRef(1)
   const endRef = useRef<HTMLDivElement>(null)
   const history = useRef<ChatMsg[]>([]) // só na memória da tela (sem histórico salvo)
-  const sentInitial = useRef(false)
 
-  const send = useCallback(async (raw: string) => {
-    const content = raw.trim()
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    const content = text.trim()
     if (!content || busy) return
     setText('')
     setBusy(true)
@@ -123,32 +124,15 @@ export default function AssistantPage() {
     } finally {
       setBusy(false)
     }
-  }, [busy, qc])
+  }
 
-  // Pergunta vinda da barra do Neural no início
   useEffect(() => {
-    const prompt = (state as { prompt?: string } | null)?.prompt
-    if (prompt && !sentInitial.current) {
-      sentInitial.current = true
-      navigate(pathname, { replace: true, state: null })
-      void send(prompt)
-    }
-  }, [state, pathname, navigate, send])
+    if (prompt) navigate(pathname, { replace: true, state: null })
+  }, [prompt, pathname, navigate])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [bubbles, busy])
-
-  function submit(e: FormEvent) {
-    e.preventDefault()
-    void send(text)
-  }
-  function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      void send(text)
-    }
-  }
 
   return (
     <div className={styles.page}>
@@ -207,7 +191,7 @@ export default function AssistantPage() {
       <div className={styles.composerWrap}>
         <div className={styles.suggestions}>
           {SUGGESTIONS.map((s) => (
-            <button key={s} type="button" onClick={() => send(s)} disabled={busy}>{s}</button>
+            <button key={s} type="button" onClick={() => setText(s)} disabled={busy}>{s}</button>
           ))}
         </div>
         <form className={styles.composer} onSubmit={submit}>
@@ -215,7 +199,7 @@ export default function AssistantPage() {
             rows={1}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={onKey}
+            enterKeyHint="enter"
             placeholder="Registre um gasto, tarefa ou hábito…"
             maxLength={1000}
             aria-label="Mensagem para o Neural"
@@ -224,7 +208,7 @@ export default function AssistantPage() {
             {busy ? <Loader2 size={20} className={styles.spin} /> : <ArrowUp size={20} />}
           </button>
         </form>
-        <p className={styles.hint}>Entende português do Brasil · Enter envia</p>
+        <p className={styles.hint}>Enter quebra a linha. Toque em Enviar para mandar.</p>
       </div>
     </div>
   )

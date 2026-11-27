@@ -131,7 +131,7 @@ function Charts({ metrics }: { metrics: Metric[] }) {
             <svg viewBox={`0 0 ${W} ${H}`} className={styles.svg} role="img" aria-label="Duração média dos treinos ao longo do tempo">
               <defs>
                 <linearGradient id="durFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.45 }} />
+                  <stop offset="0%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.16 }} />
                   <stop offset="100%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
                 </linearGradient>
               </defs>

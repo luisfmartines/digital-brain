@@ -50,7 +50,15 @@ test('calendar switches periods and saves an event on the selected day', async (
   await expect(header.getByText('Calendário', { exact: true })).toBeVisible()
   await expect(header).not.toContainText('Digital Brain')
   await expect(header.locator('img')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Conectar Google Agenda' })).toBeEnabled()
+  const google = page.getByRole('button', { name: 'Conectar Google Agenda' })
+  const today = page.getByRole('button', { name: 'Hoje', exact: true })
+  await expect(google).toBeEnabled()
+  await expect(today).toBeVisible()
+  const [googleBox, todayBox] = await Promise.all([google.boundingBox(), today.boundingBox()])
+  expect(todayBox.y).toBeCloseTo(googleBox.y, 0)
+  expect(todayBox.x).toBeGreaterThan(googleBox.x + googleBox.width)
+  const calendarActions = await today.locator('..').boundingBox()
+  expect(todayBox.x + todayBox.width).toBeCloseTo(calendarActions.x + calendarActions.width, 0)
   await expect(page.getByRole('tab', { name: 'Mês', exact: true })).toHaveAttribute('aria-selected', 'true')
   await page.getByRole('tab', { name: 'Semana' }).click()
   await expect(page.getByRole('heading', { name: 'Agenda da semana' })).toBeVisible()
@@ -91,6 +99,8 @@ test('profile persists the theme and the header keeps the friends action', async
   await expect(page.getByRole('button', { name: 'Pesquisar', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Tema claro' }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await expect(page.locator('html')).toHaveCSS('--color-primary', /^#cbfc55$/i)
+  await expect(page.locator('html')).toHaveCSS('--color-secondary', '#4d620e')
   await page.reload()
   await expect(page.getByRole('button', { name: 'Tema claro' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Tema escuro' }).click()
@@ -244,7 +254,7 @@ test('connected calendar reads Google events and sends new events to the same ag
   await page.goto('/calendar?view=day&date=2026-11-24')
   await expect(page.getByRole('link', { name: /Feriado no Google/ })).toContainText('Dia inteiro · Google Agenda · Refeições')
   await page.getByRole('link', { name: 'Novo evento' }).click()
-  await expect(page.getByRole('button', { name: 'Saúde', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Saúde', exact: true }).click()
   await page.getByRole('button', { name: /^Calendário do Google,/ }).click()
   await page.getByRole('dialog', { name: 'Calendário do Google' }).getByRole('button', { name: 'Refeições' }).click()
   await expect(page.getByRole('option', { name: 'Feriados' })).toHaveCount(0)
@@ -252,7 +262,7 @@ test('connected calendar reads Google events and sends new events to the same ag
   await page.getByRole('button', { name: 'Salvar evento' }).click()
   await expect(page.getByRole('link', { name: /Enviado ao Google/ })).toContainText('09:00–10:00 · Google Agenda')
   expect(received).toHaveLength(1)
-  expect(received[0]).toMatchObject({ title: 'Enviado ao Google', calendarId: 'meals@google.test', start: '2026-11-24T12:00:00.000Z', reminderMinutes: 10 })
+  expect(received[0]).toMatchObject({ title: 'Enviado ao Google', calendarId: 'meals@google.test', category: 'health', start: '2026-11-24T12:00:00.000Z', reminderMinutes: 10 })
 })
 
 test('another profile shows shared details and copies a workout routine', async ({ page }) => {
@@ -319,17 +329,29 @@ test('home progress is left-aligned and the workout tabs share the full bar', as
   const [numberBox, captionBox] = await Promise.all([percentage.boundingBox(), caption.boundingBox()])
   expect(numberBox.x).toBeCloseTo(captionBox.x, 0)
 
+  const homeTab = page.getByRole('tab', { name: 'Início', exact: true })
+  await expect(homeTab).toHaveAttribute('aria-selected', 'true')
+  await expect(homeTab).toHaveCSS('box-shadow', 'none')
+  const feedTab = page.getByRole('tab', { name: 'Feed', exact: true })
+  await feedTab.click()
+  await expect(feedTab).toHaveAttribute('aria-selected', 'true')
+  await expect(feedTab).toHaveCSS('box-shadow', 'none')
+  await expect(feedTab).toHaveCSS('background-color', 'rgb(35, 35, 42)')
+
   await page.goto('/workouts')
   const tabs = page.getByRole('tablist')
   const training = tabs.getByRole('tab', { name: 'Treinamento' })
   const ranking = tabs.getByRole('tab', { name: 'Classificação' })
   await expect(training).toHaveAttribute('aria-selected', 'true')
+  const statistics = page.getByRole('link', { name: 'Estatísticas', exact: true })
   for (const width of [320, 390, 1024]) {
     await page.setViewportSize({ width, height: 844 })
     const [barBox, trainingBox, rankingBox] = await Promise.all([tabs.boundingBox(), training.boundingBox(), ranking.boundingBox()])
     expect(trainingBox.width).toBeCloseTo(rankingBox.width, 0)
     expect(trainingBox.y).toBeCloseTo(rankingBox.y, 0)
     expect(trainingBox.x - barBox.x).toBeCloseTo(barBox.x + barBox.width - rankingBox.x - rankingBox.width, 0)
+    const [toolsBox, statisticsBox] = await Promise.all([statistics.locator('..').boundingBox(), statistics.boundingBox()])
+    expect(statisticsBox.x + statisticsBox.width).toBeCloseTo(toolsBox.x + toolsBox.width, 0)
   }
   await ranking.click()
   await expect(ranking).toHaveAttribute('aria-selected', 'true')
@@ -455,20 +477,159 @@ test('Expo WebView keeps the home dashboard within the screen with all modules e
 
   const progress = page.getByRole('region', { name: 'Progresso de hoje' })
   const water = page.getByRole('button', { name: 'Adicionar 500 ml de água' })
-  const send = page.getByRole('button', { name: 'Enviar', exact: true })
   await expect(progress).toBeInViewport({ ratio: 1 })
   await expect(water).toBeInViewport({ ratio: 1 })
-  await expect(send).toBeInViewport({ ratio: 1 })
+  const greeting = page.getByRole('heading', { name: 'Olá, Ana', exact: true })
+  await expect(greeting.locator('span')).toHaveText('Ana')
+  await expect(greeting.locator('span')).toHaveCSS('color', 'rgb(203, 252, 85)')
+  await expect(progress.locator('svg').first()).toHaveCSS('color', 'rgb(203, 252, 85)')
+  await expect(page.getByText('Sua mente está limpa, 0 prioridades agendadas para hoje.')).toBeVisible()
+  const budgetStatus = page.getByText('No orçamento', { exact: true })
+  const [statusBox, balanceBox] = await Promise.all([budgetStatus.boundingBox(), page.getByText('Saldo do mês', { exact: true }).locator('..').boundingBox()])
+  expect(statusBox.x).toBeGreaterThan(balanceBox.x + balanceBox.width)
+  expect(statusBox.y + statusBox.height / 2).toBeCloseTo(balanceBox.y + balanceBox.height / 2, 0)
+  await expect(page.getByRole('region', { name: 'Nível', exact: true })).toHaveCount(0)
+  await expect(page.getByPlaceholder(/Pergunte ao Neural/)).toHaveCount(0)
+  const mascotShortcut = page.getByRole('button', { name: 'Assistente de IA' })
+  await expect(mascotShortcut).toBeVisible()
+  await expect(mascotShortcut.locator('svg path').first()).toHaveCSS('fill', 'rgb(203, 252, 85)')
   expect(await page.evaluate(() => {
     document.scrollingElement.scrollLeft = 500
     return window.scrollX
   })).toBe(0)
+})
 
-  const suggestions = page.getByRole('button', { name: 'Reunião às 15h' }).locator('..')
-  await suggestions.scrollIntoViewIfNeeded()
-  expect(await suggestions.evaluate((rail) => {
-    rail.scrollLeft = rail.scrollWidth
-    return rail.scrollLeft
-  })).toBeGreaterThan(0)
-  await expect(page.getByRole('button', { name: 'Registrar 500 ml de água' })).toBeInViewport({ ratio: 0.95 })
+test('Neural keeps Enter as a newline and sends the draft only on submit', async ({ page }) => {
+  const messages = []
+  await page.route('**/functions/v1/neural', async (route) => {
+    messages.push(route.request().postDataJSON().messages.at(-1))
+    await route.fulfill({ json: { reply: 'Entendi a mensagem.', actions: [] } })
+  })
+  await page.goto('/assistant')
+  const composer = page.getByRole('textbox', { name: 'Mensagem para o Neural' })
+  const mascot = page.locator('header svg[viewBox="0 0 240 146"] path').first()
+  const send = page.getByRole('button', { name: 'Enviar', exact: true })
+  await expect(composer).toHaveAttribute('enterkeyhint', 'enter')
+  await expect(mascot).toHaveCSS('fill', 'rgb(203, 252, 85)')
+  await expect(send).toHaveCSS('color', 'rgb(203, 252, 85)')
+  await page.getByRole('button', { name: 'Gastei R$ 35 no Uber' }).click()
+  await expect(composer).toHaveValue('Gastei R$ 35 no Uber')
+  expect(messages).toHaveLength(0)
+  await composer.fill('Primeira linha')
+  await composer.press('Enter')
+  await composer.pressSequentially('Segunda linha')
+  const draft = 'Primeira linha\nSegunda linha'
+  await expect(composer).toHaveValue(draft)
+  expect(messages).toHaveLength(0)
+  await send.click()
+  await expect(page.getByText('Entendi a mensagem.')).toBeVisible()
+  expect(messages).toEqual([{ role: 'user', text: draft }])
+  await expect(page.getByText('Primeira linha Segunda linha', { exact: true })).toHaveCSS('white-space', 'pre-wrap')
+
+  await page.goto('/profile')
+  await page.getByRole('button', { name: 'Tema claro' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await page.goto('/assistant')
+  await expect(mascot).toHaveCSS('fill', 'rgb(77, 98, 14)')
+  await expect(send).toHaveCSS('color', 'rgb(77, 98, 14)')
+})
+
+test('profile opens separate lists for followers and following', async ({ page }) => {
+  const follower = '22222222-2222-4222-8222-222222222222'
+  const following = '33333333-3333-4333-8333-333333333333'
+  await page.route('https://*.supabase.co/**', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (url.pathname.endsWith('/public-profile') && request.postDataJSON()?.action === 'activity') {
+      return route.fulfill({ json: { workoutCount: 0, followers: 1, following: 1, photos: [], workouts: [], posts: [] } })
+    }
+    if (url.pathname.endsWith('/follows')) {
+      const isFollowers = url.searchParams.get('following_id') === 'eq.' + userId
+      return route.fulfill({ json: isFollowers ? [{ follower_id: follower }] : [{ following_id: following }] })
+    }
+    if (url.pathname.endsWith('/profiles') && url.searchParams.get('id')?.startsWith('in.')) {
+      const isFollower = url.searchParams.get('id').includes(follower)
+      return route.fulfill({ json: [isFollower ? { id: follower, display_name: 'Rafaela', username: 'rafa' }
+        : { id: following, display_name: 'Luís', username: 'luis' }] })
+    }
+    await route.fallback()
+  })
+  await page.goto('/profile')
+  await page.getByRole('link', { name: 'Seguidores: 1' }).click()
+  await expect(page.getByRole('list', { name: 'Seguidores' }).getByRole('link', { name: /Rafaela/ }))
+    .toHaveAttribute('href', '/profiles/' + follower)
+  await page.getByRole('link', { name: 'Seguindo', exact: true }).click()
+  await expect(page.getByRole('list', { name: 'Seguindo' }).getByRole('link', { name: /Luís/ }))
+    .toHaveAttribute('href', '/profiles/' + following)
+  await expect(page.getByText('Rafaela')).toHaveCount(0)
+  await page.getByRole('link', { name: 'Voltar ao perfil' }).click()
+  await expect(page.getByRole('heading', { name: 'Ana' })).toBeVisible()
+})
+
+test('tasks save a calendar category and display it on their agenda entry', async ({ page }) => {
+  let task
+  await page.route('https://*.supabase.co/rest/v1/tasks**', async (route) => {
+    const request = route.request()
+    if (request.method() === 'POST') task = { id: 'scheduled-task', ...request.postDataJSON() }
+    return route.fulfill({ json: task ? [task] : [] })
+  })
+  await page.goto('/tasks/new')
+  for (const name of ['Trabalho', 'Reunião', 'Saúde', 'Pessoal', 'Condicionamento', 'Mentalidade']) {
+    await expect(page.getByRole('button', { name, exact: true })).toBeVisible()
+  }
+  await page.getByPlaceholder('Ex.: Revisar os documentos do projeto').fill('Revisar pauta')
+  await page.getByRole('button', { name: 'Reunião', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Reunião', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Salvar tarefa' }).click()
+  await expect.poll(() => task?.category).toBe('meeting')
+  task.due_at = '2026-11-24T12:00:00Z'
+  await page.goto('/calendar?view=day&date=2026-11-24')
+  await expect(page.getByRole('link', { name: /Revisar pauta/ })).toContainText('Tarefa · Reunião')
+})
+
+test('Google Calendar events open in the app and can be edited and deleted', async ({ page }) => {
+  let event = {
+    id: 'external-event', calendarId: 'personal@example.test', calendarName: 'Pessoal',
+    summary: 'Consulta', description: 'Levar exames', location: 'Clínica',
+    start: { dateTime: '2026-11-24T12:00:00Z' }, end: { dateTime: '2026-11-24T13:00:00Z' },
+    etag: '"v1"', organizer: { self: true }, reminders: { useDefault: true },
+  }
+  await page.route('https://*.supabase.co/rest/v1/google_tokens**', (route) =>
+    route.fulfill({ json: [{ user_id: userId }] }))
+  await page.route('https://*.supabase.co/functions/v1/google-calendar-create-event', async (route) => {
+    const input = route.request().postDataJSON()
+    if (input.action === 'calendars') return route.fulfill({ json: { calendars: [{ id: 'personal@example.test', name: 'Pessoal', primary: true, writable: true }] } })
+    if (input.action === 'list') return route.fulfill({ json: { events: event ? [event] : [] } })
+    expect(input.calendarId).toBe('personal@example.test')
+    expect(input.eventId).toBe('external-event')
+    if (input.action === 'update') {
+      expect(input.etag).toBe('"v1"')
+      expect(input.title).toBe('Consulta de retorno')
+      expect(input.category).toBe('health')
+      expect(input.start).toBeUndefined()
+      expect(input.reminderMinutes).toBeUndefined()
+      event = { ...event, summary: input.title, etag: '"v2"', extendedProperties: { private: { digitalBrainCategory: input.category } } }
+    }
+    if (input.action === 'delete') {
+      expect(input.etag).toBe('"v2"')
+      event = null
+      return route.fulfill({ json: { id: input.eventId } })
+    }
+    return route.fulfill({ json: event })
+  })
+  await page.goto('/calendar?view=day&date=2026-11-24')
+  await page.getByRole('link', { name: /Consulta/ }).click()
+  await expect(page.getByRole('heading', { name: 'Editar evento' })).toBeVisible()
+  await expect(page.getByLabel('Notas')).toHaveValue('Levar exames')
+  await expect(page.getByText('Clínica')).toBeVisible()
+  await page.getByLabel('Título do evento').fill('Consulta de retorno')
+  await page.getByRole('button', { name: 'Saúde' }).click()
+  await page.getByRole('button', { name: 'Salvar evento' }).click()
+  const saved = page.getByRole('link', { name: /Consulta de retorno/ })
+  await expect(saved).toContainText('Saúde')
+  await saved.click()
+  await page.getByRole('button', { name: 'Excluir evento' }).click()
+  await page.getByRole('button', { name: 'Confirmar exclusão' }).click()
+  await expect(saved).toHaveCount(0)
+  await expect(page.getByText('Nenhum compromisso neste dia.')).toBeVisible()
 })

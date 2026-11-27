@@ -3,7 +3,8 @@ import { supabase } from '../../lib/supabase'
 import { localDateStr, parseDate } from '../../lib/date'
 import { useAuth } from '../auth/useAuth'
 import type { AgendaItem } from './agenda'
-import type { EventInput } from './queries'
+import type { CalendarEvent, EventInput } from './queries'
+import { eventCategory } from '../../../supabase/functions/_shared/planningCategories'
 import { CALENDAR_REDIRECT, useDevice } from '../../expo/device'
 
 export function useGoogleConnection() {
@@ -46,12 +47,14 @@ async function googleCalendar<T>(body: object) {
   if (details?.error === 'reconnect_required') {
     throw new Error('Reconecte o Google Agenda em Perfil → Conexões e tente novamente.')
   }
+  if (details?.error === 'event_forbidden') throw new Error('O Google Agenda não permite alterar este evento.')
+  if (details?.error === 'event_not_found') throw new Error('Este evento não está mais disponível no Google Agenda.')
+  if (details?.error === 'event_changed') throw new Error('O evento mudou no Google Agenda. Reabra o evento para atualizar os dados.')
   throw new Error('Não foi possível acessar o Google Agenda. Tente novamente.')
 }
 
-export async function createConnectedEvent(input: EventInput, calendarId?: string) {
-  return googleCalendar<{ id: string }>({
-    calendarId,
+function toGoogleInput(input: EventInput) {
+  return {
     title: input.title,
     description: input.description,
     category: input.category,
@@ -59,7 +62,37 @@ export async function createConnectedEvent(input: EventInput, calendarId?: strin
     end: input.all_day && input.ends_at ? localDateStr(new Date(input.ends_at)) : input.ends_at,
     allDay: input.all_day,
     reminderMinutes: input.alarm_minutes_before,
-  })
+  }
+}
+
+export async function createConnectedEvent(input: EventInput, calendarId?: string) {
+  return googleCalendar<{ id: string }>({ ...toGoogleInput(input), calendarId })
+}
+
+export interface GoogleEventRef {
+  calendarId: string
+  eventId: string
+  etag?: string
+}
+
+export interface ConnectedEvent extends CalendarEvent {
+  google: GoogleEventRef
+  canEdit: boolean
+  recurring: boolean
+  location?: string
+}
+
+export async function changeConnectedEvent(ref: GoogleEventRef, change:
+  { remove: true } | { input: EventInput; scheduleChanged: boolean; reminderChanged: boolean }) {
+  const input = 'input' in change ? toGoogleInput(change.input) : undefined
+  const request = 'remove' in change ? { ...ref, action: 'delete' } : {
+    ...ref, ...input, action: 'update',
+    start: change.scheduleChanged ? input?.start : undefined,
+    reminderMinutes: change.reminderChanged ? input?.reminderMinutes : undefined,
+  }
+  if (!await googleCalendar<{ id: string }>(request)) {
+    throw new Error('Reconecte o Google Agenda em Perfil → Conexões e tente novamente.')
+  }
 }
 
 interface GoogleEvent {
@@ -69,6 +102,13 @@ interface GoogleEvent {
   description?: string
   location?: string
   calendarName?: string
+  calendarId?: string
+  etag?: string
+  locked?: boolean
+  organizer?: { self?: boolean }
+  guestsCanModify?: boolean
+  recurringEventId?: string
+  reminders?: { useDefault?: boolean; overrides?: { method: string; minutes: number }[] }
   calendarColor?: string
   start?: { date?: string; dateTime?: string }
   end?: { date?: string; dateTime?: string }
@@ -85,26 +125,60 @@ function safeCalendarLink(value?: string) {
   return 'https://calendar.google.com/'
 }
 
-function toAgendaItem(event: GoogleEvent): AgendaItem[] {
+function eventDetails(event: GoogleEvent): CalendarEvent | null {
   const start = event.start?.date ? parseDate(event.start.date) : new Date(event.start?.dateTime ?? '')
   const end = event.end?.date ? parseDate(event.end.date) : new Date(event.end?.dateTime ?? '')
-  if (!Number.isFinite(start.getTime())) return []
-  const category = event.extendedProperties?.private?.digitalBrainCategory
-  return [{
-    id: `google:${event.id}`,
-    kind: 'google',
-    href: safeCalendarLink(event.htmlLink),
+  if (!Number.isFinite(start.getTime())) return null
+  return {
+    id: event.id,
     title: event.summary || 'Evento do Google Agenda',
+    description: event.description ?? null,
+    starts_at: start.toISOString(),
+    ends_at: Number.isFinite(end.getTime()) ? end.toISOString() : null,
+    all_day: !!event.start?.date,
+    category: eventCategory(event.extendedProperties?.private?.digitalBrainCategory),
+    alarm_minutes_before: event.reminders?.overrides?.find(({ method }) => method === 'popup')?.minutes ?? null,
+  }
+}
+
+function toAgendaItem(event: GoogleEvent): AgendaItem[] {
+  const details = eventDetails(event)
+  if (!details) return []
+  const params = event.calendarId ? new URLSearchParams({ calendar: event.calendarId, event: event.id }) : null
+  return [{
+    ...details,
+    id: 'google:' + (event.calendarId ?? 'primary') + ':' + event.id,
+    kind: 'google',
+    href: params ? '/calendar/google/edit?' + params : safeCalendarLink(event.htmlLink),
+    external: !params,
     description: [event.description?.replace(/<[^>]*>/g, ' ').trim(), event.location].filter(Boolean).join('\n') || null,
     origin: event.calendarName,
     originColor: /^#[0-9a-f]{6}$/i.test(event.calendarColor ?? '') ? event.calendarColor : undefined,
     exportedFrom: /^(dbe|dbt)[0-9a-f]{32}$/.test(event.id) ? event.id : undefined,
-    starts_at: start.toISOString(),
-    ends_at: Number.isFinite(end.getTime()) ? end.toISOString() : null,
-    all_day: !!event.start?.date,
-    category: category === 'work' || category === 'meeting' || category === 'health' ? category : 'personal',
-    alarm_minutes_before: null,
   }]
+}
+
+export function useConnectedEvent(ref?: GoogleEventRef) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['calendar', 'google-event', user?.id, ref?.calendarId, ref?.eventId],
+    enabled: !!user && !!ref,
+    retry: false,
+    refetchOnWindowFocus: false,
+    queryFn: async (): Promise<ConnectedEvent> => {
+      const event = await googleCalendar<GoogleEvent>({ action: 'read', ...ref })
+      if (!event) throw new Error('Reconecte o Google Agenda em Perfil → Conexões e tente novamente.')
+      const details = eventDetails(event)
+      if (!details) throw new Error('Este evento não tem data de início disponível.')
+      return {
+        ...details,
+        google: { ...ref!, etag: event.etag },
+        canEdit: !event.locked && (event.organizer?.self !== false || !!event.guestsCanModify),
+        recurring: !!event.recurringEventId,
+        location: event.location,
+      }
+    },
+  })
 }
 
 export function useGoogleEvents(from: Date, until: Date, connected: boolean) {

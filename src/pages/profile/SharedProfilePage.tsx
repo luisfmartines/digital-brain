@@ -24,7 +24,7 @@ export default function SharedProfilePage() {
     <div className={styles.page}>
       <button type="button" className={styles.backLink} onClick={back}><ArrowLeft size={16} /> Voltar</button>
       <ProfilePhotos photos={activity.data?.photos} />
-      <section className={`${styles.card} ${styles.identity}`}>
+      <section className={styles.card}>
         <div className={styles.person}>
           <ProfileAvatar url={avatar} name={name ?? username} size={64} />
           <div>

@@ -6,13 +6,13 @@
 
 .periods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 999px; background: var(--color-surface); }
 .period, .periodOn { padding: 8px 4px; border: 0; border-radius: 999px; background: transparent; color: var(--color-text-muted); font-size: 11px; font-weight: 700; cursor: pointer; }
-.periodOn { background: var(--color-tertiary); color: var(--color-secondary); }
+.periodOn { background: var(--color-surface-2); color: var(--color-text); }
 
-.overview { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-surface), var(--color-accent-gradient)); }
+.overview { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
 .ovIcon { width: 44px; height: 44px; display: grid; place-items: center; flex-shrink: 0; border-radius: 12px; background: var(--color-surface-2); color: var(--color-secondary); }
 .kicker { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-text-muted); }
 .ovTitle { font-family: var(--font-heading); font-size: 16px; }
-.badgeGreen { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; padding: 5px 10px; border-radius: 8px; background: var(--color-primary-soft); color: var(--color-secondary); font-size: 10px; font-weight: 700; }
+.badgeGreen { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; padding: 5px 10px; border-radius: 8px; background: var(--color-surface-2); color: var(--color-text); font-size: 10px; font-weight: 700; }
 
 .card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: var(--radius-lg); background: var(--color-surface); }
 .cardHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -32,8 +32,8 @@
 .hintStrip i { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: var(--color-secondary); }
 
 .bars { height: 140px; display: flex; align-items: flex-end; gap: 4px; }
-.bar, .barOn { flex: 1; min-width: 0; padding: 0; border: 0; border-radius: 4px 4px 2px 2px; background: var(--color-tertiary); cursor: pointer; }
-.barOn { background: linear-gradient(180deg, var(--color-secondary), var(--color-primary)); }
+.bar, .barOn { flex: 1; min-width: 0; padding: 0; border: 0; border-radius: 4px 4px 2px 2px; background: var(--color-surface-2); cursor: pointer; }
+.barOn { background: var(--color-primary); }
 .axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-text-muted); }
 .axis span:last-child { color: var(--color-secondary); font-weight: 700; }
 
@@ -50,7 +50,7 @@
 .repHead i { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--color-secondary); }
 .repHead b { flex-shrink: 0; font-size: 11px; color: var(--color-text-muted); font-weight: 600; }
 .track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--color-surface-2); }
-.fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); }
+.fill { height: 100%; border-radius: 999px; background: var(--color-primary); }
 
 .count { margin: 0; font-size: 12px; color: var(--color-text-muted); }
 .month { margin: 8px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-text-muted); }

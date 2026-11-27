@@ -33,8 +33,8 @@ export const categoryOf = (id: string | null | undefined): Category =>
   EXPENSE_CATEGORIES.find((c) => c.id === id) ?? EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1]
 
 export const GROUPS: Record<Group, { label: string; hint: string; color: string }> = {
-  fixed: { label: 'Despesas Fixas', hint: 'Aluguel, contas, luz', color: '#1f5a3f' },
-  variable: { label: 'Variáveis / Rotina', hint: 'Mercado, farmácia', color: '#3a8f64' },
-  leisure: { label: 'Lazer & Apps', hint: 'Jantares, streaming', color: '#8a9a92' },
+  fixed: { label: 'Despesas Fixas', hint: 'Aluguel, contas, luz', color: '#52661f' },
+  variable: { label: 'Variáveis / Rotina', hint: 'Mercado, farmácia', color: '#889f3c' },
+  leisure: { label: 'Lazer & Apps', hint: 'Jantares, streaming', color: '#93948a' },
 }
-export const FREE_COLOR = '#6fcf9a'
+export const FREE_COLOR = 'var(--color-primary)'

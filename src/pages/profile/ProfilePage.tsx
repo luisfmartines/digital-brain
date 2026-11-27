@@ -96,7 +96,7 @@ export default function ProfilePage() {
       </nav>
       {connections ? <Connections key={params.get('show')} expandGoogle={params.get('show') === 'google'} /> : <>
       <ProfilePhotos photos={activity.data?.photos} />
-      <section className={`${styles.card} ${styles.identity}`} aria-label="Dados do perfil">
+      <section className={styles.card} aria-label="Dados do perfil">
         <div className={styles.row}>
           <div className={styles.person}>
             <ProfileAvatar url={profile.avatar_url} name={profile.display_name} size={56} />
@@ -107,7 +107,7 @@ export default function ProfilePage() {
           </div>
           {!editing && <button type="button" className={styles.button} onClick={() => { update.reset(); setEditing(true) }}><Pencil size={14} /> Editar</button>}
         </div>
-        <ProfileCounts activity={activity.data} />
+        <ProfileCounts own activity={activity.data} />
         <PhotoPicker title="Foto do perfil" accept="image/jpeg,image/png,image/webp" camera="user" onPhoto={(file) => {
           const message = validateAvatarFile(file)
           setPhotoError(message)

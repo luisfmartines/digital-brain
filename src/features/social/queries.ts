@@ -1,5 +1,5 @@
 import type { SetType } from '../workouts/setTypes'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 import { addDays, localDateStr } from '../../lib/date'
@@ -70,6 +70,31 @@ export function useSearchProfiles(q: string) {
       if (error) throw error
       return (data ?? []) as Profile[]
     },
+  })
+}
+
+export function useProfileConnections(direction: 'followers' | 'following') {
+  const { user } = useAuth()
+  const pageSize = 40
+  return useInfiniteQuery({
+    queryKey: ['social', 'profile-connections', user?.id, direction],
+    enabled: !!user,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      if (!user) throw new Error('Entre para ver suas conexões.')
+      const ownColumn = direction === 'followers' ? 'following_id' : 'follower_id'
+      const otherColumn = direction === 'followers' ? 'follower_id' : 'following_id'
+      const { data, error } = await supabase.from('follows').select(otherColumn)
+        .eq(ownColumn, user.id).order(otherColumn).range(pageParam, pageParam + pageSize - 1)
+      if (error) throw error
+      const ids = (data ?? []).map((row) => (row as Record<string, string>)[otherColumn])
+      return {
+        profiles: [...(await profilesByIds(ids)).values()].sort((a, b) =>
+          (a.display_name ?? a.username ?? '').localeCompare(b.display_name ?? b.username ?? '', 'pt-BR')),
+        next: ids.length === pageSize ? pageParam + pageSize : undefined,
+      }
+    },
+    getNextPageParam: (lastPage) => lastPage.next,
   })
 }
 

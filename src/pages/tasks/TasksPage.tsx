@@ -2,19 +2,16 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlignLeft, Bell, Calendar, Check, CheckCircle2, ChevronDown, Clock, MoreVertical, Plus, Zap } from 'lucide-react'
 import { useDeleteTask, useTasks, useToggleTask, type Task } from '../../features/tasks/queries'
+import { TASK_CATEGORIES, type TaskCategory } from '../../../supabase/functions/_shared/planningCategories'
 import styles from './Tasks.module.css'
 
-type Filter = 'all' | 'high' | 'work' | 'personal' | 'fitness' | 'mindset'
+type Filter = 'all' | 'high' | TaskCategory
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'Todas' },
   { id: 'high', label: '● Alta prioridade' },
-  { id: 'work', label: 'Trabalho' },
-  { id: 'personal', label: 'Pessoal' },
-  { id: 'fitness', label: 'Condicionamento' },
-  { id: 'mindset', label: 'Mentalidade' },
+  ...(Object.keys(TASK_CATEGORIES) as TaskCategory[]).map((id) => ({ id, label: TASK_CATEGORIES[id] })),
 ]
-const CATEGORY_LABEL: Record<string, string> = { work: 'Trabalho', personal: 'Pessoal', fitness: 'Condicionamento', mindset: 'Mentalidade' }
 
 const matches = (t: Task, f: Filter) => f === 'all' || (f === 'high' ? t.priority === 'high' : t.category === f)
 
@@ -58,7 +55,7 @@ function TaskCard({ task, done, menuOpen, onMenu, onToggle, onDelete }: CardProp
           <span className={styles.time}><Clock size={11} /> {timeLabel(task.due_at)}</span>
           {!done && task.priority === 'high' && <span className={styles.high}>● Alta prioridade</span>}
           {task.category && (
-            <span className={task.category === 'fitness' ? styles.chipFit : styles.chip}>{CATEGORY_LABEL[task.category]}</span>
+            <span className={task.category === 'fitness' ? styles.chipFit : styles.chip}>{TASK_CATEGORIES[task.category]}</span>
           )}
           {done && <span className={styles.doneTag}>✓ Concluída</span>}
         </div>

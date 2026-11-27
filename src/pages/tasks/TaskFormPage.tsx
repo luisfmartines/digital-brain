@@ -2,7 +2,7 @@ import { useConfirmation } from '../../components/ui/useConfirmation'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  AlignLeft, Bell, CheckCheck, CheckCircle2, ChevronLeft, Clock, Flag, Flower2, Home, Laptop,
+  AlignLeft, Bell, CheckCheck, CheckCircle2, ChevronLeft, Clock, Flag, Flower2, Home, Laptop, HeartPulse, Users,
   Lightbulb, Moon, MoreVertical, PersonStanding, Sun, Sunrise, Tag,
 } from 'lucide-react'
 import Avatar from '../../components/ui/Avatar'
@@ -10,6 +10,7 @@ import Toggle from '../../components/ui/Toggle'
 import { useProfile } from '../../features/profile/useProfile'
 import { useDeleteTask, useSaveTask, useTask, type Task, type TaskCategory, type TaskPriority } from '../../features/tasks/queries'
 import { addDays, localDateStr, parseDate, startOfDay } from '../../lib/date'
+import { TASK_CATEGORIES } from '../../../supabase/functions/_shared/planningCategories'
 import styles from './TaskForm.module.css'
 
 const QUICK = [
@@ -17,12 +18,12 @@ const QUICK = [
   { label: 'Tarde (14:00)', time: '14:00', icon: Sun },
   { label: 'Noite (19:00)', time: '19:00', icon: Moon },
 ]
-const CATS: { id: TaskCategory; label: string; icon: typeof Laptop }[] = [
-  { id: 'work', label: 'Trabalho', icon: Laptop },
-  { id: 'personal', label: 'Pessoal', icon: Home },
-  { id: 'fitness', label: 'Condicionamento', icon: PersonStanding },
-  { id: 'mindset', label: 'Mentalidade', icon: Flower2 },
-]
+const CATEGORY_ICONS = {
+  work: Laptop, meeting: Users, health: HeartPulse, personal: Home, fitness: PersonStanding, mindset: Flower2,
+} satisfies Record<TaskCategory, typeof Laptop>
+const CATS = (Object.keys(TASK_CATEGORIES) as TaskCategory[]).map((id) => ({
+  id, label: TASK_CATEGORIES[id], icon: CATEGORY_ICONS[id],
+}))
 const PRIORITIES: { id: TaskPriority; label: string }[] = [
   { id: 'low', label: 'Baixa' },
   { id: 'medium', label: 'Média' },
@@ -138,7 +139,7 @@ function TaskForm({ task }: { task?: Task }) {
           </div>
           <div className={styles.grid2}>
             {CATS.map(({ id, label, icon: Icon }) => (
-              <button key={id} type="button" className={category === id ? styles.catOn : styles.cat} onClick={() => setCategory(id)}>
+              <button key={id} type="button" className={category === id ? styles.catOn : styles.cat} aria-pressed={category === id} onClick={() => setCategory(id)}>
                 <Icon size={15} /> <span>{label}</span>
                 {category === id && <CheckCircle2 size={14} />}
               </button>

@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 
-export type TaskCategory = 'work' | 'personal' | 'fitness' | 'mindset'
+import type { TaskCategory } from '../../../supabase/functions/_shared/planningCategories'
+export type { TaskCategory } from '../../../supabase/functions/_shared/planningCategories'
 export type TaskPriority = 'low' | 'medium' | 'high'
 
 export interface Task {

@@ -1,10 +1,9 @@
+import { TASK_CATEGORIES as LABELS } from "./planningCategories.ts";
 import { admin } from "./common.ts";
 import { GoogleCalendarError, googleAccessToken, insertGoogleEvent, type GoogleEventInput } from "./googleCalendar.ts";
 
 const PAGE = 15;
-const LABELS: Record<string, string> = {
-  work: "Trabalho", meeting: "Reunião", personal: "Pessoal", health: "Saúde", fitness: "Condicionamento", mindset: "Mentalidade",
-};
+
 
 export async function exportGoogleAgenda(userId: string, offset: number, timeZone: string, period?: { start: string; end: string }, known = new Set<string>()) {
   if (!Number.isSafeInteger(offset) || offset < 0) throw new GoogleCalendarError("invalid_offset", 400);
