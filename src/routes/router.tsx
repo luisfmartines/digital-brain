@@ -7,6 +7,8 @@ import { isNative } from '../expo/device'
 const createRouter = isNative ? createHashRouter : createBrowserRouter
 
 export const router = createRouter([
+  { path: '/privacidade', element: <Pages.LegalPage type="privacy" /> },
+  { path: '/termos-de-uso', element: <Pages.LegalPage type="terms" /> },
   { path: '/reset-password', element: <Pages.ResetPasswordPage /> },
   {
     element: <PublicOnly />,

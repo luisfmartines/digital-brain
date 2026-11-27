@@ -70,6 +70,8 @@
 }
 .terms { margin: 18px 0 0; font-size: 11px; line-height: 1.5; text-align: center; color: var(--color-text-muted); }
 
+.terms a { color: inherit; text-underline-offset: 3px; }
+
 .error { margin: 0; color: var(--color-danger); font-size: 13px; }
 .info { margin: 0; color: var(--color-secondary); font-size: 13px; }
 

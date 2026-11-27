@@ -186,6 +186,10 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      <nav className={styles.legalLinks} aria-label="Documentos legais">
+        <Link to="/privacidade">Política de Privacidade</Link>
+        <Link to="/termos-de-uso">Termos de Uso</Link>
+      </nav>
       {update.isError && <p className={styles.error} role="alert">Não foi possível salvar as alterações.</p>}
       <button type="button" onClick={signOut} className={`${styles.button} ${styles.accountAction}`}><LogOut size={16} /> Sair da conta</button>
       {signOutError && <p className={styles.error} role="alert">Não foi possível sair da conta.</p>}

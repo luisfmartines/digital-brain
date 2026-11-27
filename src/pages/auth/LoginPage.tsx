@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowRight, AtSign, CheckCircle2, ChevronRight, Circle, Eye, EyeOff, Lock,
   LogIn, RefreshCw, ShieldCheck, User, UserPlus,
@@ -309,12 +310,12 @@ export default function LoginPage() {
             </p>
             <span className={styles.secure}><ShieldCheck size={12} /> Criptografado em trânsito e em repouso</span>
             <p className={styles.terms}>
-              Ao criar uma conta, você concorda com nossos <u>Termos de Uso</u> e <u>Política de Privacidade</u>.
+              Ao criar uma conta, você aceita os <Link to="/termos-de-uso">Termos de Uso</Link>. Saiba como usamos seus dados na <Link to="/privacidade">Política de Privacidade</Link>.
             </p>
           </>
         ) : (
           <p className={styles.terms}>
-            Ao continuar, você concorda com nossos <u>Termos de Uso</u> e <u>Política de Privacidade</u>. Criptografado em trânsito e em repouso.
+            <Link to="/termos-de-uso">Termos de Uso</Link> · <Link to="/privacidade">Política de Privacidade</Link>.
           </p>
         )}
       </div>
