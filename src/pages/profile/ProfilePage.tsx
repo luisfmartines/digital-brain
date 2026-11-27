@@ -107,7 +107,7 @@ export default function ProfilePage() {
           </div>
           {!editing && <button type="button" className={styles.button} onClick={() => { update.reset(); setEditing(true) }}><Pencil size={14} /> Editar</button>}
         </div>
-        <ProfileCounts own activity={activity.data} />
+        <ProfileCounts activity={activity.data} profilePath="/profile" />
         <PhotoPicker title="Foto do perfil" accept="image/jpeg,image/png,image/webp" camera="user" onPhoto={(file) => {
           const message = validateAvatarFile(file)
           setPhotoError(message)

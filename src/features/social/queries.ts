@@ -73,26 +73,28 @@ export function useSearchProfiles(q: string) {
   })
 }
 
-export function useProfileConnections(direction: 'followers' | 'following') {
+type ConnectionList = 'followers' | 'following'
+
+interface ProfileConnections {
+  profile: Profile
+  profiles: Profile[]
+  next: string | null
+}
+
+export function useProfileConnections(direction: ConnectionList, profileId?: string) {
   const { user } = useAuth()
-  const pageSize = 40
+  const target = profileId ?? user?.id
   return useInfiniteQuery({
-    queryKey: ['social', 'profile-connections', user?.id, direction],
-    enabled: !!user,
-    initialPageParam: 0,
-    queryFn: async ({ pageParam }) => {
-      if (!user) throw new Error('Entre para ver suas conexões.')
-      const ownColumn = direction === 'followers' ? 'following_id' : 'follower_id'
-      const otherColumn = direction === 'followers' ? 'follower_id' : 'following_id'
-      const { data, error } = await supabase.from('follows').select(otherColumn)
-        .eq(ownColumn, user.id).order(otherColumn).range(pageParam, pageParam + pageSize - 1)
-      if (error) throw error
-      const ids = (data ?? []).map((row) => (row as Record<string, string>)[otherColumn])
-      return {
-        profiles: [...(await profilesByIds(ids)).values()].sort((a, b) =>
-          (a.display_name ?? a.username ?? '').localeCompare(b.display_name ?? b.username ?? '', 'pt-BR')),
-        next: ids.length === pageSize ? pageParam + pageSize : undefined,
-      }
+    queryKey: ['social', 'profile-connections', user?.id, target, direction],
+    enabled: !!user && !!target,
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam, signal }) => {
+      const { data, error } = await supabase.functions.invoke<ProfileConnections>('public-profile', {
+        body: { action: 'connections', id: target, direction, cursor: pageParam },
+        signal,
+      })
+      if (error || !data) throw new Error('Não foi possível carregar a lista.')
+      return data
     },
     getNextPageParam: (lastPage) => lastPage.next,
   })

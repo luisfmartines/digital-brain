@@ -1,25 +1,30 @@
 import { ArrowLeft, ChevronRight } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
-import { useProfile } from '../../features/profile/useProfile'
+import { useAuth } from '../../features/auth/useAuth'
 import { useProfileConnections } from '../../features/social/queries'
 import styles from './Profile.module.css'
 
 export default function ProfileConnectionsPage({ direction }: { direction: 'followers' | 'following' }) {
-  const profile = useProfile()
-  const connections = useProfileConnections(direction)
+  const { id } = useParams()
+  const { user } = useAuth()
+  const own = !id || id === user?.id
+  const profilePath = own ? '/profile' : '/profiles/' + id
+  const connections = useProfileConnections(direction, id)
+  const profile = connections.data?.pages[0]?.profile
   const people = connections.data?.pages.flatMap((page) => page.profiles) ?? []
+  const heading = profile?.username ? '@' + profile.username : profile?.display_name || (own ? 'Seu perfil' : 'Perfil')
   const title = direction === 'followers' ? 'Seguidores' : 'Seguindo'
 
   return (
     <main className={styles.connectionsListPage}>
       <header className={styles.connectionsListHeader}>
-        <Link to="/profile" aria-label="Voltar ao perfil"><ArrowLeft size={22} /></Link>
-        <h1>{profile.data?.username ? '@' + profile.data.username : 'Seu perfil'}</h1>
+        <Link to={profilePath} aria-label="Voltar ao perfil"><ArrowLeft size={22} /></Link>
+        <h1>{heading}</h1>
       </header>
       <nav className={styles.connectionsTabs} aria-label="Conexões do perfil">
-        <NavLink to="/profile/followers" replace>Seguidores</NavLink>
-        <NavLink to="/profile/following" replace>Seguindo</NavLink>
+        <NavLink to={profilePath + '/followers'} replace>Seguidores</NavLink>
+        <NavLink to={profilePath + '/following'} replace>Seguindo</NavLink>
       </nav>
       {connections.isPending && <p className={styles.connectionsMessage} role="status">Carregando…</p>}
       {connections.isError && (
@@ -30,8 +35,12 @@ export default function ProfileConnectionsPage({ direction }: { direction: 'foll
           </button>
         </p>
       )}
-      {connections.isSuccess && people.length === 0 && (
-        <p className={styles.connectionsMessage}>{direction === 'followers' ? 'Você ainda não tem seguidores.' : 'Você ainda não segue ninguém.'}</p>
+      {connections.isSuccess && people.length === 0 && !connections.hasNextPage && (
+        <p className={styles.connectionsMessage}>
+          {direction === 'followers'
+            ? (own ? 'Você ainda não tem seguidores.' : 'Este perfil ainda não tem seguidores.')
+            : (own ? 'Você ainda não segue ninguém.' : 'Este perfil ainda não segue ninguém.')}
+        </p>
       )}
       {people.length > 0 && (
         <ul className={styles.connectionsPeople} aria-label={title}>

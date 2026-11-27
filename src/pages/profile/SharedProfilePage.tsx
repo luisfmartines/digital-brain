@@ -32,7 +32,7 @@ export default function SharedProfilePage() {
             {username && <small>@{username} · </small>}<small>Nível {level ?? 1}</small>
           </div>
         </div>
-        <ProfileCounts activity={activity.data} />
+        <ProfileCounts activity={activity.data} profilePath={'/profiles/' + profile.data.id} />
         {bio && <p className={styles.bio}>{bio}</p>}
       </section>
       {sharing && <section className={styles.card}>

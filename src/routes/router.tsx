@@ -42,6 +42,8 @@ export const router = createRouter([
           // Amigos
           { path: '/profile/followers', element: <Pages.ProfileConnectionsPage direction="followers" /> },
           { path: '/profile/following', element: <Pages.ProfileConnectionsPage direction="following" /> },
+          { path: '/profiles/:id/followers', element: <Pages.ProfileConnectionsPage direction="followers" /> },
+          { path: '/profiles/:id/following', element: <Pages.ProfileConnectionsPage direction="following" /> },
           { path: '/friends/add', element: <Pages.AddFriendsPage /> },
 
           // Treino ativo

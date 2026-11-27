@@ -534,36 +534,61 @@ test('Neural keeps Enter as a newline and sends the draft only on submit', async
   await expect(send).toHaveCSS('color', 'rgb(77, 98, 14)')
 })
 
-test('profile opens separate lists for followers and following', async ({ page }) => {
+test('own and shared profiles open separate lists for followers and following', async ({ page }) => {
   const follower = '22222222-2222-4222-8222-222222222222'
   const following = '33333333-3333-4333-8333-333333333333'
-  await page.route('https://*.supabase.co/**', async (route) => {
-    const request = route.request()
-    const url = new URL(request.url())
-    if (url.pathname.endsWith('/public-profile') && request.postDataJSON()?.action === 'activity') {
-      return route.fulfill({ json: { workoutCount: 0, followers: 1, following: 1, photos: [], workouts: [], posts: [] } })
+  const secondFollower = '44444444-4444-4444-8444-444444444444'
+  const ana = { id: userId, display_name: 'Ana', username: 'ana' }
+  const rafa = { id: follower, display_name: 'Rafaela', username: 'rafa' }
+  const luis = { id: following, display_name: 'Luís', username: 'luis' }
+  const bia = { id: secondFollower, display_name: 'Bia', username: 'bia' }
+
+  await page.route('https://*.supabase.co/functions/v1/public-profile', async (route) => {
+    const { action, id, direction, cursor } = route.request().postDataJSON()
+    if (action === 'activity') {
+      return route.fulfill({ json: { workoutCount: 0, followers: id === follower ? 2 : 1, following: 1, photos: [], workouts: [], posts: [] } })
     }
-    if (url.pathname.endsWith('/follows')) {
-      const isFollowers = url.searchParams.get('following_id') === 'eq.' + userId
-      return route.fulfill({ json: isFollowers ? [{ follower_id: follower }] : [{ following_id: following }] })
+    if (action === 'read' && id === follower) {
+      return route.fulfill({ json: { id, name: rafa.display_name, username: rafa.username, level: 1, sharing: false } })
     }
-    if (url.pathname.endsWith('/profiles') && url.searchParams.get('id')?.startsWith('in.')) {
-      const isFollower = url.searchParams.get('id').includes(follower)
-      return route.fulfill({ json: [isFollower ? { id: follower, display_name: 'Rafaela', username: 'rafa' }
-        : { id: following, display_name: 'Luís', username: 'luis' }] })
+    if (action === 'connections') {
+      const isFollowers = direction === 'followers'
+      if (id === userId) return route.fulfill({ json: { profile: ana, profiles: [isFollowers ? rafa : luis], next: null } })
+      if (id === follower) return route.fulfill({ json: {
+        profile: rafa, profiles: isFollowers ? [cursor ? bia : luis] : [ana],
+        next: isFollowers && !cursor ? luis.id : null,
+      } })
     }
     await route.fallback()
   })
+
   await page.goto('/profile')
+  const followers = page.getByRole('list', { name: 'Seguidores' })
+  const followingList = page.getByRole('list', { name: 'Seguindo' })
   await page.getByRole('link', { name: 'Seguidores: 1' }).click()
-  await expect(page.getByRole('list', { name: 'Seguidores' }).getByRole('link', { name: /Rafaela/ }))
-    .toHaveAttribute('href', '/profiles/' + follower)
+  await expect(followers.getByRole('link', { name: /Rafaela/ })).toHaveAttribute('href', '/profiles/' + follower)
   await page.getByRole('link', { name: 'Seguindo', exact: true }).click()
-  await expect(page.getByRole('list', { name: 'Seguindo' }).getByRole('link', { name: /Luís/ }))
-    .toHaveAttribute('href', '/profiles/' + following)
+  await expect(followingList.getByRole('link', { name: /Luís/ })).toHaveAttribute('href', '/profiles/' + following)
   await expect(page.getByText('Rafaela')).toHaveCount(0)
   await page.getByRole('link', { name: 'Voltar ao perfil' }).click()
   await expect(page.getByRole('heading', { name: 'Ana' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Seguidores: 1' }).click()
+  await followers.getByRole('link', { name: /Rafaela/ }).click()
+  await expect(page.getByRole('heading', { name: 'Rafaela' })).toBeVisible()
+  await page.getByRole('link', { name: 'Seguidores: 2' }).click()
+  await expect(page).toHaveURL('/profiles/' + follower + '/followers')
+  await expect(page.getByRole('heading', { name: '@rafa' })).toBeVisible()
+  await expect(followers.getByRole('link', { name: /Luís/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Carregar mais' }).click()
+  await expect(followers.getByRole('link', { name: /Bia/ })).toBeVisible()
+  await expect(followers.getByRole('link', { name: /Luís/ })).toBeVisible()
+  await page.getByRole('link', { name: 'Seguindo', exact: true }).click()
+  await expect(page).toHaveURL('/profiles/' + follower + '/following')
+  await expect(followingList.getByRole('link', { name: /Ana/ })).toBeVisible()
+  await page.getByRole('link', { name: 'Voltar ao perfil' }).click()
+  await expect(page).toHaveURL('/profiles/' + follower)
+  await expect(page.getByRole('heading', { name: 'Rafaela' })).toBeVisible()
 })
 
 test('tasks save a calendar category and display it on their agenda entry', async ({ page }) => {

@@ -42,19 +42,19 @@ export function ProfilePhotos({ photos = [] }: { photos?: ProfileActivity['photo
   )
 }
 
-export function ProfileCounts({ activity, own = false }: { activity?: ProfileActivity; own?: boolean }) {
+export function ProfileCounts({ activity, profilePath }: { activity?: ProfileActivity; profilePath: string }) {
   if (!activity) return null
   const counts = [
     { label: 'Treinos', value: activity.workoutCount },
-    { label: 'Seguidores', value: activity.followers, to: '/profile/followers' },
-    { label: 'Seguindo', value: activity.following, to: '/profile/following' },
+    { label: 'Seguidores', value: activity.followers, to: profilePath + '/followers' },
+    { label: 'Seguindo', value: activity.following, to: profilePath + '/following' },
   ]
   return (
     <dl className={styles.profileCounts}>
       {counts.map(({ label, value, to }) => (
         <div key={label}>
           <dt>{label}</dt>
-          <dd>{own && to ? <Link to={to} aria-label={label + ': ' + value}>{value?.toLocaleString('pt-BR')}</Link>
+          <dd>{to ? <Link to={to} aria-label={label + ': ' + value}>{value?.toLocaleString('pt-BR')}</Link>
             : value?.toLocaleString('pt-BR') ?? '—'}</dd>
         </div>
       ))}
