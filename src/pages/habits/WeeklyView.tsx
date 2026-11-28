@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { AlarmClock, Check, CheckCircle2, ChevronLeft, ChevronRight, Circle, Flame, Minus, Plus, TrendingUp, X, Zap } from 'lucide-react'
+import { AlarmClock, Check, CheckCircle2, ChevronLeft, ChevronRight, Circle, Flame, Minus, TrendingUp, X } from 'lucide-react'
 import { addDays, isoWeek, localDateStr, startOfDay, startOfWeek } from '../../lib/date'
 import {
   byTime, cellState, currentStreak, dayStats, isDone, isScheduled, rangeStats, timeOfDay,
   type CellState, type Habit, type Index,
 } from '../../features/habits/stats'
-import { useCreateHabit, useToggleLog } from '../../features/habits/queries'
+import { useToggleLog } from '../../features/habits/queries'
 import { HABIT_ICONS } from '../../features/onboarding/habitIcons'
 import { DAYS } from '../../features/onboarding/habitPresets'
 import { fmtTime } from '../../features/onboarding/utils'
@@ -32,11 +32,9 @@ const slash = (h: Habit) => DAYS.filter((d) => h.weekdays.includes(d.v)).map((d)
 
 export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props) {
   const toggle = useToggleLog()
-  const create = useCreateHabit()
   const today = startOfDay()
   const todayStr = localDateStr(today)
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
-  const [quick, setQuick] = useState('')
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const weekEnd = days[6]
@@ -81,13 +79,6 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
     if (!peak || pct > peak.pct) peak = { hr, pct }
   }
   const diff = week.done - prevWeek.done
-
-  function addQuick() {
-    create.mutate(
-      { name: quick.trim(), weekdays: [0, 1, 2, 3, 4, 5, 6], time: '08:00', category: 'discipline' },
-      { onSuccess: () => setQuick('') }
-    )
-  }
 
   return (
     <>
@@ -217,12 +208,6 @@ export default function WeeklyView({ habits, ix, view, setView, onEdit }: Props)
         </section>
       </div>
 
-      <span className={styles.cap}>ATIVAR NOVA ROTINA</span>
-      <div className={styles.quick}>
-        <Zap size={16} />
-        <input value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="Ex.: Banho frio 2 min, Diário..." />
-        <button type="button" className={styles.addBtn} onClick={addQuick} disabled={!quick.trim() || create.isPending}><Plus size={14} /> Adicionar</button>
-      </div>
     </>
   )
 }

@@ -1,29 +1,29 @@
-import { useState } from 'react'
-import { ChevronRight, Heart, MessageCircle, Send, Trophy, Zap } from 'lucide-react'
+import { Activity, ChevronRight, Heart, MessageCircle, Send, Trophy, Zap } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
 import { useDevice } from '../../expo/device'
-import { useAddComment, useToggleLike, type FeedPost } from '../../features/social/queries'
+import { useToggleLike, type FeedPost } from '../../features/social/queries'
 import { ago, fmtNum, xpFor } from '../../features/workouts/utils'
+import { formatDistance } from '../../features/workouts/activities'
 import styles from './workouts.module.css'
 
 export default function PostCard({ post, userId }: { post: FeedPost; userId: string }) {
   const navigate = useNavigate()
   const device = useDevice()
   const like = useToggleLike()
-  const add = useAddComment()
-  const [open, setOpen] = useState(false)
-  const [text, setText] = useState('')
   const w = post.workout
+  const photos = post.photo_urls?.length ? post.photo_urls : post.photo_url ? [post.photo_url] : []
   const lastComment = post.comments[post.comments.length - 1]
-  const shown = open ? post.comments : lastComment ? [lastComment] : []
+  const openComments = () => navigate(`/feed/posts/${post.id}/comments`)
 
   async function share() {
-    const msg = post.caption ? (post.author?.display_name ?? 'Um amigo') + ' · ' + post.caption : `${post.author?.display_name ?? 'Um amigo'} concluiu ${w?.name ?? 'um treino'}${w ? ` (${fmtNum(w.volume)} kg de volume)` : ''} no Digital Brain.`
+    const author = post.author?.display_name ?? 'Um amigo'
+    const msg = post.caption ? author + ' · ' + post.caption
+      : w ? `${author} concluiu ${w.name} no Hebbian.` : `${author} compartilhou uma foto no Hebbian.`
     if (device || navigator.share) {
       try {
         if (device) await device.shareText(msg)
-        else await navigator.share({ title: 'Digital Brain', text: msg })
+        else await navigator.share({ title: 'Hebbian', text: msg })
       } catch {
         // cancelado
       }
@@ -42,38 +42,38 @@ export default function PostCard({ post, userId }: { post: FeedPost; userId: str
         ) : <Avatar size={38} />}
         <div className={styles.rText}>
           {post.author ? <Link className={styles.profileLink} to={`/profiles/${post.author.id}`}><strong>{post.author.display_name ?? 'Atleta'}</strong></Link> : <strong>Atleta</strong>}
+          {w?.category && <span className={styles.postModality}><Activity size={13} /> {w.category}</span>}
           <small>@{post.author?.username ?? 'usuário'} • {ago(post.created_at)}</small>
         </div>
       </div>
       {post.caption && <p className={styles.postCaption}>{post.caption}</p>}
-      {w && <div className={styles.postTag}><span><Trophy size={12} /> {w.name}</span><b>{fmtNum(w.volume)} kg de volume</b></div>}
-      {post.photo_url && <img className={styles.photo} src={post.photo_url} alt="" />}
-      {w && (
+      {w && !w.category && <div className={styles.postTag}>
+        <span><Trophy size={12} /> {w.name}</span>
+        <b>{fmtNum(w.volume)} kg de volume</b>
+      </div>}
+      {photos.length > 0 && <div className={styles.postPhotos}>
+        {photos.map((url, index) => <img key={url} className={styles.photo} src={url} alt={`Foto ${index + 1} da publicação`} loading="lazy" />)}
+      </div>}
+      {w && (!w.category || w.minutes > 0) && (
         <button type="button" className={styles.postSummary} onClick={() => navigate(`/workouts/view/${w.id}`)} aria-label={`Ver treino completo: ${w.name}`}>
           <span className={styles.iconBox}><Zap size={15} /></span>
           <div className={styles.rText}>
             <strong>{w.top ? `${w.top.name} ${w.top.weight}kg` : w.name}</strong>
-            <small>{w.minutes} min de duração</small>
+            <small>{w.minutes} min de duração{w.distance != null ? ' · ' + formatDistance(w.distance) : ''}</small>
           </div>
-          <span className={styles.badge}>+{xpFor(w.volume)} XP</span>
+          {!w.category && <span className={styles.badge}>+{xpFor(w.volume)} XP</span>}
           <ChevronRight size={16} className={styles.chev} />
         </button>
       )}
       <div className={styles.postActions}>
         <button type="button" className={post.liked ? styles.likeOn : ''} onClick={() => like.mutate({ postId: post.id, liked: post.liked, userId })} aria-label="Curtir"><Heart size={17} fill={post.liked ? 'currentColor' : 'none'} /> {post.likes}</button>
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Comentários"><MessageCircle size={17} /> {post.comments.length}</button>
+        <button type="button" onClick={openComments} aria-label="Comentários"><MessageCircle size={17} /> {post.comments.length}</button>
         <button type="button" onClick={share} aria-label="Compartilhar"><Send size={16} /></button>
       </div>
-      {shown.map((c) => (
-        <p key={c.id} className={styles.commentLine}><b>{c.author?.display_name?.split(' ')[0] ?? 'Usuário'}:</b> {c.content}</p>
-      ))}
-      {post.comments.length > 1 && !open && (
-        <button type="button" className={styles.viewAll} onClick={() => setOpen(true)}>Ver todos os {post.comments.length} comentários</button>
+      {lastComment && <p className={styles.commentLine}><b>{lastComment.author?.display_name?.split(' ')[0] ?? 'Usuário'}:</b> {lastComment.content}</p>}
+      {post.comments.length > 1 && (
+        <button type="button" className={styles.viewAll} onClick={openComments}>Ver todos os {post.comments.length} comentários</button>
       )}
-      <form className={styles.commentForm} onSubmit={(e) => { e.preventDefault(); if (text.trim()) add.mutate({ postId: post.id, content: text.trim() }, { onSuccess: () => setText('') }) }}>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Adicionar comentário…" />
-        <button type="submit" disabled={!text.trim() || add.isPending}>Publicar</button>
-      </form>
     </li>
   )
 }

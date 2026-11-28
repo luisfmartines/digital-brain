@@ -7,6 +7,8 @@ import { setStringAsync } from 'expo-clipboard'
 import { File, Paths } from 'expo-file-system'
 import { isAvailableAsync, shareAsync } from 'expo-sharing'
 import { openAuthSessionAsync } from 'expo-web-browser'
+import { CameraType, launchCameraAsync, launchImageLibraryAsync, requestCameraPermissionsAsync, type ImagePickerAsset } from 'expo-image-picker'
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import DomApp from './DomApp'
 import { CALENDAR_REDIRECT } from './device'
 import { allowsLocalDocument, resolveUpdateDocument } from './domDocument'
@@ -25,7 +27,7 @@ async function openLink(url: string) {
 }
 
 async function shareText(text: string, url?: string) {
-  await Share.share({ title: 'Digital Brain', message: url ? `${text} ${url}` : text })
+  await Share.share({ title: 'Hebbian', message: url ? `${text} ${url}` : text })
 }
 
 async function copyText(text: string) {
@@ -34,7 +36,7 @@ async function copyText(text: string) {
 
 async function exportJson(year: number, json: string) {
   if (!await isAvailableAsync()) return
-  const file = new File(Paths.cache, `digital-brain-habits-${year}.json`)
+  const file = new File(Paths.cache, `hebbian-habits-${year}.json`)
   file.create({ overwrite: true })
   file.write(json)
   await shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json' })
@@ -42,6 +44,46 @@ async function exportJson(year: number, json: string) {
 
 async function vibrate() {
   Vibration.vibrate([0, 200, 100, 200])
+}
+
+async function preparePhoto(photo: ImagePickerAsset) {
+  const { width, height } = photo
+  const maxWidth = Math.max(1, Math.round(1280 * width / Math.max(width, height, 1)))
+  const context = ImageManipulator.manipulate(photo.uri, { maxWidth })
+  try {
+    const image = await context.renderAsync()
+    try {
+      const options = { format: SaveFormat.JPEG, base64: true }
+      let output = await image.saveAsync({ ...options, compress: 0.78 })
+      if ((output.base64?.length ?? 0) > 400_000) output = await image.saveAsync({ ...options, compress: 0.58 })
+      if (!output.base64) throw new Error('A foto está vazia.')
+      return { base64: output.base64, mimeType: 'image/jpeg' }
+    } finally {
+      image.release()
+    }
+  } catch {
+    throw new Error('Não foi possível preparar esta foto. Tente novamente ou escolha outra imagem.')
+  } finally {
+    context.release()
+  }
+}
+
+async function takePhoto(facing: 'environment' | 'user') {
+  const permission = await requestCameraPermissionsAsync()
+  if (!permission.granted) {
+    throw new Error('Permita o acesso à câmera nas configurações do celular e tente novamente.')
+  }
+  const result = await launchCameraAsync({
+    cameraType: facing === 'user' ? CameraType.front : CameraType.back,
+    mediaTypes: ['images'],
+    exif: false,
+  })
+  return result.canceled ? null : preparePhoto(result.assets[0])
+}
+
+async function pickPhoto() {
+  const result = await launchImageLibraryAsync({ mediaTypes: ['images'], exif: false })
+  return result.canceled ? null : preparePhoto(result.assets[0])
 }
 
 function allowNavigation(url: string, updateDocument?: string) {
@@ -138,12 +180,15 @@ export default function NativeApp() {
           copyText={copyText}
           exportJson={exportJson}
           vibrate={vibrate}
+          takePhoto={takePhoto}
+          pickPhoto={pickPhoto}
         />
         {isPublishedPreview && previewLoad !== 'ready' && (
           <View style={styles.previewStatus}>
-            {previewLoad === 'loading' && <ActivityIndicator size="large" color="#fff" />}
+            {previewLoad === 'loading' && <Text style={styles.brand}>Hebbian</Text>}
+            {previewLoad === 'loading' && <ActivityIndicator size="small" color="#CBFC55" />}
             <Text style={styles.statusText} accessibilityLiveRegion="polite">
-              {previewLoad === 'loading' ? 'Carregando o Digital Brain…' : 'Não foi possível abrir o Digital Brain.'}
+              {previewLoad === 'loading' ? 'Carregando o Hebbian…' : 'Não foi possível abrir o Hebbian.'}
             </Text>
             {previewLoad === 'error' && (
               <Button title="Tentar novamente" onPress={() => {
@@ -167,6 +212,7 @@ const styles = StyleSheet.create({
     gap: 16,
     padding: 24,
   },
+  brand: { color: '#fff', fontSize: 34, fontWeight: '700' },
   statusText: {
     color: '#fff',
     fontSize: 16,

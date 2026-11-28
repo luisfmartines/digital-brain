@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Digital Brain",
+    "name": "Hebbian",
     "slug": "digital-brain",
     "version": "1.0.0",
     "scheme": "digitalbrain",
@@ -10,7 +10,12 @@
     "icon": "./public/icons/icon-512.png",
     "plugins": [
       "./scripts/with-windows-cmake-paths.cjs",
-      "expo-asset"
+      "expo-asset",
+      ["expo-image-picker", {
+        "cameraPermission": "Use a câmera para adicionar fotos ao perfil, exercícios e treinos.",
+        "photosPermission": "Selecione fotos para o perfil, exercícios e treinos.",
+        "microphonePermission": false
+      }]
     ],
     "ios": {
       "bundleIdentifier": "app.digitalbrain.mobile",

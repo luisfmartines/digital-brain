@@ -9,7 +9,7 @@ import {
   useMonthFinance, useTasksSummary, useTodayHabits, useToggleHabit, useWorkoutsToday,
 } from '../../features/home/queries'
 import { WATER_STEP, litersLabel, useAddWater, useWater } from '../../features/water/queries'
-import FeedView from '../workouts/FeedView'
+import SocialFeed from '../social/SocialFeed'
 import { useLastPerformed, useRoutines, useStartWorkout } from '../../features/workouts/queries'
 import { estimateMinutes, muscleLabel } from '../../features/workouts/utils'
 import { useOnline } from '../../hooks/useOnline'
@@ -248,7 +248,7 @@ export default function HomePage() {
           </button>
         ))}
       </div>
-      {tab === 'feed' ? <FeedView /> : <Overview />}
+      {tab === 'feed' ? <SocialFeed /> : <Overview />}
     </div>
   )
 }

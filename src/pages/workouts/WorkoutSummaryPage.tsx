@@ -1,23 +1,33 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BookOpen, Camera, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
+import { useState } from 'react'
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, ArrowRight, Layers, Maximize2, Share2, Sparkles, Timer, TrendingUp, Trophy, X, Zap } from 'lucide-react'
+import Splash from '../../components/layout/Splash'
 import Avatar from '../../components/ui/Avatar'
-import PhotoPicker from '../../components/ui/PhotoPicker'
+import { useDevice } from '../../expo/device'
 import { useProfile } from '../../features/profile/useProfile'
-import { useSession, useSharePost, useSummaryExtras, useUploadPhoto } from '../../features/workouts/queries'
+import { useSession, useSummaryExtras } from '../../features/workouts/queries'
 import { fmtNum, mins, muscleLabel, volumeOf, workoutSeconds } from '../../features/workouts/utils'
 import styles from './workouts.module.css'
+import WorkoutReview from './WorkoutReview'
+import FinishedWorkoutPhotos from './FinishedWorkoutPhotos'
 
 export default function WorkoutSummaryPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const device = useDevice()
+  const [shareNotice, setShareNotice] = useState('')
+  const fromLogbook = useLocation().state?.fromLogbook === true
+  const back = () => navigate(fromLogbook ? '/workouts/stats?tab=history' : '/workouts', { replace: true })
   const { data: profile } = useProfile()
   const { data: session, isLoading } = useSession(id)
   const extras = useSummaryExtras(session)
-  const upload = useUploadPhoto(id)
-  const share = useSharePost()
-  if (isLoading) return <p className={styles.loading}>Carregando…</p>
+  if (isLoading) return <Splash />
   if (!session) return <Navigate to="/workouts" replace />
-  if (!session.ended_at) return <Navigate to={`/workouts/active/${id}`} replace />
+  if (!session.ended_at) return params.get('review') === '1'
+    ? <WorkoutReview key={id} session={session} updateRoutine={params.get('updateRoutine') === '1'} />
+    : <Navigate to={`/workouts/active/${id}`} replace />
+  if (params.has('review')) return <Navigate to={`/workouts/summary/${id}`} replace />
 
   const sets = session.workout_sets
   const done = sets.filter((s) => s.completed)
@@ -26,7 +36,7 @@ export default function WorkoutSummaryPage() {
   const secs = workoutSeconds(session, 0)
   const pct = sets.length ? Math.round((done.length / sets.length) * 100) : 0
   const exercises = new Set(done.map((s) => s.exercise_id)).size
-  const reps = work.reduce((a, s) => a + (s.reps ?? 0), 0)
+  const reps = done.reduce((a, s) => a + (s.reps ?? 0), 0)
   const xp = extras.data?.xp ?? null
   const prevVol = extras.data?.prevVolume ?? null
   const diff = prevVol === null ? null : volume - prevVol
@@ -46,19 +56,39 @@ export default function WorkoutSummaryPage() {
   // Distribuição por músculo (por volume; sem carga, por número de séries)
   const useVol = volume > 0
   const byMuscle = new Map<string, number>()
-  for (const s of work) byMuscle.set(s.exercise.muscle_group, (byMuscle.get(s.exercise.muscle_group) ?? 0) + (useVol ? (s.weight_kg ?? 0) * (s.reps ?? 0) : 1))
+  for (const s of done) byMuscle.set(s.exercise.muscle_group, (byMuscle.get(s.exercise.muscle_group) ?? 0) + (useVol ? (s.weight_kg ?? 0) * (s.reps ?? 0) : 1))
   const total = [...byMuscle.values()].reduce((a, b) => a + b, 0)
   const muscles = [...byMuscle.entries()].sort((a, b) => b[1] - a[1]).map(([m, v]) => ({ m, pct: total ? Math.round((v / total) * 100) : 0 }))
 
   const end = new Date(session.ended_at)
+  const photos = session.photo_urls?.length ? session.photo_urls : session.photo_url ? [session.photo_url] : []
+  const shareText = `Concluí ${session.name} no Hebbian. ${mins(secs)} min, ${done.length} séries e ${fmtNum(volume)} kg de volume.`
+
+  async function shareOutsideApp() {
+    setShareNotice('')
+    try {
+      if (device) {
+        await device.shareText(shareText)
+      } else if (navigator.share) {
+        await navigator.share({ title: 'Meu treino no Hebbian', text: shareText })
+      } else {
+        await navigator.clipboard.writeText(shareText)
+        setShareNotice('Resumo copiado.')
+      }
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'AbortError')) {
+        setShareNotice('Não foi possível compartilhar o resumo. Tente novamente.')
+      }
+    }
+  }
 
   return (
     <div className={styles.screen}>
       <div className={styles.frame}>
         <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Voltar"><ArrowLeft size={20} /></button>
+          <button type="button" className={styles.back} onClick={back} aria-label="Voltar"><ArrowLeft size={20} /></button>
           <h1 className={styles.headerTitle}>Resumo do treino</h1>
-          <button type="button" className={styles.back} onClick={() => navigate('/workouts', { replace: true })} aria-label="Fechar"><X size={20} /></button>
+          <button type="button" className={styles.back} onClick={back} aria-label="Fechar"><X size={20} /></button>
           <Avatar url={profile?.avatar_url} name={profile?.display_name} size={30} />
         </header>
 
@@ -122,37 +152,16 @@ export default function WorkoutSummaryPage() {
           </section>
         )}
 
-        <section className={styles.panel}>
-          <div className={styles.sectionHead}><span><Camera size={14} /> Mídia do treino</span><em className={styles.hintTag}>Comprovante</em></div>
-          <div className={styles.mediaGrid}>
-            {session.photo_url && (
-              <div className={styles.photoCard}>
-                <img src={session.photo_url} alt="Treino" />
-                <span>Hoje, {end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            )}
-            <PhotoPicker title="Adicionar foto do treino" onPhoto={(file) => upload.mutate(file)}>
-              {(open) => (
-                <button type="button" className={styles.addPhoto} aria-haspopup="dialog" onClick={open} disabled={upload.isPending}>
-                  <Camera size={20} />
-                  <b>{upload.isPending ? 'Enviando…' : session.photo_url ? 'Substituir foto' : '+ Adicionar foto'}</b>
-                  <small>Envie uma foto do treino</small>
-                </button>
-              )}
-            </PhotoPicker>
-          </div>
-          {upload.error && <p className={styles.error}>{upload.error.message}</p>}
-        </section>
+        <FinishedWorkoutPhotos workoutId={session.id} photos={photos} />
 
-        <button
-          type="button"
-          className={styles.primary}
-          disabled={!!extras.data?.postId || share.isPending || upload.isPending}
-          onClick={() => share.mutate({ workoutId: id, photoUrl: session.photo_url }, { onSuccess: () => navigate('/?tab=feed', { replace: true }) })}
-        >
-          <Share2 size={15} /> {extras.data?.postId ? 'Compartilhado no feed' : 'Compartilhar no feed'}
+        <button type="button" className={styles.primary}
+          onClick={() => fromLogbook ? back() : navigate('/?tab=feed', { replace: true })}>
+          Continuar <ArrowRight size={15} />
         </button>
-        <button type="button" className={styles.cancel} onClick={() => navigate('/workouts', { replace: true })}><BookOpen size={14} /> Salvar no registro</button>
+        <button type="button" className={styles.cancel} onClick={() => void shareOutsideApp()}>
+          <Share2 size={15} /> Compartilhar
+        </button>
+        {shareNotice && <p className={styles.publishNote} role="status">{shareNotice}</p>}
       </div>
     </div>
   )

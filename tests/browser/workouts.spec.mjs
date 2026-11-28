@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 const userId = '11111111-1111-4111-8111-111111111111'
-const exercise = { id: 'saved', name: 'Supino salvo', muscle_group: 'chest', equipment: 'barbell', user_id: userId }
+const exercise = { id: userId + ':saved-media', name: 'Supino salvo', muscle_group: 'chest', equipment: 'barbell', user_id: userId }
 const routine = { id: 'routine-test', name: 'Treino A', focus: '', tags: [], routine_exercises: [
   { id: 'row', position: 0, target_sets: 3, reps_min: 8, reps_max: 12, rest_seconds: 90, exercise },
 ] }
@@ -67,6 +67,203 @@ test('empty and out-of-range sets do not save or silently become ten', async ({ 
   await expect(input).toHaveAttribute('aria-invalid', 'false')
 })
 
+test('tapping a routine previews its exercises and leaves the workout unstarted', async ({ page }) => {
+  let starts = 0
+  await page.route('**/rest/v1/workout_routines?*', (route) => route.fulfill({
+    json: new URL(route.request().url()).searchParams.has('id') ? routine : [routine],
+  }))
+  await page.route('**/rest/v1/workouts?*', (route) => {
+    if (route.request().method() !== 'GET') starts += 1
+    const url = new URL(route.request().url())
+    return route.fulfill({ json: url.searchParams.get('routine_id') === 'eq.routine-test' ? [{
+      id: 'last-routine-run', ended_at: new Date().toISOString(), started_at: new Date(Date.now() - 900000).toISOString(),
+      paused_seconds: 0,
+      workout_sets: [{ id: 'last-set', exercise_id: exercise.id, completed: true, is_warmup: false, set_number: 1, weight_kg: 30, reps: 8 }],
+    }] : [] })
+  })
+  await page.goto('/workouts')
+  const card = page.getByRole('list', { name: 'Rotinas de treino' }).getByRole('listitem')
+  await card.getByText(routine.name, { exact: true }).click()
+  await expect(page).toHaveURL('/workouts/routines/routine-test')
+  await expect(page.getByRole('heading', { name: routine.name, level: 1 })).toBeVisible()
+  await expect(page.getByText('3 séries · 1 min 30 s de descanso')).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Séries anteriores de Supino salvo' })).toContainText('30 kg')
+  await expect(page.getByText('240 kg')).toBeVisible()
+  await page.getByRole('button', { name: 'Repetições', exact: true }).click()
+  await expect(page.getByText('8 reps')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Iniciar treino' })).toBeVisible()
+  expect(starts).toBe(0)
+})
+
+test('a feed post opens its conversation with avatars, likes and threaded replies', async ({ page }) => {
+  const friend = { id: 'friend', display_name: 'Marina', username: 'marina', avatar_url: 'https://media.test/good.gif' }
+  const me = { id: userId, display_name: 'Atleta', username: 'atleta' }
+  const postId = 'test-post'
+  const at = new Date().toISOString()
+  const comments = [{ id: 'first', user_id: friend.id, post_id: postId, parent_id: null, content: 'Boa série!', created_at: at }]
+  let liked = false
+  await page.route('**/rest/v1/posts?*', (route) => route.fulfill({ json: [{
+    id: postId, user_id: friend.id, created_at: at, photo_url: null, caption: 'Dia de treino',
+    workout: { id: 'public-workout', name: 'Treino A', started_at: at, ended_at: at, paused_seconds: 0, workout_sets: [] },
+  }] }))
+  await page.route('**/rest/v1/profiles?*', (route) => route.fulfill({
+    json: new URL(route.request().url()).searchParams.get('id')?.startsWith('in.')
+      ? [friend, me] : { ...me, onboarding_completed: true, enabled_modules: ['workouts'] },
+  }))
+  await page.route('**/rest/v1/post_comments*', (route) => {
+    if (route.request().method() === 'POST') {
+      const payload = route.request().postDataJSON()
+      expect(payload).toEqual({ post_id: postId, content: 'Valeu!', parent_id: 'first' })
+      comments.push({ ...payload, id: 'reply', user_id: userId, created_at: at })
+      return route.fulfill({ status: 204 })
+    }
+    return route.fulfill({ json: comments.map((comment) => ({
+      ...comment,
+      like_summary: [{ count: comment.id === 'first' && liked ? 1 : 0 }],
+      my_like: comment.id === 'first' && liked ? [{ user_id: userId }] : [],
+    })) })
+  })
+  await page.route('**/rest/v1/post_comment_likes*', (route) => {
+    liked = route.request().method() === 'POST'
+    return route.fulfill({ status: 204 })
+  })
+  await page.goto('/?tab=feed')
+  await page.getByRole('button', { name: 'Comentários', exact: true }).click()
+  await expect(page).toHaveURL('/feed/posts/test-post/comments')
+  await expect(page.getByRole('heading', { name: 'Comentários' })).toBeVisible()
+  const thread = page.getByRole('list', { name: 'Comentários da publicação' })
+  await expect(thread.getByRole('link', { name: 'Ver perfil de Marina' }).locator('img')).toHaveAttribute('src', friend.avatar_url)
+  const like = thread.getByRole('button', { name: 'Curtir comentário de Marina' })
+  await like.click()
+  await expect(like).toHaveAttribute('aria-pressed', 'true')
+  await like.click()
+  await expect(like).toHaveAttribute('aria-pressed', 'false')
+  await thread.getByRole('button', { name: 'Responder' }).click()
+  await page.getByRole('textbox', { name: 'Sua resposta' }).fill('Valeu!')
+  await page.getByRole('button', { name: 'Enviar resposta' }).click()
+  const reply = thread.getByRole('listitem').filter({ hasText: 'Valeu!' })
+  await expect(reply).toContainText('Em resposta a Marina')
+  await expect(page.getByRole('link', { name: 'Treino A' })).toHaveAttribute('href', '/workouts/view/public-workout')
+})
+
+test('the custom exercise icon opens editing and saves a new photo', async ({ page }) => {
+  const custom = { ...exercise, id: 'custom-edit', name: 'Remada livre' }
+  let saved = custom
+  await page.route('**/rest/v1/exercises?*', (route) => {
+    if (route.request().method() !== 'PATCH') return route.fulfill({ json: [saved] })
+    saved = { ...saved, ...route.request().postDataJSON() }
+    return route.fulfill({ json: saved })
+  })
+  await page.route('**/storage/v1/object/exercise-photos/**', (route) => route.fulfill({ json: { Key: 'exercise-photos/custom-edit.jpg' } }))
+  await page.route('**/storage/v1/object/sign/exercise-photos/**', (route) => route.request().method() === 'GET'
+    ? route.fulfill({ contentType: 'image/gif', body: gif })
+    : route.fulfill({ json: { signedURL: '/object/sign/exercise-photos/' + saved.photo_path + '?token=test' } }))
+  await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
+  await page.getByRole('button', { name: 'Editar Remada livre' }).click()
+  const edit = page.getByRole('dialog', { name: 'Editar exercício' })
+  await edit.getByLabel('Nome do exercício').fill('Remada unilateral')
+  await edit.getByRole('button', { name: 'Adicionar foto' }).click()
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Escolher da galeria' }).click()
+  await (await chooser).setFiles({ name: 'remada.gif', mimeType: 'image/gif', buffer: gif })
+  await expect(edit.getByRole('img', { name: 'Prévia da foto do exercício' })).toBeVisible()
+  await edit.getByRole('button', { name: 'Salvar exercício' }).click()
+  const updated = page.getByRole('button', { name: 'Editar Remada unilateral' })
+  await expect(updated.getByRole('img', { name: 'Demonstração: Remada unilateral' })).toBeVisible()
+  expect(saved.photo_path).toBe(userId + '/custom-edit.jpg')
+})
+
+test('finished workouts share outside Hebbian and photo removal updates the feed', async ({ page }) => {
+  const custom = { ...exercise, id: 'custom', name: 'Minha remada', photo_path: userId + '/custom.jpg' }
+  const workout = {
+    id: 'logged', user_id: userId, name: 'Treino registrado', started_at: new Date(Date.now() - 60000).toISOString(),
+    ended_at: null, paused_at: null, paused_seconds: 0, photo_url: null, photo_urls: [],
+    workout_sets: [
+      { id: 'warmup', exercise_id: custom.id, exercise_order: 0, set_number: 1, completed: true, is_warmup: true, weight_kg: 10, reps: 10, exercise: custom },
+      { id: 'prep', exercise_id: custom.id, exercise_order: 0, set_number: 2, completed: true, is_warmup: true, set_type: 'preparatory', weight_kg: 20, reps: 5, exercise: custom },
+    ],
+  }
+  let uploads = 0
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { value: async (content) => { window.lastShare = content } })
+  })
+  await page.route('**/rest/v1/workouts?*', (route) => {
+    const url = new URL(route.request().url())
+    return route.fulfill({ json: url.searchParams.get('id') ? workout : url.searchParams.get('ended_at') === 'not.is.null' ? [workout] : [] })
+  })
+  await page.route('**/rest/v1/posts?*', (route) => route.fulfill({
+    json: workout.ended_at ? [{ id: 'post', user_id: userId, workout, created_at: workout.ended_at, photo_url: workout.photo_url, photo_urls: workout.photo_urls }] : [],
+  }))
+  await page.route('**/rest/v1/profiles?*', (route) => route.fulfill({
+    json: new URL(route.request().url()).searchParams.get('id')?.startsWith('in.')
+      ? [{ id: userId, display_name: 'Atleta', username: 'atleta' }]
+      : { id: userId, onboarding_completed: true, enabled_modules: ['workouts'] },
+  }))
+  await page.route('**/rest/v1/exercise_media_links?*', (route) => route.fulfill({ json: [] }))
+  await page.route('**/storage/v1/object/post-media/**', (route) => {
+    if (route.request().method() === 'POST') uploads += 1
+    return route.fulfill({ json: { Key: 'post-media/photo.jpg' } })
+  })
+  await page.route('**/storage/v1/object/public/post-media/**', (route) => route.fulfill({ contentType: 'image/gif', body: gif }))
+  await page.route('**/storage/v1/object/sign/exercise-photos/**', (route) => route.request().method() === 'GET'
+    ? route.fulfill({ contentType: 'image/gif', body: gif })
+    : route.fulfill({ json: { signedURL: '/object/sign/exercise-photos/' + custom.photo_path + '?token=test' } }))
+  await page.route('**/rest/v1/rpc/finish_workout_with_photos', (route) => {
+    const request = route.request().postDataJSON()
+    expect(request.session_id).toBe(workout.id)
+    expect(request.selected_photos).toHaveLength(1)
+    workout.photo_urls = request.selected_photos
+    workout.photo_url = workout.photo_urls[0]
+    workout.ended_at = new Date().toISOString()
+    return route.fulfill({ json: workout.photo_urls })
+  })
+  await page.route('**/rest/v1/rpc/remove_finished_workout_photo', (route) => {
+    expect(route.request().postDataJSON()).toEqual({ session_id: workout.id, photo_url_to_remove: workout.photo_url })
+    workout.photo_urls = []
+    workout.photo_url = null
+    return route.fulfill({ json: true })
+  })
+  await page.route('**/rest/v1/workout_routines?*', (route) => route.fulfill({ json: [] }))
+  await page.goto('/workouts/summary/logged?review=1')
+  for (let index = 1; index <= 2; index += 1) {
+    await page.getByRole('button', { name: 'Adicionar foto', exact: true }).click()
+    const chooser = page.waitForEvent('filechooser')
+    await page.getByRole('button', { name: 'Escolher da galeria' }).click()
+    await (await chooser).setFiles({ name: 'treino.gif', mimeType: 'image/gif', buffer: gif })
+    await expect(page.getByRole('img', { name: `Foto ${index} do treino` })).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Remover foto 1' }).click()
+  await expect(page.getByRole('img', { name: 'Foto 2 do treino' })).toHaveCount(0)
+  expect(uploads).toBe(0)
+  await page.getByRole('button', { name: 'Finalizar treino' }).click()
+  await expect(page.getByRole('heading', { name: 'Treino concluído!' })).toBeVisible()
+  expect(uploads).toBe(1)
+  await page.getByRole('button', { name: 'Compartilhar', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => window.lastShare?.text)).toContain('Treino registrado')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByText('200 kg de volume')).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Foto 1 da publicação' })).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Foto 2 da publicação' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Ver treino completo: Treino registrado' }).click()
+  const photo = page.getByRole('img', { name: 'Foto de Minha remada' })
+  await expect(photo).toBeVisible()
+  await expect(photo).toHaveJSProperty('naturalWidth', 1)
+  await expect(page.getByRole('button', { name: 'Remover foto 1' })).toBeVisible()
+  await page.getByRole('link', { name: 'Ver resumo' }).click()
+  await expect(page.getByRole('heading', { name: 'Treino concluído!' })).toBeVisible()
+  const remove = page.getByRole('button', { name: 'Remover foto 1' })
+  const confirmation = page.getByRole('dialog', { name: 'Remover esta foto?' })
+  await remove.click()
+  await confirmation.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(page.getByRole('img', { name: 'Foto 1 do treino' })).toBeVisible()
+  await remove.click()
+  await confirmation.getByRole('button', { name: 'Remover foto', exact: true }).click()
+  await expect(page.getByRole('img', { name: 'Foto 1 do treino' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByRole('img', { name: 'Foto 1 da publicação' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Ver treino completo: Treino registrado' })).toBeVisible()
+})
+
 test('saved exercises show GIFs and broken URLs recover or show an explicit fallback', async ({ page }) => {
   await page.getByRole('button', { name: 'Adicionar exercício', exact: true }).click()
   const saved = page.getByRole('img', { name: 'Demonstração: Supino salvo', exact: true })
@@ -98,7 +295,7 @@ test('every exercise has details; preview shows Portuguese instructions without 
   expect(writes.some((request) => request.url().includes('/exercises'))).toBe(true)
 })
 
-const replacement = { ...exercise, id: 'replacement', name: 'Supino inclinado salvo' }
+const replacement = { ...exercise, id: userId + ':replacement', name: 'Supino inclinado salvo' }
 
 for (const update of [false, true]) {
   test(`active workout shows guidance, supports swipe and replacement, and sends routine choice ${update}`, async ({ page }) => {
@@ -126,11 +323,11 @@ for (const update of [false, true]) {
           ...set, ...patch, exercise: patch.exercise_id === replacement.id ? replacement : set.exercise,
         } : set)
       }
-      await route.fulfill({ status: 204 })
+      await route.fulfill(request.method() === 'PATCH' && id ? { json: { id } } : { status: 204 })
     })
-    await page.route('**/rest/v1/rpc/finish_workout_session', async (route) => {
+    await page.route('**/rest/v1/rpc/finish_workout_with_photos', async (route) => {
       endedAt = new Date().toISOString()
-      await route.fulfill({ status: 204 })
+      await route.fulfill({ json: [] })
     })
     await page.goto('/workouts/active/active-test')
     if (update) await page.setViewportSize({ width: 320, height: 844 })
@@ -149,6 +346,17 @@ for (const update of [false, true]) {
     await expect(preview).toBeHidden()
     await expect(exerciseHeader).toHaveAttribute('aria-expanded', 'false')
     await exerciseHeader.click()
+    await page.getByRole('button', { name: 'Descanso entre séries, 1 min 30 s' }).click()
+    const restDialog = page.getByRole('dialog', { name: 'Descanso entre séries' })
+    const wheel = restDialog.getByRole('listbox', { name: 'Duração do descanso' })
+    await expect(wheel.getByRole('option', { selected: true })).toHaveText('1 min 30 s')
+    const restBox = await restDialog.boundingBox()
+    expect(restBox.y + restBox.height).toBeCloseTo(page.viewportSize().height, 0)
+    await wheel.hover()
+    await page.mouse.wheel(0, 44)
+    await expect(wheel.getByRole('option', { selected: true })).toHaveText('2 min')
+    await restDialog.getByRole('button', { name: 'Aplicar descanso' }).click()
+    await expect(page.getByRole('button', { name: 'Descanso entre séries, 2 min' })).toBeVisible()
     if (update) {
       const firstSet = page.getByRole('button', { name: 'Remover série 1' }).locator('..')
       const [number, weight, reps, done] = await Promise.all([
@@ -184,12 +392,25 @@ for (const update of [false, true]) {
     await expect(page.getByLabel('Peso em kg').first()).toHaveValue('')
     await expect(page.getByLabel('Repetições').first()).toHaveValue('')
     await page.getByRole('button', { name: 'Marcar série como concluída' }).first().click()
+    const repsDialog = page.getByRole('dialog', { name: 'Informe as repetições' })
+    await expect(repsDialog).toBeVisible()
+    await repsDialog.getByRole('button', { name: 'Fechar' }).click()
+    await page.getByLabel('Repetições').first().fill('8')
+    await page.getByRole('button', { name: 'Marcar série como concluída' }).first().click()
+    await page.getByRole('button', { name: 'Finalizar' }).click()
+    const pending = page.getByRole('dialog', { name: 'Ainda há séries pendentes' })
+    await expect(pending).toBeVisible()
+    await pending.getByRole('button', { name: 'Fechar' }).click()
+    await page.getByLabel('Repetições').last().fill('10')
+    await page.getByRole('button', { name: 'Marcar série como concluída' }).last().click()
     await page.getByRole('button', { name: 'Finalizar' }).click()
     const dialog = page.getByRole('dialog', { name: 'Atualizar a rotina?' })
     await expect(dialog).toBeVisible()
-    const finishing = page.waitForRequest('**/rest/v1/rpc/finish_workout_session')
     await dialog.getByRole('button', { name: update ? 'Atualizar rotina' : 'Manter rotina original' }).click()
-    expect((await finishing).postDataJSON()).toEqual({ session_id: 'active-test', update_routine: update })
+    await expect(page.getByRole('heading', { name: 'Revisar treino' })).toBeVisible()
+    const finishing = page.waitForRequest('**/rest/v1/rpc/finish_workout_with_photos')
+    await page.getByRole('button', { name: 'Finalizar treino' }).click()
+    expect((await finishing).postDataJSON()).toEqual({ session_id: 'active-test', update_routine: update, selected_photos: [] })
     await expect(page).toHaveURL('/workouts/summary/active-test')
   })
 }
@@ -296,28 +517,28 @@ test('exercise creation saves an optional photo and displays it after reopening 
   await expect(photo).toHaveJSProperty('naturalWidth', 1)
 })
 
-test('workout summary offers camera and gallery and saves the selected photo', async ({ page }) => {
-  let photoUrl = null
+test('workout review can preview a camera photo when the WebView bitmap decoder rejects it', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.createImageBitmap = async () => { throw new Error('Unsupported image') }
+  })
   await page.route('**/rest/v1/workouts?*', async (route) => {
-    if (route.request().method() === 'PATCH') {
-      photoUrl = route.request().postDataJSON().photo_url
-      return route.fulfill({ status: 204 })
-    }
     await route.fulfill({ json: {
       id: 'photo-workout', name: 'Treino A', routine_id: null, started_at: '2026-11-24T12:00:00Z',
-      ended_at: '2026-11-24T12:20:00Z', paused_at: null, paused_seconds: 0, photo_url: photoUrl, workout_sets: [],
+      ended_at: null, paused_at: null, paused_seconds: 0, photo_url: null,
+      workout_sets: [{ id: 'set-photo', exercise_id: exercise.id, set_number: 1, reps: 8, completed: true, exercise }],
     } })
   })
-  await page.route('**/storage/v1/object/post-media/**', (route) => route.fulfill({ json: { Key: 'post-media/workout.jpg' } }))
-  await page.route('**/storage/v1/object/public/post-media/**', (route) => route.fulfill({ contentType: 'image/gif', body: gif }))
-  await page.goto('/workouts/summary/photo-workout')
+  await page.goto('/workouts/summary/photo-workout?review=1')
 
   await page.getByRole('button', { name: /Adicionar foto/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Adicionar foto do treino' })
   const camera = page.waitForEvent('filechooser')
   await dialog.getByRole('button', { name: 'Usar câmera' }).click()
-  expect(await (await camera).element().getAttribute('capture')).toBe('environment')
+  const cameraChooser = await camera
+  expect(await cameraChooser.element().getAttribute('capture')).toBe('environment')
+  await cameraChooser.setFiles({ name: 'camera.gif', mimeType: 'image/gif', buffer: gif })
   await expect(dialog).toBeHidden()
+  await expect(page.getByRole('img', { name: 'Foto 1 do treino' })).toHaveJSProperty('naturalWidth', 1)
 
   await page.getByRole('button', { name: /Adicionar foto/ }).click()
   const gallery = page.waitForEvent('filechooser')
@@ -325,7 +546,7 @@ test('workout summary offers camera and gallery and saves the selected photo', a
   const chooser = await gallery
   expect(await chooser.element().getAttribute('capture')).toBeNull()
   await chooser.setFiles({ name: 'treino.gif', mimeType: 'image/gif', buffer: gif })
-  const photo = page.getByRole('img', { name: 'Treino', exact: true })
+  const photo = page.getByRole('img', { name: 'Foto 2 do treino', exact: true })
   await expect(photo).toBeVisible()
   await expect(photo).toHaveJSProperty('naturalWidth', 1)
 })
@@ -422,6 +643,7 @@ test('an empty workout opens and lets the user change the rest for an exercise',
     if (request.method() === 'PATCH') {
       const updatedId = new URL(request.url()).searchParams.get('id').slice(3)
       active.workout_sets = active.workout_sets.map((set) => set.id === updatedId ? { ...set, ...request.postDataJSON() } : set)
+      return route.fulfill({ json: { id: updatedId } })
     }
     await route.fulfill({ status: 204 })
   })
@@ -445,9 +667,10 @@ test('an empty workout opens and lets the user change the rest for an exercise',
   const rest = page.getByRole('button', { name: /^Descanso entre séries,/ })
   await rest.click()
   const restChoices = page.getByRole('dialog', { name: 'Descanso entre séries' })
-  await expect(restChoices.getByRole('button', { name: '30 s', exact: true })).toBeVisible()
-  await expect(restChoices.getByRole('button', { name: '1 min 30 s', exact: true })).toBeVisible()
-  await restChoices.getByRole('button', { name: '5 min', exact: true }).click()
+  await expect(restChoices.getByRole('option', { name: '30 s', exact: true })).toBeVisible()
+  await expect(restChoices.getByRole('option', { selected: true })).toHaveText('1 min 30 s')
+  await restChoices.getByRole('option', { name: '5 min', exact: true }).click()
+  await restChoices.getByRole('button', { name: 'Aplicar descanso' }).click()
   await page.reload()
   await expect(rest).toHaveAccessibleName('Descanso entre séries, 5 min')
 
@@ -459,6 +682,7 @@ test('an empty workout opens and lets the user change the rest for an exercise',
     await expect.poll(() => active.workout_sets[index]).toMatchObject({ set_type: type, is_warmup: warmup })
     await page.reload()
     await expect(row.getByRole('button', { name: 'Tipo da série, ' + label, exact: true })).toBeVisible()
+    await row.getByLabel('Repetições').fill('8')
     await row.getByRole('button', { name: 'Marcar série como concluída', exact: true }).click()
     const skip = page.getByRole('button', { name: /Pular descanso/ })
     await expect(skip).toBeVisible()
@@ -467,9 +691,8 @@ test('an empty workout opens and lets the user change the rest for an exercise',
   }
 
   await page.getByRole('button', { name: 'Finalizar', exact: true }).click()
-  const finish = page.getByRole('dialog', { name: 'Finalizar este treino?' })
-  await expect(finish).toBeVisible()
-  await finish.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(page.getByRole('heading', { name: 'Revisar treino' })).toBeVisible()
+  await page.getByRole('button', { name: 'Voltar ao treino' }).click()
   await page.getByRole('button', { name: 'Descartar treino', exact: true }).click()
   const discard = page.getByRole('dialog', { name: 'Descartar este treino?' })
   await expect(discard).toBeVisible()

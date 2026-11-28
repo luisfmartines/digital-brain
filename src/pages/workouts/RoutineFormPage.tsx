@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ChevronLeft, Plus, Trash2 } from 'lucide-react'
-import { useRoutine, useSaveRoutine, type Exercise, type Routine } from '../../features/workouts/queries'
+import { ArrowDown, ArrowUp, ChevronLeft, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useAuth } from '../../features/auth/useAuth'
+import { isCustomExercise, useRoutine, useSaveRoutine, type Exercise, type Routine } from '../../features/workouts/queries'
 import { muscleLabel } from '../../features/workouts/utils'
 import ExercisePicker from './ExercisePicker'
+import EditExerciseDialog from './EditExerciseDialog'
+import { SavedExerciseImage } from './ExerciseImage'
 import ChoiceField from '../../components/ui/ChoiceField'
 import { normalizeRest, REST_OPTIONS } from '../../features/workouts/setTypes'
 import styles from './workouts.module.css'
@@ -13,6 +16,7 @@ interface Row { key: string; exercise: Exercise; target_sets: string; rest_secon
 
 function RoutineForm({ routine }: { routine?: Routine }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const save = useSaveRoutine()
   const [name, setName] = useState(routine?.name ?? '')
   const [focus, setFocus] = useState(routine?.focus ?? '')
@@ -21,6 +25,7 @@ function RoutineForm({ routine }: { routine?: Routine }) {
     routine?.routine_exercises.map((r) => ({ key: r.id, exercise: r.exercise, target_sets: String(r.target_sets), rest_seconds: normalizeRest(r.rest_seconds) })) ?? []
   )
   const [picker, setPicker] = useState(false)
+  const [editing, setEditing] = useState<Exercise | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const patch = (key: string, p: Partial<Row>) => setRows((cur) => cur.map((r) => (r.key === key ? { ...r, ...p } : r)))
@@ -74,6 +79,12 @@ function RoutineForm({ routine }: { routine?: Routine }) {
           {rows.map((r, i) => (
             <li key={r.key} className={styles.exRow}>
               <div className={styles.rowBetween}>
+                {isCustomExercise(r.exercise, user?.id) && (
+                  <button type="button" className={styles.editExerciseThumb} aria-label={`Editar ${r.exercise.name}`}
+                    aria-haspopup="dialog" onClick={() => setEditing(r.exercise)}>
+                    <SavedExerciseImage exercise={r.exercise} fallback={<Pencil size={16} />} />
+                  </button>
+                )}
                 <div className={styles.rText}><strong>{r.exercise.name}</strong><small>{muscleLabel(r.exercise.muscle_group)}</small></div>
                 <div className={styles.rowBtns}>
                   <button type="button" className={styles.plainBtn} onClick={() => move(i, -1)} aria-label="Mover para cima"><ArrowUp size={15} /></button>
@@ -101,6 +112,9 @@ function RoutineForm({ routine }: { routine?: Routine }) {
           onPick={(e) => { setRows((c) => [...c, { key: `${e.id}-${Date.now()}`, exercise: e, target_sets: '3', rest_seconds: 90 }]); setPicker(false) }}
         />
       )}
+      {editing && <EditExerciseDialog exercise={editing} onClose={() => setEditing(null)} onSaved={(exercise) => {
+        setRows((current) => current.map((row) => row.exercise.id === exercise.id ? { ...row, exercise } : row))
+      }} />}
     </div>
   )
 }

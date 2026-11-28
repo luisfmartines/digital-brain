@@ -9,24 +9,30 @@
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <title>Digital Brain</title>
+    <title>Hebbian</title>
     <style>
       body { margin: 0; background: #131318; color: #ececf1; }
       #startup { display: none; min-height: 100vh; padding: 24px; box-sizing: border-box; place-content: center; text-align: center; font: 16px system-ui, sans-serif; }
       #root:empty + #startup { display: grid; }
       #startup [data-recovery], #startup[data-failed] [data-loading] { display: none; }
       #startup[data-failed] [data-recovery] { display: block; }
+      #startup img { margin: 0 auto 16px; border-radius: 18px; }
+      #startup strong { font-size: 34px; }
+      #startup [data-loading] { width: 88px; height: 3px; margin: 18px auto 0; border-radius: 10px; background: #CBFC55; animation: startup-pulse 1s ease-in-out infinite alternate; }
+      @keyframes startup-pulse { to { opacity: .3; } }
+      @media (prefers-reduced-motion: reduce) { #startup [data-loading] { animation: none; } }
       #startup a { text-decoration: none; margin: 8px auto; padding: 10px 16px; border: 0; border-radius: 8px; background: #CBFC55; color: #1c260a; font: inherit; }
     </style>
   </head>
   <body>
     <div id="root"></div>
-    <div id="startup" role="status">
-      <strong>Digital Brain</strong>
-      <p data-loading>Carregando…</p>
+    <div id="startup" role="status" aria-label="Inicializando Hebbian">
+      <img src="/icons/icon-192.png" width="72" height="72" alt="" />
+      <strong>Hebbian</strong>
+      <span data-loading aria-hidden="true"></span>
       <p data-recovery>Não foi possível abrir o app. Confira a conexão e tente novamente.</p>
       <a data-recovery id="startup-retry" href="">Recarregar</a>
-      <noscript>Ative o JavaScript para abrir o Digital Brain.</noscript>
+      <noscript>Ative o JavaScript para abrir o Hebbian.</noscript>
     </div>
     <script>
       window.setTimeout(function () {

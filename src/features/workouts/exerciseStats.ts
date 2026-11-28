@@ -20,12 +20,12 @@ export function metricValue(s: HistSession, m: MetricId): number {
   switch (m) {
     case 'weight': return Math.max(0, ...ws.map((x) => num(x.weight_kg)))
     case 'reps': return Math.max(0, ...ws.map((x) => num(x.reps)))
-    case 'volume': return ws.reduce((a, x) => a + num(x.weight_kg) * num(x.reps), 0)
+    case 'volume': return s.sets.reduce((a, x) => a + num(x.weight_kg) * num(x.reps), 0)
     case 'sessionReps': return ws.reduce((a, x) => a + num(x.reps), 0)
   }
 }
 
-export const hasWeight = (list: HistSession[]) => list.some((s) => work(s).some((x) => num(x.weight_kg) > 0))
+export const hasWeight = (list: HistSession[]) => list.some((s) => s.sets.some((x) => num(x.weight_kg) > 0))
 
 export interface Records { maxWeight: number | null; maxReps: number; best1rm: number | null; bestSetVolume: number | null; bestSessionVolume: number }
 

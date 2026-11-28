@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth'
 import { localDateStr } from '../../lib/date'
 import { toggleHabitLog, useInvalidateHabits } from '../habits/queries'
 import { monthKey, monthRange, totals } from '../finance/summary'
+import { syncRecurringFinance } from '../finance/queries'
 
 export function useTasksSummary() {
   const { user } = useAuth()
@@ -87,6 +88,7 @@ export function useMonthFinance() {
     enabled: !!user,
     queryFn: async () => {
       const { from, to } = monthRange(monthKey())
+      await syncRecurringFinance()
       const [settings, tx] = await Promise.all([
         supabase.from('user_settings').select('monthly_income').maybeSingle(),
         supabase.from('transactions').select('type, kind, amount').gte('occurred_on', from).lt('occurred_on', to).is('deleted_at', null),

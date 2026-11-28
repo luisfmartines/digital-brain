@@ -1,7 +1,7 @@
-# Digital Brain
+# Hebbian
 
 Aplicação Expo e React Native para Android, iOS e web, com TypeScript e Supabase.
-As telas usam componentes DOM do Expo e os estilos originais do Digital Brain.
+As telas usam componentes DOM do Expo e os estilos originais do Hebbian.
 No celular, as telas são incluídas no bundle do aplicativo e usam APIs nativas
 para recursos como compartilhamento, área de transferência e vibração.
 
@@ -40,7 +40,7 @@ desta branch. Os clientes web continuam usando o retorno HTTPS existente.
 
 ### Galaxy S22
 
-Use o APK Android do Digital Brain para acessar os fluxos que retornam pelo esquema
+Use o APK Android do Hebbian para acessar os fluxos que retornam pelo esquema
 `digitalbrain://`. Transfira o arquivo para o celular, abra-o no aplicativo
 **Meus Arquivos** e autorize a instalação por essa fonte quando o Android solicitar.
 O APK inclui o bundle JavaScript e funciona sem o Metro rodando no computador.
@@ -68,7 +68,7 @@ estejam autenticados com a mesma conta Expo. Para pessoas com contas diferentes,
 a Expo permite testar atualizações publicadas compatíveis com Expo Go. Isso
 requer uma conta Expo e um projeto vinculado ao EAS Update.
 
-No Expo Go, entre com e-mail e senha. Se a conta do Digital Brain foi criada pelo
+No Expo Go, entre com e-mail e senha. Se a conta do Hebbian foi criada pelo
 Google, use o mesmo e-mail em **Esqueceu a senha?** para criar uma senha no
 navegador e volte ao app. A confirmação do cadastro também acontece pelo site.
 Para conectar o Google Agenda, conclua a autorização no navegador e volte ao Expo Go

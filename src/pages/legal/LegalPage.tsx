@@ -38,7 +38,7 @@ function ContactEmail() {
 
 const privacy: Section[] = [
   { id: 'dados', title: 'Dados que tratamos', content: <>
-    <p>O Digital Brain usa seus dados para oferecer uma conta e organizar as informações que você registra em cada módulo.</p>
+    <p>O Hebbian usa seus dados para oferecer uma conta e organizar as informações que você registra em cada módulo.</p>
     <ul>
       <li><strong>Conta e perfil.</strong> E-mail, nome, nome de usuário, foto, descrição e preferências. Se você entrar com o Google, recebemos informações de perfil autorizadas, como nome, e-mail e foto.</li>
       <li><strong>Planejamento pessoal.</strong> Tarefas, eventos, notas, hábitos, consumo de água, treinos, exercícios, fotos e lançamentos financeiros, conforme os recursos que você usa.</li>
@@ -52,8 +52,8 @@ const privacy: Section[] = [
     <p>A conexão com o Google Agenda é opcional e exige sua autorização. Alguns registros que você escolhe inserir, como informações de saúde ou hábitos, podem revelar dados sensíveis. Preencha esses campos apenas conforme necessário para seu uso.</p>
   </> },
   { id: 'google-agenda', title: 'Google Agenda', content: <>
-    <p>Com sua autorização, acessamos a lista de calendários e os eventos disponíveis para exibi-los no Digital Brain. Isso pode incluir títulos, horários, descrições, locais e lembretes. A integração também permite criar, editar e excluir eventos nos calendários em que o Google permite essas ações.</p>
-    <p>Quando há sincronização, o Digital Brain pode enviar eventos e tarefas agendadas à sua conta Google, incluindo título, data, notas e lembretes do item. Guardamos uma credencial de autorização no servidor para manter a conexão. O acesso ao Google Agenda é separado do login com o Google.</p>
+    <p>Com sua autorização, acessamos a lista de calendários e os eventos disponíveis para exibi-los no Hebbian. Isso pode incluir títulos, horários, descrições, locais e lembretes. A integração também permite criar, editar e excluir eventos nos calendários em que o Google permite essas ações.</p>
+    <p>Quando há sincronização, o Hebbian pode enviar eventos e tarefas agendadas à sua conta Google, incluindo título, data, notas e lembretes do item. Guardamos uma credencial de autorização no servidor para manter a conexão. O acesso ao Google Agenda é separado do login com o Google.</p>
     <p>Usamos os dados obtidos da API do Google Agenda para os recursos de calendário e sincronização descritos nesta seção. Os dados importados por essa API ficam fora do fluxo de processamento de mensagens pelo Neural. Você pode revogar a autorização na sua conta Google. <ExternalLink href={googlePermissions}>Gerenciar conexões da Conta Google</ExternalLink>.</p>
     <p>O uso e a transferência de dados recebidos das APIs do Google seguem a Política de Dados do Usuário dos Serviços de API do Google, incluindo os requisitos de Uso Limitado. <ExternalLink href={googlePolicy}>Consultar a política do Google</ExternalLink>.</p>
   </> },
@@ -70,7 +70,7 @@ const privacy: Section[] = [
     <p>Para iniciar a remoção da conta, dos registros associados e dos arquivos enviados ao app, entre e selecione <Link to="/profile">Perfil → Excluir conta</Link>. Eventos já gravados no Google Agenda podem permanecer na sua conta Google e podem ser gerenciados por lá.</p>
   </> },
   { id: 'direitos', title: 'Seus direitos e contato', content: <>
-    <p>O responsável pelo tratamento de dados pessoais no Digital Brain é <strong>{controller}</strong>. Para solicitar informações ou exercer seus direitos, envie um e-mail para <ContactEmail />. Podemos pedir informações para confirmar sua identidade antes de atender à solicitação.</p>
+    <p>O responsável pelo tratamento de dados pessoais no Hebbian é <strong>{controller}</strong>. Para solicitar informações ou exercer seus direitos, envie um e-mail para <ContactEmail />. Podemos pedir informações para confirmar sua identidade antes de atender à solicitação.</p>
     <p>Nos termos da LGPD, você pode pedir confirmação do tratamento, acesso, correção, informações sobre compartilhamento, portabilidade, bloqueio ou eliminação de dados nas hipóteses aplicáveis. Você também pode revogar consentimento quando ele for a base do tratamento e apresentar uma petição à ANPD. <ExternalLink href={anpdRights}>Conhecer os direitos dos titulares</ExternalLink>.</p>
     <p>Quando esta política mudar, a data da atualização será indicada no início da página.</p>
   </> },
@@ -78,14 +78,14 @@ const privacy: Section[] = [
 
 const terms: Section[] = [
   { id: 'servico', title: 'Uso do serviço', content: <>
-    <p>Estes termos regem o uso do site e do aplicativo Digital Brain, operados por <strong>{controller}</strong>. O Digital Brain oferece ferramentas para organizar tarefas, calendário, hábitos, finanças pessoais e treinos, além de recursos sociais e do assistente Neural.</p>
+    <p>Estes termos regem o uso do site e do aplicativo Hebbian, operados por <strong>{controller}</strong>. O Hebbian oferece ferramentas para organizar tarefas, calendário, hábitos, finanças pessoais e treinos, além de recursos sociais e do assistente Neural.</p>
     <p>Ao criar uma conta ou usar os recursos do serviço, você concorda com estes termos. Saiba como tratamos seus dados na <Link to="/privacidade">Política de Privacidade</Link>.</p>
   </> },
   { id: 'conta', title: 'Sua conta', content: <>
     <p>Use informações corretas no cadastro, proteja sua senha e mantenha o acesso à conta sob seu controle. Se suspeitar que alguém acessou sua conta, redefina a senha e entre em contato pelo canal abaixo.</p>
   </> },
   { id: 'conteudo', title: 'Conduta e conteúdo', content: <>
-    <p>Você continua titular dos direitos que possui sobre o conteúdo que envia. Ao armazenar ou publicar um conteúdo, você autoriza o Digital Brain a processá-lo e exibi-lo conforme o recurso usado e as configurações de compartilhamento aplicáveis.</p>
+    <p>Você continua titular dos direitos que possui sobre o conteúdo que envia. Ao armazenar ou publicar um conteúdo, você autoriza o Hebbian a processá-lo e exibi-lo conforme o recurso usado e as configurações de compartilhamento aplicáveis.</p>
     <p>Use o serviço de forma lícita e respeite a privacidade e os direitos de outras pessoas. Evite publicar conteúdo de terceiros sem autorização. São proibidos assédio, fraude, distribuição de spam e tentativas de obter acesso indevido a contas ou sistemas.</p>
   </> },
   { id: 'integracoes', title: 'Integrações e assistente', content: <>
@@ -109,8 +109,8 @@ export default function LegalPage({ type }: { type: DocumentType }) {
   const sections = isPrivacy ? privacy : terms
   const title = isPrivacy ? 'Política de Privacidade' : 'Termos de Uso'
   const description = isPrivacy
-    ? 'Como o Digital Brain usa seus dados e quais escolhas você pode fazer.'
-    : 'As condições para usar o Digital Brain e seus recursos.'
+    ? 'Como o Hebbian usa seus dados e quais escolhas você pode fazer.'
+    : 'As condições para usar o Hebbian e seus recursos.'
 
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
@@ -119,7 +119,7 @@ export default function LegalPage({ type }: { type: DocumentType }) {
 
   useEffect(() => {
     const previousTitle = document.title
-    document.title = title + ' | Digital Brain'
+    document.title = title + ' | Hebbian'
     return () => { document.title = previousTitle }
   }, [title])
 
@@ -127,7 +127,7 @@ export default function LegalPage({ type }: { type: DocumentType }) {
     <meta name="description" content={description} />
     <header className={styles.header}>
       <Link className={styles.brand} to={user ? '/' : '/login'}>
-        <img src={appIcon} alt="" width="36" height="36" /> Digital Brain
+        <img src={appIcon} alt="" width="36" height="36" /> Hebbian
       </Link>
       <Link className={styles.appLink} to={user ? '/profile' : '/login'}>
         {user ? 'Voltar ao perfil' : 'Acessar o app'} <ArrowUpRight size={16} aria-hidden="true" />

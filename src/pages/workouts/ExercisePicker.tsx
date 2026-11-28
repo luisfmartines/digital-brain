@@ -1,10 +1,12 @@
 import ChoiceField from '../../components/ui/ChoiceField'
 import PhotoPicker from '../../components/ui/PhotoPicker'
 import { useEffect, useState } from 'react'
-import { ImagePlus, Info, Plus, Search, X } from 'lucide-react'
-import { useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
+import { ImagePlus, Info, Pencil, Plus, Search, X } from 'lucide-react'
+import { useAuth } from '../../features/auth/useAuth'
+import { isCustomExercise, useCreateExercise, useExercises, type Exercise } from '../../features/workouts/queries'
 import { MUSCLES, muscleLabel } from '../../features/workouts/utils'
 import ExerciseDetail from './ExerciseDetail'
+import EditExerciseDialog from './EditExerciseDialog'
 import styles from './workouts.module.css'
 import { useExerciseCatalog, useImportExercise } from '../../features/exercisedb/queries'
 import { exerciseGroup, muscleName } from '../../features/exercisedb/api'
@@ -19,12 +21,14 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
   onPick: (e: Exercise) => void; onClose: () => void; title?: string; excludedIds?: string[]; error?: string; saving?: boolean
 }) {
   const saved = useExercises()
+  const { user } = useAuth()
   const all = saved.data ?? []
   const create = useCreateExercise()
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState('')
   const [creating, setCreating] = useState(false)
   const [info, setInfo] = useState<Exercise | null>(null)
+  const [editing, setEditing] = useState<Exercise | null>(null)
   const [catalogInfo, setCatalogInfo] = useState<ExerciseMedia | null>(null)
   const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null)
   const [name, setName] = useState('')
@@ -94,10 +98,13 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
               {q.trim() === term && results.map((result) => {
                 if (result.source === 'saved') {
                   const exercise = result.exercise
+                  const custom = isCustomExercise(exercise, user?.id)
                   return (
                     <li key={exercise.id} className={styles.pickRow}>
+                      {custom && <button type="button" className={styles.editExerciseThumb}
+                        onClick={() => setEditing(exercise)} aria-label={`Editar ${exercise.name}`}><SavedExerciseImage exercise={exercise} fallback={<Pencil size={16} />} /></button>}
                       <button type="button" className={styles.catalogExercise} disabled={busy} onClick={() => onPick(exercise)}>
-                        <SavedExerciseImage exercise={exercise} />
+                        {!custom && <SavedExerciseImage exercise={exercise} />}
                         <span><strong>{exercise.name}</strong><small>{muscleLabel(exercise.muscle_group)}{exercise.equipment ? ` • ${exercise.equipment}` : ''}</small></span>
                       </button>
                       <button type="button" className={styles.pickInfo} onClick={() => setInfo(exercise)} aria-label={`Ver detalhes de ${exercise.name}`}><Info size={18} /></button>
@@ -166,6 +173,7 @@ export default function ExercisePicker({ onPick, onClose, title = 'Adicionar exe
         )}
       </div>
       {info && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail key={info.id} exercise={info} onClose={() => setInfo(null)} onAdd={() => onPick(info)} adding={saving} addError={error} addLabel={title} /></div>}
+      {editing && <div onClick={(event) => event.stopPropagation()}><EditExerciseDialog exercise={editing} onClose={() => setEditing(null)} /></div>}
       {catalogInfo && <div onClick={(e) => e.stopPropagation()}><ExerciseDetail
         key={catalogInfo.id}
         exercise={{ id: catalogInfo.id, name: catalogInfo.name, muscle_group: exerciseGroup(catalogInfo), equipment: catalogInfo.equipments.map(translateText).join(', ') || null, user_id: null }}

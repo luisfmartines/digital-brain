@@ -1,0 +1,34 @@
+.timeline { display: grid; gap: 12px; padding: 8px 0 16px; }
+.week { display: grid; gap: 12px; padding: clamp(8px, 3vw, 14px); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.weekHeader { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; align-items: center; }
+.weekHeader h2 { font-size: 1rem; margin: 0; }
+.weekHeader p { margin: 3px 0 0; color: var(--color-text-muted); font-size: .75rem; }
+.weekArrows { display: flex; gap: 4px; }
+.weekArrows button { width: 40px; height: 44px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg); color: var(--color-text); cursor: pointer; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: clamp(3px, 1vw, 6px); }
+.days button { width: 100%; min-height: 80px; display: grid; grid-template-rows: auto auto auto; gap: 4px; place-content: center; justify-items: center; text-align: center; padding: 3px 0; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 10px; cursor: pointer; }
+.days small { color: var(--color-text-muted); font-size: .65rem; }
+.days strong { font-size: 1.08rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.days button[data-trained='true'] { background: var(--color-primary-soft); }
+.days button[aria-pressed='true'] { box-shadow: 0 0 0 1px var(--color-text); border-color: var(--color-text); }
+.days button[aria-current='date'] strong { text-decoration: underline; text-underline-offset: 3px; }
+.mark { display: grid; width: 17px; height: 17px; place-items: center; border-radius: 50%; color: var(--color-text-muted); font-size: 1rem; line-height: 1; }
+.days button[data-trained='true'] .mark { color: var(--color-on-primary); background: var(--color-primary); }
+.weekArrows button:disabled, .days button:disabled { opacity: .45; cursor: default; }
+.weekCount { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--color-text-muted); font-size: .77rem; }
+.weekCount svg { color: var(--color-secondary); }
+.selectedDay { display: grid; gap: 7px; padding: 0 2px; }
+.selectedDay h3 { margin: 0; font-size: .85rem; text-transform: capitalize; }
+.metrics { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: .75rem; }
+.metrics > div { display: flex; gap: 4px; }
+.metrics dt { color: var(--color-text-muted); }
+.metrics dd { margin: 0; font-weight: 800; }
+.sessions { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.sessions a, .history { display: flex; align-items: center; gap: 9px; padding: 9px; border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text); text-decoration: none; background: var(--color-surface); }
+.sessions a > span { background: var(--color-primary-soft); color: var(--color-secondary); border-radius: 8px; padding: 8px; display: grid; place-items: center; }
+.sessions a > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sessions strong, .sessions small { display: block; }
+.sessions small, .history small, .empty { color: var(--color-text-muted); font-size: .76rem; }
+.history { min-height: 44px; font-size: .8rem; font-weight: 800; }
+.history small { margin-left: auto; font-weight: 600; }
+.empty { margin: 0; }

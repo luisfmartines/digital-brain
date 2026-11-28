@@ -15,6 +15,7 @@
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 .fabsHidden { transform: translateY(24px); opacity: 0; pointer-events: none; }
+.fabsLeft { left: var(--fab-right); right: auto; }
 .fab {
   position: relative;
   width: var(--fab-size); height: var(--fab-size); display: grid; place-items: center;

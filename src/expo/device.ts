@@ -20,6 +20,8 @@ interface DeviceActions {
   exportJson: (year: number, json: string) => Promise<void>
   vibrate: () => Promise<void>
   setTheme: (theme: 'light' | 'dark') => Promise<void>
+  takePhoto: (facing: 'environment' | 'user') => Promise<{ base64: string; mimeType: string } | null>
+  pickPhoto: () => Promise<{ base64: string; mimeType: string } | null>
 }
 
 export const DeviceContext = createContext<DeviceActions | null>(null)
@@ -28,6 +30,6 @@ export const useDevice = () => useContext(DeviceContext)
 export function publicAppOrigin() {
   if (!isNative) return window.location.origin
   const url = process.env.EXPO_PUBLIC_APP_URL
-  if (!url) throw new Error('Endereço público do Digital Brain indisponível.')
+  if (!url) throw new Error('Endereço público do Hebbian indisponível.')
   return new URL(url).origin
 }

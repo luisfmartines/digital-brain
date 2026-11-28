@@ -2,8 +2,8 @@ import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import styles from './Dialog.module.css'
 
-export default function Dialog({ title, children, onClose, busy = false }: {
-  title: string; children: ReactNode; onClose: () => void; busy?: boolean
+export default function Dialog({ title, children, onClose, busy = false, className }: {
+  title: string; children: ReactNode; onClose: () => void; busy?: boolean; className?: string
 }) {
   const panel = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -15,7 +15,7 @@ export default function Dialog({ title, children, onClose, busy = false }: {
   }, [])
 
   return (
-    <dialog ref={panel} className={styles.dialog} aria-labelledby={titleId}
+    <dialog ref={panel} className={className ? styles.dialog + ' ' + className : styles.dialog} aria-labelledby={titleId}
       onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
       <div className={styles.panel}>
         <header className={styles.header}>

@@ -12,11 +12,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeSync />
-        <Splash>
-          <Suspense fallback={<p className="route-loading" role="status">Carregando…</p>}>
-            <RouterProvider router={router} />
-          </Suspense>
-        </Splash>
+        <Suspense fallback={<Splash />}>
+          <RouterProvider router={router} />
+        </Suspense>
       </AuthProvider>
     </QueryClientProvider>
   )

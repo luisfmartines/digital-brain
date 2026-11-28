@@ -1,0 +1,21 @@
+dialog.drawer {
+  position: fixed;
+  inset: 0 auto 0 max(0px, calc((100% - var(--app-width)) / 2));
+  margin: 0;
+  width: min(86vw, 340px);
+  height: 100dvh;
+  max-height: none;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  border-width: 0 1px 0 0;
+  border-radius: 0 24px 24px 0;
+}
+.profile { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); text-decoration: none; color: var(--color-text); }
+.profile span { display: grid; overflow-wrap: anywhere; }
+.profile small { color: var(--color-text-muted); }
+.profile > svg { color: var(--color-secondary); }
+.navigation { display: grid; gap: 8px; }
+.navigation ul { padding: 0; margin: 0; list-style: none; }
+.navigation ul + ul { border-top: 1px solid var(--color-border); padding-top: 8px; }
+.navigation a { display: flex; align-items: center; gap: 12px; padding: 9px 12px; min-height: 44px; color: var(--color-text); text-decoration: none; border-radius: 10px; font-size: .875rem; font-weight: 700; }
+.navigation a:hover, .navigation a:focus-visible { background: var(--color-surface-2); }
+.navigation a svg { color: var(--color-secondary); flex: none; }

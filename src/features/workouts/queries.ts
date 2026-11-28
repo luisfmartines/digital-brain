@@ -4,16 +4,18 @@ import { useAuth } from '../auth/useAuth'
 import { addDays, startOfWeek } from '../../lib/date'
 import type { LogWorkout } from './stats'
 import type { HistSession, HistSet } from './exerciseStats'
-import { resizeImage, volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
-import type { SetType } from './setTypes'
+import { volumeOf, workoutSeconds, type SetLike, type Timing } from './utils'
+import { restStorageKey, type SetType } from './setTypes'
 import { translateExercise } from '../exercisedb/translate'
 import { removeExercisePhoto, uploadExercisePhoto } from '../exercisedb/exercisePhoto'
 
 export interface Exercise { id: string; name: string; muscle_group: string; equipment: string | null; user_id: string | null; photo_path?: string | null }
+export const isCustomExercise = (exercise: Exercise, userId?: string) =>
+  !!userId && exercise.user_id === userId && !exercise.id.startsWith(userId + ':')
 export interface RoutineExercise { id: string; position: number; target_sets: number; rest_seconds: number; exercise: Exercise }
 export interface Routine { id: string; name: string; focus: string | null; notes: string | null; tags: string[]; created_at: string; routine_exercises: RoutineExercise[] }
 export interface SessionSet extends SetLike { id: string; exercise_id: string; set_number: number; exercise_order: number; set_type?: SetType | null; exercise: Exercise }
-export interface Session extends Timing { id: string; name: string; routine_id: string | null; photo_url: string | null; workout_sets: SessionSet[] }
+export interface Session extends Timing { id: string; name: string; routine_id: string | null; photo_url: string | null; photo_urls?: string[]; workout_sets: SessionSet[] }
 export interface PrevSet { exercise_id: string; set_number: number; weight_kg: number | null; reps: number | null; is_warmup: boolean }
 
 // A foto é opcional e pode ainda não existir no esquema do ambiente.
@@ -96,27 +98,31 @@ export function useWeekStats() {
   })
 }
 
-export interface HistoryItem { id: string; name: string; ended_at: string; seconds: number; volume: number; pct: number }
-export function useHistory(limit = 5) {
+export interface HistoryItem {
+  id: string; name: string; ended_at: string; seconds: number; volume: number; sets: number; category: string | null
+}
+export function useHistory(weekStart: string) {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['workouts', 'history', user?.id, limit],
+    queryKey: ['workouts', 'history', user?.id, weekStart],
     enabled: !!user,
     queryFn: async () => {
+      const firstDay = new Date(weekStart + 'T00:00:00')
       const { data, error } = await supabase
         .from('workouts')
-        .select('id, name, started_at, ended_at, paused_seconds, paused_at, workout_sets(weight_kg, reps, completed, is_warmup)')
+        .select('id, name, started_at, ended_at, paused_seconds, paused_at, activity_category, workout_sets(weight_kg, reps, completed, is_warmup)')
         .eq('user_id', user!.id)
-        .not('ended_at', 'is', null).is('deleted_at', null)
-        .order('ended_at', { ascending: false }).limit(limit)
+        .gte('ended_at', firstDay.toISOString()).lt('ended_at', addDays(firstDay, 7).toISOString()).is('deleted_at', null)
+        .order('ended_at', { ascending: false })
       if (error) throw error
-      return ((data ?? []) as (Timing & { id: string; name: string; workout_sets: SetLike[] })[]).map((w): HistoryItem => ({
+      return ((data ?? []) as (Timing & { id: string; name: string; activity_category: string | null; workout_sets: SetLike[] })[]).map((w): HistoryItem => ({
         id: w.id,
         name: w.name,
         ended_at: w.ended_at!,
         seconds: workoutSeconds(w, 0),
         volume: volumeOf(w.workout_sets),
-        pct: w.workout_sets.length ? Math.round((w.workout_sets.filter((s) => s.completed).length / w.workout_sets.length) * 100) : 0,
+        category: w.activity_category,
+        sets: w.workout_sets.filter((set) => set.completed && !set.is_warmup).length,
       }))
     },
   })
@@ -132,7 +138,8 @@ export function useExercises() {
     queryKey: ['workouts', 'exercises', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from('exercises').select(EX).order('name')
+      const { data, error } = await supabase.from('exercises').select(EX)
+        .or(`user_id.is.null,user_id.eq.${user!.id}`).order('name')
       if (error) throw error
       return ((data ?? []) as Exercise[]).map(translateExercise)
     },
@@ -162,6 +169,30 @@ export function useCreateExercise() {
       return data as Exercise
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workouts', 'exercises'] }),
+  })
+}
+
+export function useEditExercise() {
+  const { user } = useAuth()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ exercise, name, muscle_group, photo }: {
+      exercise: Exercise; name: string; muscle_group: string; photo: File | null
+    }) => {
+      if (!user || !isCustomExercise(exercise, user.id)) throw new Error('Este exercício não pode ser editado.')
+      const path = exercise.photo_path ?? `${user.id}/${exercise.id}.jpg`
+      if (photo) await uploadExercisePhoto(path, photo, true)
+      const { data, error } = await supabase.from('exercises')
+        .update({ name, muscle_group, ...(photo ? { photo_path: path } : {}) })
+        .eq('id', exercise.id).eq('user_id', user.id).select(EX).single()
+      if (error) throw new Error('Não foi possível salvar o exercício. Tente novamente.')
+      return data as Exercise
+    },
+    onSuccess: () => Promise.all([
+      qc.invalidateQueries({ queryKey: ['workouts'] }),
+      qc.invalidateQueries({ queryKey: ['social', 'workout-detail'] }),
+      qc.invalidateQueries({ queryKey: ['exercisedb', 'photo'] }),
+    ]),
   })
 }
 
@@ -256,7 +287,7 @@ export function useSession(id?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workouts')
-        .select(`id, name, routine_id, started_at, ended_at, paused_seconds, paused_at, photo_url, workout_sets(*, exercise:exercises(${EX}))`)
+        .select(`id, name, routine_id, started_at, ended_at, paused_seconds, paused_at, photo_url, photo_urls, workout_sets(*, exercise:exercises(${EX}))`)
         .eq('id', id!).eq('user_id', user!.id).is('deleted_at', null).maybeSingle()
       if (error) throw error
       const session = data as Session | null
@@ -363,20 +394,6 @@ export function useSessionActions(id: string) {
     onSuccess: refresh,
   })
 
-  const finish = useMutation({
-    scope,
-    mutationFn: async (updateRoutine: boolean) => {
-      const { error } = await supabase.rpc('finish_workout_session', { session_id: id, update_routine: updateRoutine })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['workouts'] })
-      qc.invalidateQueries({ queryKey: ['profile'] })
-      qc.invalidateQueries({ queryKey: ['home'] })
-      void qc.invalidateQueries({ queryKey: ['social'] })
-    },
-  })
-
   const discard = useMutation({
     scope,
     mutationFn: async () => {
@@ -386,7 +403,7 @@ export function useSessionActions(id: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workouts'] }),
   })
 
-  return { updateSet, addSet, removeSet, addExercise, replaceExercise, removeExercise, pause, finish, discard }
+  return { updateSet, addSet, removeSet, addExercise, replaceExercise, removeExercise, pause, discard }
 }
 
 /* ---------- Resumo do treino ---------- */
@@ -401,7 +418,6 @@ export function useSummaryExtras(session?: Session | null) {
       const ids = [...new Set(s.workout_sets.map((x) => x.exercise_id))]
       const bests = await supabase.rpc('exercise_bests', { exercise_ids: ids, before_ts: s.started_at })
       const xp = await supabase.from('xp_events').select('amount').eq('ref_id', s.id).eq('source', 'workout').maybeSingle()
-      const post = await supabase.from('posts').select('id').eq('workout_id', s.id).is('deleted_at', null).maybeSingle()
       let prevVolume: number | null = null
       if (s.routine_id) {
         const prev = await supabase
@@ -414,46 +430,111 @@ export function useSummaryExtras(session?: Session | null) {
       }
       const map = new Map<string, number>()
       for (const b of (bests.data ?? []) as { exercise_id: string; best_weight: number }[]) map.set(b.exercise_id, Number(b.best_weight))
-      return { bests: map, xp: (xp.data?.amount ?? null) as number | null, postId: (post.data?.id ?? null) as string | null, prevVolume }
+      return { bests: map, xp: (xp.data?.amount ?? null) as number | null, prevVolume }
     },
   })
 }
 
-export function useUploadPhoto(workoutId: string) {
+export function useFinalizeWorkout(workoutId: string) {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (file: File) => {
-      const blob = await resizeImage(file, 1280)
-      const path = `${user!.id}/${workoutId}-${Date.now()}.jpg`
-      const up = await supabase.storage.from('post-media').upload(path, blob, { contentType: 'image/jpeg' })
-      if (up.error) throw up.error
-      const url = supabase.storage.from('post-media').getPublicUrl(path).data.publicUrl
-      const { error } = await supabase.from('workouts').update({ photo_url: url }).eq('id', workoutId)
-      if (error) throw error
+    scope: { id: `workout-session:${workoutId}` },
+    mutationFn: async ({ photos, updateRoutine }: { photos: Blob[]; updateRoutine: boolean }) => {
+      if (!user) throw new Error('Entre novamente para finalizar o treino.')
+      const bucket = supabase.storage.from('post-media')
+      const uploads = await Promise.allSettled(photos.map(async (photo) => {
+        const path = `${user.id}/${workoutId}-${crypto.randomUUID()}.jpg`
+        const { error } = await bucket.upload(path, photo, { contentType: 'image/jpeg' })
+        if (error) throw error
+        return { path, url: bucket.getPublicUrl(path).data.publicUrl }
+      }))
+      const uploaded = uploads.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])
+      const removeUploads = async (published: string[] = []) => {
+        const unused = uploaded.filter(({ url }) => !published.includes(url)).map(({ path }) => path)
+        if (unused.length) await bucket.remove(unused).catch(() => undefined)
+      }
+      if (uploaded.length !== photos.length) {
+        await removeUploads()
+        throw new Error('Não foi possível enviar todas as fotos. Tente finalizar novamente.')
+      }
+      const { data, error } = await supabase.rpc('finish_workout_with_photos', {
+        session_id: workoutId,
+        update_routine: updateRoutine,
+        selected_photos: uploaded.map(({ url }) => url),
+      })
+      if (error) {
+        if (/^[0-9A-Z]{5}$/.test(error.code) || error.code === 'PGRST202') await removeUploads()
+        if (error.code === '23514') throw new Error('Ainda há séries pendentes. Volte ao treino e conclua as séries.')
+        throw new Error('Não foi possível finalizar o treino. Tente novamente.')
+      }
+      if (Array.isArray(data)) await removeUploads(data)
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: sessionKey(workoutId, user?.id) })
-      void qc.invalidateQueries({ queryKey: ['social', 'profile-activity'] })
+      try { localStorage.removeItem(restStorageKey(workoutId)) } catch { /* Optional storage. */ }
+      const refresh = qc.invalidateQueries({ queryKey: ['workouts'] })
+      qc.invalidateQueries({ queryKey: ['profile'] })
+      qc.invalidateQueries({ queryKey: ['home'] })
+      qc.invalidateQueries({ queryKey: ['social'] })
+      return refresh
     },
   })
 }
 
-export function useSharePost() {
+export function useRemoveFinishedWorkoutPhoto(workoutId: string) {
+  const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (v: { workoutId: string; photoUrl: string | null }) => {
-      const { error } = await supabase.from('posts').insert({ workout_id: v.workoutId, photo_url: v.photoUrl })
-      if (error) throw error
+    scope: { id: `workout-session:${workoutId}` },
+    mutationFn: async (photoUrl: string) => {
+      if (!user) throw new Error('Entre novamente para remover a foto.')
+      const { data: removed, error } = await supabase.rpc('remove_finished_workout_photo', {
+        session_id: workoutId,
+        photo_url_to_remove: photoUrl,
+      })
+      if (error) throw new Error('Não foi possível remover a foto. Tente novamente.')
+
+      const bucket = supabase.storage.from('post-media')
+      const prefix = `${user.id}/${workoutId}-`
+      const publicPrefix = bucket.getPublicUrl(prefix).data.publicUrl
+      const suffix = photoUrl.slice(publicPrefix.length)
+      if (removed === true && photoUrl.startsWith(publicPrefix) && /^[0-9a-f-]+\.jpg$/i.test(suffix)) {
+        await bucket.remove([prefix + suffix]).catch(() => undefined)
+      }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['social'] })
-      qc.invalidateQueries({ queryKey: ['workouts', 'summary'] })
-    },
+    onSuccess: () => Promise.all([
+      qc.invalidateQueries({ queryKey: sessionKey(workoutId, user?.id) }),
+      qc.invalidateQueries({ queryKey: ['social'] }),
+    ]),
   })
 }
 
 /* ---------- Estatísticas e logbook ---------- */
+
+export type RoutineHistorySet = Pick<SessionSet, 'id' | 'exercise_id' | 'set_number' | 'set_type' | 'weight_kg' | 'reps' | 'completed' | 'is_warmup'>
+export interface RoutineHistoryWorkout {
+  id: string
+  started_at: string
+  ended_at: string
+  paused_seconds: number
+  workout_sets: RoutineHistorySet[]
+}
+
+export function useRoutineHistory(routineId?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['workouts', 'routine-history', user?.id, routineId],
+    enabled: !!user && !!routineId,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await supabase.from('workouts')
+        .select('id, started_at, ended_at, paused_seconds, workout_sets(id, exercise_id, set_number, set_type, weight_kg, reps, completed, is_warmup)')
+        .eq('user_id', user!.id).eq('routine_id', routineId!).not('ended_at', 'is', null).is('deleted_at', null)
+        .order('ended_at', { ascending: false }).limit(120).abortSignal(signal)
+      if (error) throw error
+      return (data ?? []) as RoutineHistoryWorkout[]
+    },
+  })
+}
 
 export function useWorkoutLog() {
   const { user } = useAuth()
@@ -463,7 +544,7 @@ export function useWorkoutLog() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workouts')
-        .select('id, name, started_at, ended_at, paused_seconds, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name, muscle_group))')
+        .select('id, name, started_at, ended_at, paused_seconds, activity_category, distance_km, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name, muscle_group))')
         .eq('user_id', user!.id)
         .not('ended_at', 'is', null).is('deleted_at', null)
         .order('ended_at', { ascending: false }).limit(1000)

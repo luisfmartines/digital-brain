@@ -44,6 +44,12 @@ export const router = createRouter([
           { path: '/profile/following', element: <Pages.ProfileConnectionsPage direction="following" /> },
           { path: '/profiles/:id/followers', element: <Pages.ProfileConnectionsPage direction="followers" /> },
           { path: '/profiles/:id/following', element: <Pages.ProfileConnectionsPage direction="following" /> },
+          { path: '/profile/media', element: <Pages.ProfileMediaPage /> },
+          { path: '/profiles/:id/media', element: <Pages.ProfileMediaPage /> },
+          { path: '/feed/posts/:id/comments', element: <Pages.PostCommentsPage /> },
+          { path: '/feed/communities/new', element: <Pages.CommunityFormPage /> },
+          { path: '/feed/communities/:id/edit', element: <Pages.CommunityFormPage /> },
+          { path: '/feed/communities/:id', element: <Pages.CommunityPage /> },
           { path: '/friends/add', element: <Pages.AddFriendsPage /> },
 
           // Treino ativo
@@ -52,6 +58,7 @@ export const router = createRouter([
           { path: '/workouts/view/:id', element: <Pages.WorkoutDetailPage /> },
           { path: '/workouts/exercises/:id', element: <Pages.ExerciseDetailPage /> },
           { path: '/workouts/routines/new', element: <Pages.RoutineFormPage /> },
+          { path: '/workouts/routines/:id', element: <Pages.RoutinePreviewPage /> },
           { path: '/workouts/routines/:id/edit', element: <Pages.RoutineFormPage /> },
 
           {

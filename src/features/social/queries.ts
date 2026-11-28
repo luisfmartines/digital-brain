@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 import { addDays, localDateStr } from '../../lib/date'
 import { volumeOf, workoutSeconds, type SetLike } from '../workouts/utils'
+import type { Exercise } from '../workouts/queries'
+import type { ActivityCategory } from '../workouts/activities'
 
 export interface Profile { id: string; display_name: string | null; username: string | null; avatar_url: string | null }
 
@@ -104,65 +106,107 @@ export function useProfileConnections(direction: ConnectionList, profileId?: str
 
 interface RawPost {
   id: string; user_id: string; caption: string | null; photo_url: string | null; created_at: string
+  photo_urls?: string[]
   workout: {
     id: string; name: string; started_at: string; ended_at: string | null; paused_seconds: number
+    activity_category: ActivityCategory | null; distance_km: number | null
     workout_sets: (SetLike & { exercise: { name: string } | null })[]
   } | null
 }
 
-export interface FeedComment { id: string; user_id: string; content: string; created_at: string; author?: Profile }
+export interface FeedComment {
+  id: string; user_id: string; content: string; created_at: string; author?: Profile
+  parent_id?: string | null; likes?: number; liked?: boolean
+}
 export interface FeedPost {
   id: string; created_at: string; photo_url: string | null; caption: string | null; author?: Profile
-  workout: { id: string; name: string; volume: number; minutes: number; top: { name: string; weight: number } | null } | null
+  photo_urls?: string[]
+  workout: {
+    id: string; name: string; volume: number; minutes: number; top: { name: string; weight: number } | null
+    category: ActivityCategory | null; distance: number | null
+  } | null
   likes: number; liked: boolean; comments: FeedComment[]
 }
 
-export function useFeed(authorId?: string) {
+type FeedScope = 'friends' | 'explore'
+
+async function loadFeedPosts(viewer: string, { authorId, postId, scope }: { authorId?: string; postId?: string; scope?: FeedScope }) {
+  const query = supabase
+    .from('posts')
+    .select('id, user_id, caption, photo_url, photo_urls, created_at, workout:workouts(id, name, started_at, ended_at, paused_seconds, activity_category, distance_km, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name)))')
+    .is('deleted_at', null)
+  if (authorId) query.eq('user_id', authorId)
+  if (postId) query.eq('id', postId)
+  if (scope === 'explore') query.eq('discoverable', true)
+  if (scope === 'friends') query.eq('in_friends_feed', true)
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(postId ? 1 : 20)
+  if (error) throw error
+  const posts = (data ?? []) as unknown as RawPost[]
+  const ids = posts.map((p) => p.id)
+
+  if (!ids.length) return []
+  const commentColumns = 'id, post_id, user_id, content, created_at'
+  const commentsQuery = supabase.from('post_comments')
+    .select(postId ? commentColumns + ', parent_id, like_summary:post_comment_likes(count), my_like:post_comment_likes(user_id)' : commentColumns)
+    .in('post_id', ids).order('created_at').order('id')
+  if (postId) commentsQuery.eq('my_like.user_id', viewer)
+  const [likes, comments] = await Promise.all([
+    supabase.from('post_likes').select('post_id, user_id').in('post_id', ids),
+    commentsQuery,
+  ])
+  if (postId && comments.error) throw comments.error
+  const likeRows = (likes.data ?? []) as { post_id: string; user_id: string }[]
+  const commentRows = (comments.data ?? []) as unknown as (FeedComment & {
+    post_id: string; like_summary?: { count: number }[]; my_like?: { user_id: string }[]
+  })[]
+
+  const people = await profilesByIds([...new Set([...posts.map((p) => p.user_id), ...commentRows.map((c) => c.user_id)])])
+
+  return posts.map((p): FeedPost => {
+    const w = p.workout
+    const seconds = w ? workoutSeconds({ ...w, paused_at: null }, 0) : 0
+    let top: { name: string; weight: number } | null = null
+    if (w) for (const s of w.workout_sets) {
+      if (s.completed && !s.is_warmup && (s.weight_kg ?? 0) > (top?.weight ?? 0)) top = { name: s.exercise?.name ?? 'Exercício', weight: s.weight_kg ?? 0 }
+    }
+    return {
+      id: p.id,
+      created_at: p.created_at,
+      photo_url: p.photo_url,
+      photo_urls: p.photo_urls,
+      caption: p.caption,
+      author: people.get(p.user_id),
+      workout: w
+        ? {
+            id: w.id, name: w.name, volume: volumeOf(w.workout_sets), top,
+            minutes: w.activity_category && seconds === 0 ? 0 : Math.max(1, Math.round(seconds / 60)),
+            category: w.activity_category ?? null, distance: w.distance_km ?? null,
+          }
+        : null,
+      likes: likeRows.filter((l) => l.post_id === p.id).length,
+      liked: likeRows.some((l) => l.post_id === p.id && l.user_id === viewer),
+      comments: commentRows.filter((c) => c.post_id === p.id).map(({ like_summary, my_like, ...c }) => ({
+        ...c, author: people.get(c.user_id), likes: like_summary?.[0]?.count ?? 0, liked: !!my_like?.length,
+      })),
+    }
+  })
+}
+
+export function useFeed(authorId?: string, scope?: FeedScope) {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['social', 'feed', user?.id, authorId],
+    queryKey: ['social', 'feed', user?.id, authorId, scope],
     enabled: !!user,
-    queryFn: async () => {
-      const query = supabase
-        .from('posts')
-        .select('id, user_id, caption, photo_url, created_at, workout:workouts(id, name, started_at, ended_at, paused_seconds, workout_sets(weight_kg, reps, completed, is_warmup, exercise:exercises(name)))')
-        .is('deleted_at', null)
-      if (authorId) query.eq('user_id', authorId)
-      const { data, error } = await query.order('created_at', { ascending: false }).limit(20)
-      if (error) throw error
-      const posts = (data ?? []) as unknown as RawPost[]
-      const ids = posts.map((p) => p.id)
+    queryFn: () => loadFeedPosts(user!.id, { authorId, scope }),
+  })
+}
 
-      const likes = ids.length ? await supabase.from('post_likes').select('post_id, user_id').in('post_id', ids) : { data: [] }
-      const comments = ids.length
-        ? await supabase.from('post_comments').select('id, post_id, user_id, content, created_at').in('post_id', ids).order('created_at')
-        : { data: [] }
-      const likeRows = (likes.data ?? []) as { post_id: string; user_id: string }[]
-      const commentRows = (comments.data ?? []) as (FeedComment & { post_id: string })[]
-
-      const people = await profilesByIds([...new Set([...posts.map((p) => p.user_id), ...commentRows.map((c) => c.user_id)])])
-
-      return posts.map((p): FeedPost => {
-        const w = p.workout
-        let top: { name: string; weight: number } | null = null
-        if (w) for (const s of w.workout_sets) {
-          if (s.completed && !s.is_warmup && (s.weight_kg ?? 0) > (top?.weight ?? 0)) top = { name: s.exercise?.name ?? 'Exercício', weight: s.weight_kg ?? 0 }
-        }
-        return {
-          id: p.id,
-          created_at: p.created_at,
-          photo_url: p.photo_url,
-          caption: p.caption,
-          author: people.get(p.user_id),
-          workout: w
-            ? { id: w.id, name: w.name, volume: volumeOf(w.workout_sets), minutes: Math.max(1, Math.round(workoutSeconds({ ...w, paused_at: null }, 0) / 60)), top }
-            : null,
-          likes: likeRows.filter((l) => l.post_id === p.id).length,
-          liked: likeRows.some((l) => l.post_id === p.id && l.user_id === user!.id),
-          comments: commentRows.filter((c) => c.post_id === p.id).map((c) => ({ ...c, author: people.get(c.user_id) })),
-        }
-      })
-    },
+export function usePostConversation(postId?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['social', 'conversation', user?.id, postId],
+    enabled: !!user && !!postId,
+    queryFn: async () => (await loadFeedPosts(user!.id, { postId }))[0] ?? null,
   })
 }
 
@@ -175,18 +219,39 @@ export function useToggleLike() {
         : await supabase.from('post_likes').insert({ post_id: postId })
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['social', 'feed'] }),
+    onSuccess: () => Promise.all([
+      qc.invalidateQueries({ queryKey: ['social', 'feed'] }),
+      qc.invalidateQueries({ queryKey: ['social', 'conversation'] }),
+    ]),
   })
 }
 
 export function useAddComment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
-      const { error } = await supabase.from('post_comments').insert({ post_id: postId, content })
+    mutationFn: async ({ postId, content, parentId }: { postId: string; content: string; parentId?: string }) => {
+      const { error } = await supabase.from('post_comments').insert({ post_id: postId, content, parent_id: parentId ?? null })
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['social', 'feed'] }),
+    onSuccess: () => Promise.all([
+      qc.invalidateQueries({ queryKey: ['social', 'feed'] }),
+      qc.invalidateQueries({ queryKey: ['social', 'conversation'] }),
+    ]),
+  })
+}
+
+export function useToggleCommentLike(postId?: string) {
+  const qc = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: async ({ commentId, liked }: { commentId: string; liked: boolean }) => {
+      if (!user) throw new Error('Entre para curtir um comentário.')
+      const { error } = liked
+        ? await supabase.from('post_comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id)
+        : await supabase.from('post_comment_likes').insert({ comment_id: commentId })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['social', 'conversation', user?.id, postId] }),
   })
 }
 
@@ -215,10 +280,15 @@ export function useLeaderboard(weekStart: Date) {
 
 /* ---------- Detalhe completo de um treino (feed) ---------- */
 
-export interface WorkoutDetailSet { id: string; exercise_id: string; set_number: number; exercise_order: number; weight_kg: number | null; reps: number | null; is_warmup: boolean; set_type?: SetType | null; completed: boolean; exercise: { name: string; muscle_group: string } | null }
+export interface WorkoutDetailSet { id: string; exercise_id: string; set_number: number; exercise_order: number; weight_kg: number | null; reps: number | null; is_warmup: boolean; set_type?: SetType | null; completed: boolean; exercise: Exercise | null }
 export interface WorkoutDetail {
   id: string; name: string; started_at: string; ended_at: string | null; paused_seconds: number; photo_url: string | null
   author?: Profile
+  user_id: string
+  photo_urls?: string[]
+  activity_category: ActivityCategory | null
+  distance_km: number | null
+  mediaByExercise: Record<string, string>
   sets: WorkoutDetailSet[]
 }
 
@@ -230,13 +300,18 @@ export function useWorkoutDetail(id?: string) {
     queryFn: async (): Promise<WorkoutDetail | null> => {
       const { data, error } = await supabase
         .from('workouts')
-        .select('id, user_id, name, started_at, ended_at, paused_seconds, photo_url, workout_sets(*, exercise:exercises(name, muscle_group))')
+        .select('id, user_id, name, started_at, ended_at, paused_seconds, photo_url, photo_urls, activity_category, distance_km, workout_sets(*, exercise:exercises(*))')
         .eq('id', id!).is('deleted_at', null).maybeSingle()
       if (error) throw error
       if (!data) return null
-      const { user_id, workout_sets, ...w } = data as unknown as Omit<WorkoutDetail, 'sets' | 'author'> & { user_id: string; workout_sets: WorkoutDetailSet[] }
-      const people = await profilesByIds([user_id])
-      return { ...w, author: people.get(user_id), sets: workout_sets ?? [] }
+      const { workout_sets: sets, ...w } = data as unknown as Omit<WorkoutDetail, 'sets' | 'author' | 'mediaByExercise'> & { workout_sets: WorkoutDetailSet[] }
+      const ids = [...new Set(sets.filter((set) => set.completed).map((set) => set.exercise_id))]
+      const [people, media] = await Promise.all([
+        profilesByIds([w.user_id]),
+        ids.length ? supabase.from('exercise_media_links').select('exercise_id, external_id').eq('user_id', w.user_id).in('exercise_id', ids)
+          : { data: [] },
+      ])
+      return { ...w, author: people.get(w.user_id), sets, mediaByExercise: Object.fromEntries((media.data ?? []).map((row) => [row.exercise_id, row.external_id])) }
     },
   })
 }

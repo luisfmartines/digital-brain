@@ -2,8 +2,24 @@
   position: fixed;
   inset: 0;
   display: flex;
+  flex-direction: column;
+  gap: 16px;
   align-items: center;
   justify-content: center;
   background: var(--color-bg);
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
+.splash img { border-radius: 18px; }
+.splash strong { font: 700 34px/1 var(--font-heading); }
+.progress { width: 88px; height: 3px; overflow: hidden; border-radius: 10px; background: var(--color-border); }
+.progress::before {
+  content: '';
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-secondary);
+  animation: loading 1.3s ease-in-out infinite alternate;
+}
+@keyframes loading { to { transform: translateX(125%); } }
+@media (prefers-reduced-motion: reduce) { .progress::before { animation: none; margin-inline: auto; } }

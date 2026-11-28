@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, ChevronRight, Clock, MoreHorizontal, Pencil, Play, PlayCircle, Plus, Timer, TrendingUp } from 'lucide-react'
+import { BrainCircuit, Clock, MoreHorizontal, Pencil, Play, PlayCircle, Timer, TrendingUp } from 'lucide-react'
+import FloatingAction from '../../components/ui/FloatingAction'
+import ActionSheet from '../../components/ui/ActionSheet'
 import { useConfirmation } from '../../components/ui/useConfirmation'
 import {
-  useActiveWorkout, useDeleteRoutine, useHistory, useLastPerformed, useRoutines, useStartWorkout, useWeekStats, type Routine,
+  useActiveWorkout, useDeleteRoutine, useLastPerformed, useRoutines, useStartWorkout, type Routine,
 } from '../../features/workouts/queries'
 import { SavedExerciseImage } from './ExerciseImage'
-import { estimateMinutes, fmtNum, mins, muscleLabel, relDays } from './helpers'
+import { estimateMinutes, muscleLabel } from './helpers'
+import WorkoutTimeline from './WorkoutTimeline'
 import styles from './workouts.module.css'
 
 export default function TrainingView() {
@@ -14,13 +17,12 @@ export default function TrainingView() {
   const routineList = useRoutines()
   const routines = routineList.data ?? []
   const last = useLastPerformed().data ?? {}
-  const week = useWeekStats().data
-  const history = useHistory().data ?? []
   const active = useActiveWorkout().data
   const start = useStartWorkout()
   const remove = useDeleteRoutine()
   const confirmation = useConfirmation()
   const [menuId, setMenuId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const go = (routine?: Routine) => start.mutate(routine, { onSuccess: (id) => navigate(`/workouts/active/${id}`) })
   const ready = routines.reduce<Routine | undefined>((oldest, routine) =>
@@ -39,9 +41,9 @@ export default function TrainingView() {
         </button>
       )}
 
+      <WorkoutTimeline />
       <div className={styles.trainingHeading}>
         <h1>Meus treinos</h1>
-        <Link to="/workouts/routines/new" className={styles.routineAction}><Plus size={16} /> Criar rotina</Link>
       </div>
 
       {start.isError && <p className={styles.error} role="alert">Não foi possível iniciar o treino. Tente novamente.</p>}
@@ -55,7 +57,8 @@ export default function TrainingView() {
             <span className={styles.readyPill}><PlayCircle size={15} /> Treino de hoje</span>
             <span className={styles.est}><Clock size={13} /> ~{estimateMinutes(todayExercises)} min</span>
           </div>
-          <h2>{ready.name}</h2>
+          <h2><Link className={styles.featuredPreview} to={`/workouts/routines/${ready.id}`}
+            aria-label={`Prévia de ${ready.name}`}>{ready.name}</Link></h2>
           {ready.focus && <p className={styles.fFocus}>{ready.focus}</p>}
           <div className={styles.chipRow}>
             <span>{todayExercises.length} {todayExercises.length === 1 ? 'exercício' : 'exercícios'}</span>
@@ -115,8 +118,11 @@ export default function TrainingView() {
                 </div>
 
                 <div className={styles.routineInfo}>
-                  <h2>{routine.name}</h2>
-                  <p>{count} {count === 1 ? 'exercício' : 'exercícios'}</p>
+                  <h2 aria-label={routine.name}>
+                    <Link className={styles.routinePreviewHit} to={`/workouts/routines/${routine.id}`}
+                      aria-label={`Pré-visualizar ${routine.name}`}>{routine.name}</Link>
+                  </h2>
+                  <small>{count} {count === 1 ? 'exercício' : 'exercícios'}</small>
                 </div>
                 <button type="button" className={`${styles.routineAction} ${styles.quickStart}`} onClick={() => go(routine)}
                   disabled={start.isPending} aria-label={`Iniciar ${routine.name}`}><Play size={14} /> Iniciar</button>
@@ -136,36 +142,13 @@ export default function TrainingView() {
         <Link to="/workouts/stats?tab=charts" className={styles.routineAction}><TrendingUp size={15} /> Estatísticas</Link>
       </div>
 
-      {week && (
-        <Link to="/workouts/stats?tab=charts" className={styles.trainingStrip}>
-          <div className={styles.rText}>
-            <strong>Esta semana</strong>
-            <small>{week.count} {week.count === 1 ? 'treino' : 'treinos'} · {fmtNum(week.volume)} kg de volume</small>
-          </div>
-          <ChevronRight size={16} />
+      <FloatingAction label="Criar rotina" onClick={() => setCreating(true)} />
+      {creating && <ActionSheet title="Nova rotina" onClose={() => setCreating(false)}>
+        <Link to="/workouts/routines/new"><Pencil size={21} /><span><strong>Montar minha rotina</strong><small>Escolha os exercícios e as séries.</small></span></Link>
+        <Link to="/assistant" state={{ prompt: 'Quero montar uma rotina de treino. Antes de criar, pergunte meu objetivo, experiência e quantos dias posso treinar.' }}>
+          <BrainCircuit size={21} /><span><strong>Montar com o Neural</strong><small>Monte uma rotina a partir do seu objetivo.</small></span>
         </Link>
-      )}
-
-      {history.length > 0 && (
-        <>
-          <div className={styles.sectionHead}>
-            <span>Histórico recente</span>
-            <Link to="/workouts/stats?tab=history" className={`${styles.link} ${styles.linkIcon}`}>Ver histórico <ChevronRight size={13} /></Link>
-          </div>
-          <ul className={styles.list}>
-            {history.map((workout) => (
-              <li key={workout.id} className={styles.hItem}>
-                <span className={styles.hIcon}><Check size={14} /></span>
-                <div className={styles.rText}>
-                  <strong>{workout.name} <i className={styles.hintTag}>{relDays(workout.ended_at)}</i></strong>
-                  <small>{mins(workout.seconds)} min · {fmtNum(workout.volume)} kg de volume</small>
-                </div>
-                <div className={styles.hRight}><strong>{workout.pct}%</strong><small>Concluído</small></div>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      </ActionSheet>}
     </>
   )
 }

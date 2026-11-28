@@ -1,22 +1,35 @@
 import { setTypeOf } from '../../features/workouts/setTypes'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, FileText } from 'lucide-react'
+import Splash from '../../components/layout/Splash'
 import Avatar from '../../components/ui/Avatar'
+import { useAuth } from '../../features/auth/useAuth'
+import { useExerciseMedia } from '../../features/exercisedb/queries'
 import { useWorkoutDetail, type WorkoutDetailSet } from '../../features/social/queries'
 import { fmtNum, mins, volumeOf, workoutSeconds } from '../../features/workouts/utils'
+import { formatDistance } from '../../features/workouts/activities'
+import ExerciseImage, { CustomExercisePhoto } from './ExerciseImage'
+import FinishedWorkoutPhotos from './FinishedWorkoutPhotos'
 import styles from './workouts.module.css'
 
 const kg = (n: number | null) => (n === null ? '—' : `${Number(n.toFixed(2))} kg`)
 
-// Treino completo de um post do feed (somente leitura): exercícios, séries, peso e repetições
+function CatalogPhoto({ externalId, name }: { externalId: string; name: string }) {
+  const media = useExerciseMedia(externalId)
+  return media.data?.videoUrl && !media.data.imageUrl
+    ? <video src={media.data.videoUrl} autoPlay muted loop playsInline aria-label={`Demonstração de ${name}`} />
+    : <ExerciseImage src={media.data?.imageUrl} externalId={externalId} name={name} loading={media.isLoading} />
+}
+
 export default function WorkoutDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { data: w, isLoading, error } = useWorkoutDetail(id)
 
   const back = () => (window.history.length > 1 ? navigate(-1) : navigate('/?tab=feed', { replace: true }))
 
-  if (isLoading) return <p className={styles.loading}>Carregando…</p>
+  if (isLoading) return <Splash />
   if (error) return <p className={styles.loading}>Não foi possível carregar este treino.</p>
   if (!w) return <Navigate to="/?tab=feed" replace />
 
@@ -34,6 +47,8 @@ export default function WorkoutDetailPage() {
   const volume = volumeOf(w.sets)
   const secs = workoutSeconds({ ...w, paused_at: null }, 0)
   const date = new Date(w.ended_at ?? w.started_at).toLocaleDateString('pt-BR', { weekday: 'short', month: 'short', day: 'numeric' })
+  const photos = w.photo_urls?.length ? w.photo_urls : w.photo_url ? [w.photo_url] : []
+  const isOwner = !!w.ended_at && user?.id === w.user_id
 
   return (
     <div className={styles.screen}>
@@ -45,21 +60,38 @@ export default function WorkoutDetailPage() {
             <strong>{w.name}</strong>
             <small>{w.author?.display_name ?? 'Atleta'} • {date}</small>
           </div>
+          {isOwner && !w.activity_category && <Link to={`/workouts/summary/${w.id}`} className={styles.routineAction}
+            aria-label="Ver resumo"><FileText size={16} /></Link>}
         </header>
 
         <div className={styles.detStats}>
-          <div className={styles.detStat}><small>Duração</small><strong>{mins(secs)} <i>min</i></strong></div>
-          <div className={styles.detStat}><small>Volume</small><strong>{fmtNum(volume)} <i>kg</i></strong></div>
-          <div className={styles.detStat}><small>Séries</small><strong>{logged.length}</strong></div>
+          {(!w.activity_category || secs > 0) && <div className={styles.detStat}><small>Duração</small><strong>{mins(secs)} <i>min</i></strong></div>}
+          {w.activity_category ? <>
+            <div className={styles.detStat}><small>Modalidade</small><strong>{w.activity_category}</strong></div>
+            {w.distance_km != null && <div className={styles.detStat}><small>Distância</small><strong>{formatDistance(w.distance_km)}</strong></div>}
+          </> : <>
+            <div className={styles.detStat}><small>Volume</small><strong>{fmtNum(volume)} <i>kg</i></strong></div>
+            <div className={styles.detStat}><small>Séries</small><strong>{logged.length}</strong></div>
+          </>}
         </div>
 
-        {w.photo_url && <img className={styles.detPhoto} src={w.photo_url} alt="" />}
+        {isOwner ? <FinishedWorkoutPhotos workoutId={w.id} photos={photos} /> : photos.length > 0 && <div className={styles.postPhotos}>
+          {photos.map((url, index) => <img key={url} className={styles.detPhoto} src={url} alt={`Foto ${index + 1} do treino`} loading="lazy" />)}
+        </div>}
 
-        <section className={styles.panel}>
+        {!w.activity_category && <section className={styles.panel}>
           {exercises.length === 0 && <p className={styles.empty}>Nenhuma série foi registrada neste treino.</p>}
-          {exercises.map((ex) => (
+          {exercises.map((ex) => {
+            const set = ex.sets[0]
+            const path = set.exercise?.photo_path
+            const externalId = w.mediaByExercise?.[set.exercise_id]
+            return (
             <div key={ex.sets[0].exercise_id} className={styles.detEx}>
               <div className={styles.detExHead}>
+                {(path || externalId) && <span className={styles.detailExerciseMedia}>
+                  {path ? <CustomExercisePhoto path={path} name={ex.name} thumbnail /> :
+                    externalId && <CatalogPhoto externalId={externalId} name={ex.name} />}
+                </span>}
                 <strong>{ex.name}</strong>
                 <small>{ex.sets.length} {ex.sets.length === 1 ? 'série' : 'séries'}</small>
               </div>
@@ -78,8 +110,9 @@ export default function WorkoutDetailPage() {
                 </tbody>
               </table>
             </div>
-          ))}
-        </section>
+            )
+          })}
+        </section>}
       </div>
     </div>
   )

@@ -2,7 +2,10 @@ import { addDays, startOfWeek } from '../../lib/date'
 import { muscleLabel, volumeOf, workoutSeconds, type SetLike } from './utils'
 
 export interface LogSet extends SetLike { exercise: { name: string; muscle_group: string } | null }
-export interface LogWorkout { id: string; name: string; started_at: string; ended_at: string; paused_seconds: number; workout_sets: LogSet[] }
+export interface LogWorkout {
+  id: string; name: string; started_at: string; ended_at: string; paused_seconds: number; workout_sets: LogSet[]
+  activity_category?: string | null; distance_km?: number | null
+}
 
 export type Period = '3m' | '1y' | 'all'
 
@@ -23,7 +26,7 @@ export function toMetrics(list: LogWorkout[]): Metric[] {
       minutes: workoutSeconds({ ...w, paused_at: null }, 0) / 60,
       reps: done.reduce((a, s) => a + (s.reps ?? 0), 0),
       sets: done.length,
-      pct: w.workout_sets.length ? Math.round((w.workout_sets.filter((s) => s.completed).length / w.workout_sets.length) * 100) : 0,
+      pct: w.activity_category ? 100 : w.workout_sets.length ? Math.round((w.workout_sets.filter((s) => s.completed).length / w.workout_sets.length) * 100) : 0,
       w,
     }
   })

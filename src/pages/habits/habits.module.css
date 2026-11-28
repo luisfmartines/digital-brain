@@ -205,3 +205,5 @@
 .ghostBtn { background: var(--color-surface-2); color: var(--color-text); }
 .dangerBtn { background: rgba(186, 26, 26, 0.35); color: #ffb4ab; }
 .dangerLink { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 0; background: transparent; color: var(--color-danger); font-size: 13px; font-weight: 700; cursor: pointer; }
+.habitForm { display: grid; gap: 12px; }
+.habitForm label { display: grid; gap: 6px; font-weight: 700; font-size: .85rem; }

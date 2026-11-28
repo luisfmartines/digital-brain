@@ -165,3 +165,10 @@
   .seg { animation: none; }
   .split i { transition: none; }
 }
+.recurringForm { display: grid; gap: 12px; }
+.recurringForm label:not(:has(span)) { display: grid; min-width: 0; gap: 4px; font-size: .84rem; font-weight: 700; }
+.recurringForm label:not(:has(span)) :is(input, select) { min-width: 0; width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-2); color: var(--color-text); }
+.recurringFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.recurringList { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.recurringList li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.recurringList small { display: block; color: var(--color-text-muted); font-size: .72rem; margin-top: 3px; }

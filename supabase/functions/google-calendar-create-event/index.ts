@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
         try {
           const known = new Set(result.events.map((event) => event.id));
           const sync = await exportGoogleAgenda(user.id, 0, input.timeZone, { start: input.start, end: input.end }, known);
-          if (sync?.failed) result.warnings.push("Alguns itens do Digital Brain não foram enviados ao Google Agenda.");
+          if (sync?.failed) result.warnings.push("Alguns itens do Hebbian não foram enviados ao Google Agenda.");
           if (sync?.next != null) result.warnings.push("Para enviar o restante do planejamento, use Perfil → Conexões.");
         } catch {
           result.warnings.push("Não foi possível enviar o planejamento ao Google Agenda. Confira a conexão em Perfil.");

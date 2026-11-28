@@ -6,6 +6,11 @@ import { monthRange, type TxRow } from './summary'
 
 const COLS = 'id, type, kind, amount, occurred_on, title:description, category, source, is_recurring, created_at'
 
+export async function syncRecurringFinance() {
+  const { error } = await supabase.rpc('sync_finance_recurring')
+  if (error) throw error
+}
+
 export function useFinanceMonth(month: string) {
   const { user } = useAuth()
   return useQuery({
@@ -13,6 +18,7 @@ export function useFinanceMonth(month: string) {
     enabled: !!user,
     queryFn: async () => {
       const { from, to } = monthRange(month)
+      await syncRecurringFinance()
       const [settings, tx] = await Promise.all([
         supabase.from('user_settings').select('monthly_income, savings_goal').maybeSingle(),
         supabase.from('transactions').select(COLS)
@@ -49,6 +55,63 @@ export interface NewTransaction {
   group?: string // expenses: salva em `kind` o grupo (fixed/variable/leisure)
 }
 
+function transactionKind(type: NewTransaction['type'], group?: string) {
+  return type === 'income' ? 'extra' : group === 'fixed' || group === 'leisure' ? group : 'other'
+}
+
+export type Frequency = 'weekly' | 'monthly' | 'yearly'
+export interface RecurringTransaction {
+  id: string
+  type: NewTransaction['type']
+  description: string
+  amount: number
+  starts_on: string
+  frequency: Frequency
+}
+
+export function useRecurringTransactions() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['finance', 'recurring', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('finance_recurring')
+        .select('id,type,description,amount,starts_on,frequency')
+        .eq('user_id', user!.id).is('cancelled_on', null).order('starts_on')
+      if (error) throw error
+      return (data ?? []) as RecurringTransaction[]
+    },
+  })
+}
+
+export function useAddRecurring() {
+  const { user } = useAuth()
+  const invalidate = useInvalidateFinance()
+  return useMutation({
+    mutationFn: async (rule: NewTransaction & { id: string; startsOn: string; frequency: Frequency }) => {
+      if (!user) throw new Error('Entre novamente para criar uma recorrência.')
+      const { error } = await supabase.from('finance_recurring').upsert({
+        id: rule.id, user_id: user.id, type: rule.type, kind: transactionKind(rule.type, rule.group),
+        amount: rule.amount, description: rule.title.trim(), category: rule.category,
+        starts_on: rule.startsOn, frequency: rule.frequency,
+      }, { ignoreDuplicates: true })
+      if (error) throw error
+    },
+    onSuccess: invalidate,
+  })
+}
+
+export function useCancelRecurring() {
+  const invalidate = useInvalidateFinance()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc('cancel_finance_recurring', { rule_id: id })
+      if (error) throw error
+    },
+    onSuccess: invalidate,
+  })
+}
+
 export function useAddTransaction() {
   const { user } = useAuth()
   const invalidate = useInvalidateFinance()
@@ -59,7 +122,7 @@ export function useAddTransaction() {
       const { error } = await supabase.from('transactions').insert({
         user_id: user.id,
         type: t.type,
-        kind: t.type === 'income' ? 'extra' : t.group === 'fixed' || t.group === 'leisure' ? t.group : 'other',
+        kind: transactionKind(t.type, t.group),
         amount: t.amount,
         occurred_on: localDateStr(),
         description: t.title.trim() || null,

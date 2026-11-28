@@ -8,7 +8,7 @@ export interface SetLike { weight_kg: number | null; reps: number | null; comple
 export interface Timing { started_at: string; ended_at: string | null; paused_seconds: number; paused_at: string | null }
 
 export const volumeOf = (sets: SetLike[]) =>
-  sets.reduce((a, s) => a + (s.completed && !s.is_warmup ? (s.weight_kg ?? 0) * (s.reps ?? 0) : 0), 0)
+  sets.reduce((a, s) => a + (s.completed ? (s.weight_kg ?? 0) * (s.reps ?? 0) : 0), 0)
 export const fmtNum = (n: number) => Math.round(n).toLocaleString('pt-BR')
 // Mesma fórmula do servidor
 export const xpFor = (volume: number) => Math.min(500, 50 + Math.round(volume / 100))
@@ -49,18 +49,40 @@ export const estimateMinutes = (rows: { target_sets: number; rest_seconds: numbe
   Math.max(5, Math.round(rows.reduce((a, r) => a + r.target_sets * (45 + r.rest_seconds), 0) / 300) * 5)
 
 // Reduz a foto antes de enviar (economiza armazenamento)
-export async function resizeImage(file: File, max: number): Promise<Blob> {
-  const bmp = await createImageBitmap(file)
-  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height))
+function renderImage(image: CanvasImageSource, width: number, height: number, max: number): Promise<Blob> {
+  const scale = Math.min(1, max / Math.max(width, height))
   const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round(bmp.width * scale))
-  canvas.height = Math.max(1, Math.round(bmp.height * scale))
-  try {
-    canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height)
-  } finally {
-    bmp.close()
-  }
+  canvas.width = Math.max(1, Math.round(width * scale))
+  canvas.height = Math.max(1, Math.round(height * scale))
+  const context = canvas.getContext('2d')
+  if (!context) return Promise.reject(new Error('Não foi possível processar a imagem.'))
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Não foi possível processar a imagem'))), 'image/jpeg', 0.82)
   )
+}
+
+export async function resizeImage(file: File, max: number): Promise<Blob> {
+  const bitmap = typeof createImageBitmap === 'function' ? await createImageBitmap(file).catch(() => null) : null
+  if (bitmap) {
+    try {
+      return await renderImage(bitmap, bitmap.width, bitmap.height, max)
+    } finally {
+      bitmap.close()
+    }
+  }
+
+  // WebViews can display images whose format their ImageBitmap decoder does not support.
+  const url = URL.createObjectURL(file)
+  try {
+    const image = new Image()
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('Não foi possível abrir esta foto. Escolha outra imagem.'))
+      image.src = url
+    })
+    return await renderImage(image, image.naturalWidth, image.naturalHeight, max)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }

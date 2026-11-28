@@ -48,7 +48,7 @@ test('calendar switches periods and saves an event on the selected day', async (
   await page.goto('/calendar?date=2026-11-24')
   const header = page.getByRole('banner')
   await expect(header.getByText('Calendário', { exact: true })).toBeVisible()
-  await expect(header).not.toContainText('Digital Brain')
+  await expect(header).not.toContainText(/Digital Brain|Hebbian/)
   await expect(header.locator('img')).toHaveCount(0)
   const google = page.getByRole('button', { name: 'Conectar Google Agenda' })
   const today = page.getByRole('button', { name: 'Hoje', exact: true })
@@ -268,6 +268,24 @@ test('connected calendar reads Google events and sends new events to the same ag
 test('another profile shows shared details and copies a workout routine', async ({ page }) => {
   const otherId = '22222222-2222-4222-8222-222222222222'
   const calls = []
+  const mediaWorkout = {
+    id: 'recent-workout', name: 'Treino de força', user_id: otherId, started_at: '2026-11-24T16:30:00Z',
+    ended_at: '2026-11-24T17:00:00Z', paused_seconds: 0, workout_sets: [],
+    photo_url: 'https://media.test/one.gif', photo_urls: ['https://media.test/one.gif', 'https://media.test/two.gif'],
+  }
+  await page.route('https://media.test/**', (route) => route.fulfill({
+    contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'),
+  }))
+  await page.route('**/rest/v1/workouts?*', (route) => {
+    const url = new URL(route.request().url())
+    return route.fulfill({ json: url.searchParams.has('id') ? mediaWorkout : [mediaWorkout] })
+  })
+  await page.route('**/rest/v1/profiles?*', (route) => {
+    const lookup = new URL(route.request().url()).searchParams.get('id')
+    return route.fulfill({ json: lookup?.startsWith('in.')
+      ? [{ id: otherId, display_name: 'Ana', username: 'ana' }]
+      : { id: userId, onboarding_completed: true, enabled_modules: ['workouts'] } })
+  })
   await page.route('https://*.supabase.co/functions/v1/public-profile', (route) => {
     const action = route.request().postDataJSON()
     calls.push(action)
@@ -298,7 +316,7 @@ test('another profile shows shared details and copies a workout routine', async 
   await expect(viewer.getByRole('img')).toHaveCSS('border-radius', '50%')
   await viewer.getByRole('button', { name: 'Fechar' }).click()
   await expect(page.getByText('Seguidores', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Ampliar foto de Treino de força' })).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Fotos de treino' }).getByRole('link', { name: 'Abrir treino Treino de força' })).toHaveCount(2)
   await expect(page.getByText('Dia 100% concluído!')).toBeVisible()
   await page.getByRole('button', { name: /Treino de força.*1 exercício/ }).click()
   const routineDialog = page.getByRole('dialog', { name: 'Treino de força' })
@@ -314,6 +332,14 @@ test('another profile shows shared details and copies a workout routine', async 
     { action: 'read', id: otherId }, { action: 'activity', id: otherId },
     { action: 'copy', id: 'test-routine' }, { action: 'copy_workout', id: 'recent-workout' },
   ]))
+  await workoutDialog.getByRole('button', { name: 'Fechar' }).click()
+  await page.getByRole('link', { name: 'Ver todas' }).click()
+  await expect(page.getByRole('heading', { name: 'Mídias de Ana' })).toBeVisible()
+  const gallery = page.getByRole('list', { name: 'Mídias de treino' })
+  await expect(gallery.getByRole('img')).toHaveCount(2)
+  await gallery.getByRole('link', { name: 'Abrir treino Treino de força' }).nth(1).click()
+  await expect(page).toHaveURL('/workouts/view/recent-workout')
+  await expect(page.getByRole('img', { name: 'Foto 2 do treino' })).toBeVisible()
 })
 
 test('home progress is left-aligned and the workout tabs share the full bar', async ({ page }) => {
@@ -359,13 +385,14 @@ test('home progress is left-aligned and the workout tabs share the full bar', as
 
 test('habit creation uses the theme picker and submits the chosen category', async ({ page }) => {
   await page.goto('/routine?tab=habits')
+  await page.getByRole('button', { name: 'Novo hábito' }).click()
   await page.getByPlaceholder('Ex.: Ler por 20 minutos').fill('Caminhar depois do almoço')
   await page.getByRole('button', { name: /^Categoria do hábito,/ }).click()
   const choice = page.getByRole('dialog', { name: 'Categoria do hábito' })
   await choice.getByRole('button', { name: 'Condicionamento e Movimento' }).click()
   await expect(choice).toBeHidden()
   const request = page.waitForRequest((req) => new URL(req.url()).pathname.endsWith('/rest/v1/habits') && req.method() === 'POST')
-  await page.getByRole('button', { name: 'Ativar hábito' }).click()
+  await page.getByRole('button', { name: 'Criar hábito' }).click()
   expect((await request).postDataJSON()).toMatchObject({ name: 'Caminhar depois do almoço', category: 'fitness' })
 })
 

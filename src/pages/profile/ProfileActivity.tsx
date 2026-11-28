@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Activity, CalendarCheck, Copy, Dumbbell } from 'lucide-react'
+import { Activity, ArrowUpRight, CalendarCheck, Copy, Dumbbell, Images } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Dialog from '../../components/ui/Dialog'
 import { useCopySharedRoutine, type ProfileActivity, type ProfileRoutine } from '../../features/social/sharedProfile'
 import { translateName } from '../../features/exercisedb/translate'
 import { restLabel } from '../../features/workouts/setTypes'
 import { useFeed } from '../../features/social/queries'
+import { useProfileMedia } from '../../features/social/profileMedia'
 import { parseDate } from '../../lib/date'
 import FeedPostCard from '../workouts/FeedPostCard'
 import workoutStyles from '../workouts/workouts.module.css'
@@ -20,25 +21,27 @@ const duration = (seconds: number) => {
 }
 const setsLabel = (sets: number) => sets === 1 ? '1 série' : sets + ' séries'
 
-export function ProfilePhotos({ photos = [] }: { photos?: ProfileActivity['photos'] }) {
-  const [selected, setSelected] = useState<ProfileActivity['photos'][number] | null>(null)
+export function ProfilePhotos({ id, own = false }: { id?: string; own?: boolean }) {
+  const media = useProfileMedia(id)
+  const photos = media.data?.pages[0]?.photos.slice(0, 4) ?? []
   if (!photos.length) return null
 
   return (
-    <>
+    <section className={styles.activitySection}>
+      <div className={styles.photoHeading}>
+        <h2><Images size={18} /> Mídias</h2>
+        <Link to={own ? '/profile/media' : `/profiles/${id}/media`}>Ver todas <ArrowUpRight size={15} /></Link>
+      </div>
       <ul className={styles.photoRail} aria-label="Fotos de treino">
         {photos.map((photo) => (
-          <li key={photo.url + photo.at}>
-            <button type="button" aria-label={'Ampliar foto de ' + photo.name} onClick={() => setSelected(photo)}>
+          <li key={photo.url + photo.workoutId}>
+            <Link to={`/workouts/view/${photo.workoutId}`} aria-label={'Abrir treino ' + photo.name}>
               <img src={photo.url} alt="" loading="lazy" />
-            </button>
+            </Link>
           </li>
         ))}
       </ul>
-      {selected && <Dialog title={selected.name} onClose={() => setSelected(null)}>
-        <img className={styles.activityPhoto} src={selected.url} alt={'Foto de ' + selected.name} />
-      </Dialog>}
-    </>
+    </section>
   )
 }
 

@@ -6,7 +6,7 @@ const html = await readFile(htmlPath, 'utf8')
 const registration = `<script id="register-service-worker">
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch((error) => {
-    console.error('Digital Brain offline setup failed', error)
+    console.error('Hebbian offline setup failed', error)
   })
 }
 </script>`

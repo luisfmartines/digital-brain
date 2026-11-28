@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { setTypeOf } from '../../features/workouts/setTypes'
 import ChoiceField from '../../components/ui/ChoiceField'
 import { useState } from 'react'
@@ -174,6 +175,7 @@ function History({ history }: { history: HistSession[] }) {
           <li key={s.id} className={styles.block}>
             <strong>{s.name}</strong>
             <small>{longDate(s.at)}</small>
+            <Link className={styles.historyShare} to={`/workouts/summary/${s.id}`}>Ver resumo</Link>
             <ol>
               {s.sets.map((x) => {
                 if (!x.is_warmup) n += 1

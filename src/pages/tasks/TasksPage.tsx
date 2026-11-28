@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlignLeft, Bell, Calendar, Check, CheckCircle2, ChevronDown, Clock, MoreVertical, Plus, Zap } from 'lucide-react'
+import { AlignLeft, Bell, Calendar, Check, CheckCircle2, ChevronDown, Clock, MoreVertical, Zap } from 'lucide-react'
+import FloatingAction from '../../components/ui/FloatingAction'
 import { useDeleteTask, useTasks, useToggleTask, type Task } from '../../features/tasks/queries'
 import { TASK_CATEGORIES, type TaskCategory } from '../../../supabase/functions/_shared/planningCategories'
 import styles from './Tasks.module.css'
@@ -104,7 +105,6 @@ export default function TasksPage() {
       </div>
       <div className={styles.titleRow}>
         <h1 className={styles.h1}>Tarefas e checklist</h1>
-        <Link to="/tasks/new" className={styles.newBtn}><Plus size={14} /> Nova</Link>
       </div>
 
       <section className={styles.hero}>
@@ -132,7 +132,7 @@ export default function TasksPage() {
       </div>
 
       {shownPending.length === 0 && shownDone.length === 0 && (
-        <p className={styles.empty}>{all.length === 0 ? 'Nenhuma tarefa ainda. Toque em “Nova” para criar a primeira.' : 'Nenhuma tarefa neste filtro.'}</p>
+        <p className={styles.empty}>{all.length === 0 ? 'Nenhuma tarefa ainda.' : 'Nenhuma tarefa neste filtro.'}</p>
       )}
 
       <ul className={styles.list}>
@@ -171,6 +171,7 @@ export default function TasksPage() {
           )}
         </>
       )}
+      <FloatingAction to="/tasks/new" label="Nova tarefa" />
     </div>
   )
 }

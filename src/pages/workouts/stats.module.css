@@ -55,5 +55,5 @@
 .count { margin: 0; font-size: 12px; color: var(--color-text-muted); }
 .month { margin: 8px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-text-muted); }
 .logItem { list-style: none; }
-.itemBtn { width: 100%; border: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.itemBtn { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; text-align: left; color: inherit; background: none; font: inherit; cursor: pointer; }
 .more { padding: 13px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: transparent; color: var(--color-secondary); font-size: 13px; font-weight: 700; cursor: pointer; }

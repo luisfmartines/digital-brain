@@ -1,0 +1,106 @@
+.detailHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--color-border);
+}
+.detailHead h1, .detailHead > span { flex: 1; min-width: 0; margin: 0; font: 700 17px/1.25 var(--font-heading); overflow-wrap: anywhere; }
+.detailHead a:last-child { flex-shrink: 0; }
+
+.routineIntro { display: grid; gap: 10px; padding-block: 10px; }
+.routineIntro h1 { margin: 0; font: 750 clamp(30px, 8vw, 44px)/1.05 var(--font-heading); overflow-wrap: anywhere; }
+.routineIntro p { margin: 0; color: var(--color-text-muted); }
+.routineNotes { white-space: pre-wrap; }
+.routineIntro button { margin-top: 6px; }
+.routineHistory {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.sectionRow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.sectionRow h2 { margin: 0; font: 700 19px/1.2 var(--font-heading); }
+.sectionRow small, .chartDates, .chartNote { color: var(--color-text-muted); }
+.metricTabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: var(--color-bg); }
+.metricTabs button { min-height: 40px; padding: 3px; border: 1px solid transparent; border-radius: 9px; background: transparent; font-size: 12px; font-weight: 700; color: var(--color-text-muted); cursor: pointer; }
+.metricTabs button[aria-pressed='true'] { color: var(--color-secondary); border-color: var(--color-border); background: var(--color-surface-2); }
+.routineMetric { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0; }
+.routineMetric strong { font: 750 28px/1 var(--font-heading); }
+.routineMetric strong small, .routineMetric span { color: var(--color-text-muted); font-size: 13px; }
+.routinePlot { position: relative; height: 108px; margin-top: -3px; }
+.routinePlot svg, .chartTargets { position: absolute; inset: 0; width: 100%; height: 100%; }
+.chartGrid, .chartLine { fill: none; vector-effect: non-scaling-stroke; }
+.chartGrid { stroke: var(--color-border); }
+.chartLine { stroke: var(--color-secondary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chartTargets { display: flex; }
+.chartTargets button { position: relative; flex: 1; min-width: 0; padding: 0; background: none; border: 0; cursor: pointer; }
+.chartTargets i { position: absolute; left: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--color-secondary); }
+.chartTargets button[aria-pressed='true'] i { width: 11px; height: 11px; outline: 2px solid var(--color-surface); }
+.chartDates { display: flex; justify-content: space-between; }
+.routineExercises { display: grid; gap: 10px; padding-block: 6px 20px; }
+.routineExercise { padding: 10px 0 14px; border-bottom: 1px solid var(--color-border); }
+.exerciseLink { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 12px; min-height: 56px; text-decoration: none; color: inherit; }
+.exerciseLink > svg:first-child { margin-inline: auto; color: var(--color-secondary); }
+.exerciseLink > svg:last-child { color: var(--color-text-muted); }
+.exerciseLink span { min-width: 0; overflow-wrap: anywhere; }
+.exerciseLink strong, .exerciseLink small { display: block; }
+.exerciseLink small, .routineExercise p { color: var(--color-text-muted); }
+.routineExercise p { display: flex; align-items: center; gap: 7px; margin: 10px 0; font-size: 13px; }
+.routineSeries { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; font-variant-numeric: tabular-nums; }
+.routineSeries th, .routineSeries td { padding: 7px 9px; }
+.routineSeries th { color: var(--color-text-muted); }
+.routineSeries tbody tr:nth-child(odd) { background: var(--color-surface); }
+
+.conversation { min-height: 100dvh; padding-inline: var(--page-gutter); background: var(--color-bg); }
+.conversationFrame { display: flex; flex-direction: column; min-height: 100dvh; width: min(100%, 640px); margin: 0 auto; padding-top: env(safe-area-inset-top); }
+.postContext { display: grid; gap: 10px; padding: 16px 0 12px; border-bottom: 1px solid var(--color-border); }
+.postContext p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.contextAuthor { display: flex; align-items: center; gap: 11px; }
+.contextAuthor strong, .contextAuthor small { display: block; overflow-wrap: anywhere; }
+.contextAuthor small, .contextCounts small, .commentBody small { color: var(--color-text-muted); }
+.contextWorkout { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 10px; background: var(--color-surface); color: inherit; font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
+.contextCounts { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.contextCounts button { display: flex; align-items: center; gap: 7px; min-height: 44px; padding-inline: 5px; border: 0; background: none; color: var(--color-text-muted); cursor: pointer; }
+.contextCounts button[aria-pressed='true'], .commentLike[aria-pressed='true'] { color: var(--color-secondary); }
+.threadEmpty { padding: 8px 0; margin: 0; font-size: 13px; color: var(--color-text-muted); }
+.conversation .threadEmpty { padding-top: 16px; }
+.thread { display: grid; gap: 14px; list-style: none; margin: 0; padding: 16px 0 22px; }
+.comment { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 9px; }
+.comment[data-reply='true'] { margin-inline-start: 15px; padding-inline-start: 10px; border-inline-start: 2px solid var(--color-border); }
+.commentBody > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px; }
+.commentBody strong { overflow-wrap: anywhere; }
+.commentBody p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.replyTo { display: block; margin-top: 3px; overflow-wrap: anywhere; }
+.replyAction, .commentLike { min-height: 40px; border: 0; background: none; color: var(--color-text-muted); cursor: pointer; }
+.replyAction { padding-inline: 0 9px; font-size: 12px; font-weight: 700; }
+.commentLike { display: grid; justify-items: center; min-width: 44px; padding: 7px 6px; }
+.composer { position: sticky; bottom: 0; display: grid; gap: 6px; margin-top: auto; padding: 8px 0 max(10px, env(safe-area-inset-bottom)); background: var(--color-bg); border-top: 1px solid var(--color-border); }
+.composerField, .replyDraft { display: flex; align-items: center; gap: 7px; }
+.composerField textarea {
+  width: 100%; min-width: 0; min-height: 44px; resize: vertical;
+  padding: 11px; border-radius: 12px; border: 1px solid var(--color-border);
+  background: var(--color-surface-2); color: inherit; font: inherit;
+}
+.composerField button, .replyDraft button {
+  flex: 0 0 44px; min-height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--color-border); border-radius: 12px;
+  background: var(--color-surface-2); color: var(--color-secondary); cursor: pointer;
+}
+.composerField button:disabled { color: var(--color-text-muted); cursor: default; }
+.replyDraft { flex-wrap: wrap; font-size: 13px; color: var(--color-text-muted); }
+.replyDraft button { margin-inline-start: auto; }
+.reactions { display: flex; flex-wrap: wrap; gap: 3px; }
+.reactions button { min-width: 44px; min-height: 44px; border: 0; border-radius: 9px; background: none; font-size: 20px; cursor: pointer; }
+.reactions button:hover { background: var(--color-surface); }
+
+.gallery { list-style: none; display: grid; gap: 14px; padding: 0 0 10px; margin: 0; }
+.mediaCard { display: block; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); color: inherit; text-decoration: none; }
+.mediaCard img { display: block; width: 100%; height: clamp(210px, 90vw, 460px); background: var(--color-bg); object-fit: contain; }
+.mediaCaption { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
+.mediaCaption strong, .mediaCaption small { display: block; overflow-wrap: anywhere; }
+.mediaCaption small { margin-top: 2px; color: var(--color-text-muted); }
+.mediaCaption > svg { color: var(--color-secondary); flex-shrink: 0; }

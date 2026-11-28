@@ -69,13 +69,13 @@ test('API failures are errors, not empty search or empty exercise screens', asyn
   await assert.rejects(searchExercises('moon lift'), /inválida/)
 })
 
-test('exercise records exclude warm-ups and sum working sets', () => {
+test('exercise records exclude warm-ups from peak weight and include them in session volume', () => {
   const session = { sets: [
     { weight_kg: 200, reps: 20, is_warmup: true },
     { weight_kg: 40, reps: 10, is_warmup: false },
     { weight_kg: 50, reps: 5, is_warmup: false },
   ] }
-  assert.equal(metricValue(session, 'volume'), 650)
+  assert.equal(metricValue(session, 'volume'), 4650)
   assert.equal(records([session]).maxWeight, 50)
   assert.equal(records([session]).maxReps, 10)
   assert.equal(records([]).maxWeight, null)

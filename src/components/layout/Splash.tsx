@@ -1,23 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { appIcon } from '../../expo/device'
 import styles from './Splash.module.css'
 
-export default function Splash({ children }: { children: ReactNode }) {
-  const [done, setDone] = useState(() => {
-    try { return sessionStorage.getItem('splash') === '1' } catch { return true }
-  })
-
-  useEffect(() => {
-    if (done) return
-    const t = setTimeout(() => {
-      try { sessionStorage.setItem('splash', '1') } catch { /* Optional preference. */ }
-      setDone(true)
-    }, 600)
-    return () => clearTimeout(t)
-  }, [done])
-
-  if (done) return <>{children}</>
-
+export default function Splash() {
   return (
-    <div className={styles.splash} role="status">Carregando…</div>
+    <div className={styles.splash} role="status" aria-label="Carregando Hebbian">
+      <img src={appIcon} alt="" width="72" height="72" />
+      <strong>Hebbian</strong>
+      <span className={styles.progress} aria-hidden="true" />
+    </div>
   )
 }

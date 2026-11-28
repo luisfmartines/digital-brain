@@ -1,8 +1,10 @@
 import ChoiceField from '../../components/ui/ChoiceField'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Activity, ArrowDown, ArrowUp, Check, History, LineChart, RotateCw, Timer, Zap } from 'lucide-react'
+import { Activity, ArrowDown, ArrowUp, Check, FileText, History, LineChart, RotateCw, Timer, Zap } from 'lucide-react'
+import Splash from '../../components/layout/Splash'
 import { useWorkoutLog } from '../../features/workouts/queries'
+import { formatDistance } from '../../features/workouts/activities'
 import {
   bucketize, breakdown, makeBuckets, periodWindow, pctChange, summarize, toMetrics,
   type Bucket, type Metric, type Period,
@@ -197,14 +199,20 @@ function Logbook({ metrics }: { metrics: Metric[] }) {
           return (
             <li key={m.id} className={styles.logItem}>
               {head && <h3 className={styles.month}>{month}</h3>}
-              <button type="button" className={`${w.hItem} ${styles.itemBtn}`} onClick={() => navigate(`/workouts/view/${m.id}`)}>
-                <span className={w.hIcon}><Check size={14} /></span>
-                <div className={w.rText}>
-                  <strong>{m.name} <i className={w.hintTag}>{m.at.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}</i></strong>
-                  <small>{mins(m.minutes * 60)} min • {fmtNum(m.volume)} kg de volume • {m.sets} séries</small>
-                </div>
-                <div className={w.hRight}><strong>{m.pct}%</strong><small>Concluído</small></div>
-              </button>
+              <div className={w.hItem}>
+                <button type="button" className={styles.itemBtn} onClick={() => navigate(`/workouts/view/${m.id}`)}>
+                  <span className={w.hIcon}><Check size={14} /></span>
+                  <span className={w.rText}>
+                    <strong>{m.name} <i className={w.hintTag}>{m.at.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}</i></strong>
+                    <small>{(!m.w.activity_category || m.minutes > 0) && `${mins(m.minutes * 60)} min • `}{m.w.activity_category
+                      ? m.w.activity_category + (m.w.distance_km != null ? ' • ' + formatDistance(m.w.distance_km) : '')
+                      : fmtNum(m.volume) + ' kg de volume • ' + m.sets + ' séries'}</small>
+                  </span>
+                  <span className={w.hRight}><strong>{m.pct}%</strong><small>Concluído</small></span>
+                </button>
+                {!m.w.activity_category && <button type="button" className={w.routineAction} onClick={() => navigate(`/workouts/summary/${m.id}`, { state: { fromLogbook: true } })}
+                  aria-label={`Ver resumo de ${m.name}`} title="Ver resumo"><FileText size={16} /></button>}
+              </div>
             </li>
           )
         })}
@@ -226,7 +234,7 @@ export default function StatsPage() {
         <button type="button" role="tab" aria-selected={tab === 'history'} className={tab === 'history' ? styles.tabOn : styles.tab} onClick={() => setParams({ tab: 'history' }, { replace: true })}><History size={14} /> Histórico</button>
         <button type="button" role="tab" aria-selected={tab === 'charts'} className={tab === 'charts' ? styles.tabOn : styles.tab} onClick={() => setParams({ tab: 'charts' }, { replace: true })}><LineChart size={14} /> Gráficos</button>
       </div>
-      {isLoading ? <p className={w.loading}>Carregando…</p>
+      {isLoading ? <Splash />
         : isError ? <p className={w.error}>Não foi possível carregar seus treinos. Tente novamente em alguns instantes.</p>
         : tab === 'history' ? <Logbook metrics={metrics} /> : <Charts metrics={metrics} />}
     </div>

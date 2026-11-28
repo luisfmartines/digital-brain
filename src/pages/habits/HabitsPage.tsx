@@ -4,6 +4,8 @@ import { useHabitsData } from '../../features/habits/queries'
 import { buildIndex, type Habit } from '../../features/habits/stats'
 import type { View } from './common.tsx'
 import HabitSheet from './HabitSheet'
+import CreateHabitDialog from './CreateHabitDialog'
+import FloatingAction from '../../components/ui/FloatingAction'
 import MonthlyView from './MonthlyView.tsx'
 import WeeklyView from './WeeklyView'
 import YearlyView from './YearlyView.tsx'
@@ -12,6 +14,7 @@ import styles from './habits.module.css'
 export default function HabitsPage() {
   const [view, setView] = useState<View>('monthly')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
   const [params, setParams] = useSearchParams()
   const { data, isLoading, error } = useHabitsData()
   const habits = useMemo(() => data?.habits ?? [], [data])
@@ -42,6 +45,8 @@ export default function HabitsPage() {
       {view === 'weekly' && <WeeklyView {...props} onEdit={(h) => setEditingId(h.id)} />}
       {view === 'yearly' && <YearlyView {...props} />}
       {editing && <HabitSheet key={editing.id} habit={editing} onClose={closeSheet} />}
+      <FloatingAction label="Novo hábito" onClick={() => setCreating(true)} />
+      {creating && <CreateHabitDialog close={() => setCreating(false)} />}
     </div>
   )
 }

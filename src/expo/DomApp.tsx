@@ -53,7 +53,7 @@ export default function DomApp({ incomingUrl, incomingSequence, backRequest, set
         (url.pathname === '/reset-password' || url.pathname === '/signup')) {
       void handleAuthReturn(url)
         .then((path) => path && router.navigate(path, { replace: true }))
-        .catch((error: unknown) => console.error('Digital Brain authentication failed', error))
+        .catch((error: unknown) => console.error('Hebbian authentication failed', error))
     } else if (`${url.protocol}//${url.host}` === CALENDAR_REDIRECT) {
       const status = url.searchParams.get('calendar')
       if (status === 'connected' || status === 'denied' || status === 'error') {

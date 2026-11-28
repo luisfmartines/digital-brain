@@ -36,7 +36,7 @@ export async function exportGoogleAgenda(userId: string, offset: number, timeZon
       end: new Date(Date.parse(task.due_at) + 15 * 60_000).toISOString(),
       description: [task.notes, LABELS[task.category] && `Categoria: ${LABELS[task.category]}`,
         task.priority && `Prioridade: ${({ high: "Alta", medium: "Média", low: "Baixa" } as Record<string, string>)[task.priority] ?? task.priority}`,
-        task.completed_at ? "Tarefa concluída no Digital Brain" : "Tarefa do Digital Brain"].filter(Boolean).join("\n"),
+        task.completed_at ? "Tarefa concluída no Hebbian" : "Tarefa do Hebbian"].filter(Boolean).join("\n"),
       category: task.category,
       reminderMinutes: task.completed_at ? null : task.remind_minutes_before,
     })),

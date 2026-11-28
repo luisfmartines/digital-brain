@@ -121,7 +121,9 @@
 .photoRail { grid-auto-columns: minmax(82px, 29%); }
 .routineRail { grid-auto-columns: minmax(155px, 58%); }
 .photoRail > li, .routineRail > li { scroll-snap-align: start; min-width: 0; }
-.photoRail button {
+.photoHeading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.photoHeading a { display: inline-flex; gap: 4px; align-items: center; min-height: 44px; font-size: 13px; font-weight: 700; color: var(--color-secondary); }
+.photoRail a {
   display: block;
   width: 100%;
   aspect-ratio: 1;

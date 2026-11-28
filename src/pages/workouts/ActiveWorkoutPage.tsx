@@ -1,27 +1,29 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { useDevice } from '../../expo/device'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, Clock, FastForward, Flag, Hourglass, Maximize2, MoreVertical, Pause, Pencil, Play, Plus, Trash2, Vibrate, Volume2, VolumeX, X } from 'lucide-react'
+import Splash from '../../components/layout/Splash'
 import Avatar from '../../components/ui/Avatar'
 import ChoiceField from '../../components/ui/ChoiceField'
 import Dialog from '../../components/ui/Dialog'
 import { useConfirmation } from '../../components/ui/useConfirmation'
 import dialogStyles from '../../components/ui/Dialog.module.css'
-import { SET_TYPES, REST_OPTIONS, MAX_REST_SECONDS, isPreparation, normalizeRest, setTypeOf, type SetType } from '../../features/workouts/setTypes'
+import { SET_TYPES, MAX_REST_SECONDS, isPreparation, normalizeRest, restStorageKey, setTypeOf, type SetType } from '../../features/workouts/setTypes'
 import { useProfile } from '../../features/profile/useProfile'
-import { usePrevious, useRoutine, useSession, useSessionActions, type Exercise, type SessionSet } from '../../features/workouts/queries'
+import { isCustomExercise, usePrevious, useRoutine, useSession, useSessionActions, type Exercise, type SessionSet } from '../../features/workouts/queries'
+import { useAuth } from '../../features/auth/useAuth'
 import { fmtClock, fmtNum, muscleLabel, volumeOf, workoutSeconds } from '../../features/workouts/utils'
 import { useExerciseLink, useExerciseMedia } from '../../features/exercisedb/queries'
 import ExercisePicker from './ExercisePicker'
 import ExerciseDetail from './ExerciseDetail'
 import ExerciseImage, { CustomExercisePhoto } from './ExerciseImage'
 import { ExerciseDemo, ExerciseInstructions } from './ExerciseGuidance'
+import RestDurationField from './RestDurationField'
+import EditExerciseDialog from './EditExerciseDialog'
 import styles from './workouts.module.css'
 
 interface Group { exercise: Exercise; order: number; sets: SessionSet[] }
 const groupKey = (g: Group) => `${g.order}:${g.exercise.id}`
-
-const restStorageKey = (id: string) => 'workout-rest:' + id
 
 function readRestDurations(id: string): Record<string, number> {
   try {
@@ -40,16 +42,8 @@ function storeRestDurations(id: string, durations?: Record<string, number>) {
   }
 }
 
-function RestDurationField({ seconds, onApply }: { seconds: number; onApply: (value: number) => void }) {
-  return (
-    <div className={styles.restDurationField}>
-      <span>Descanso entre séries</span>
-      <ChoiceField label="Descanso entre séries" value={seconds} options={REST_OPTIONS} onChange={onApply} />
-    </div>
-  )
-}
-
 function ActiveExerciseThumbnail({ exercise }: { exercise: Exercise }) {
+  const { user } = useAuth()
   const link = useExerciseLink(exercise.id)
   const media = useExerciseMedia(link.data)
   const dialog = useRef<HTMLDialogElement>(null)
@@ -57,6 +51,14 @@ function ActiveExerciseThumbnail({ exercise }: { exercise: Exercise }) {
   const demo = media.data
   const thumbnail = styles.iconBox + ' ' + styles.activeThumbnail
   const icon = <Maximize2 size={16} aria-hidden="true" />
+  if (isCustomExercise(exercise, user?.id)) return (
+    <>
+      <button type="button" className={thumbnail} aria-label={`Editar ${exercise.name}`} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        {exercise.photo_path ? <CustomExercisePhoto path={exercise.photo_path} name={exercise.name} thumbnail fallback={<Pencil size={16} />} /> : <Pencil size={16} />}
+      </button>
+      {open && <EditExerciseDialog exercise={exercise} onClose={() => setOpen(false)} />}
+    </>
+  )
   if (!link.data || !demo || (!demo.imageUrl && !demo.videoUrl)) return <span className={thumbnail}>{icon}</span>
 
   return (
@@ -102,16 +104,15 @@ function ActiveGuidance({ exercise, onDetails }: { exercise: Exercise; onDetails
   )
 }
 
-function FinishOptions({ name, busy, error, onClose, onFinish }: {
-  name: string; busy: boolean; error: boolean; onClose: () => void; onFinish: (update: boolean) => void
+function FinishOptions({ name, onClose, onReview }: {
+  name: string; onClose: () => void; onReview: (update: boolean) => void
 }) {
   return (
-    <Dialog title="Atualizar a rotina?" busy={busy} onClose={onClose}>
+    <Dialog title="Atualizar a rotina?" onClose={onClose}>
       <p className={dialogStyles.description}>Seu treino será registrado com as alterações. Você quer aplicá-las à rotina {name} para os próximos treinos?</p>
-      {error && <p role="alert">Não foi possível finalizar o treino. Tente novamente.</p>}
-      <button type="button" className={dialogStyles.button + ' ' + dialogStyles.primary} disabled={busy} onClick={() => onFinish(true)}>Atualizar rotina</button>
-      <button type="button" className={dialogStyles.button} disabled={busy} onClick={() => onFinish(false)}>Manter rotina original</button>
-      <button type="button" className={dialogStyles.button} disabled={busy} onClick={onClose}>Voltar ao treino</button>
+      <button type="button" className={dialogStyles.button + ' ' + dialogStyles.primary} onClick={() => onReview(true)}>Atualizar rotina</button>
+      <button type="button" className={dialogStyles.button} onClick={() => onReview(false)}>Manter rotina original</button>
+      <button type="button" className={dialogStyles.button} onClick={onClose}>Voltar ao treino</button>
     </Dialog>
   )
 }
@@ -274,7 +275,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     return () => window.clearTimeout(timer)
   }, [restEndsAt, vibrate, sound, vibrateDevice])
 
-  if (isLoading) return <p className={styles.loading}>Carregando…</p>
+  if (isLoading) return <Splash />
   if (isError && !session) return (
     <section className={styles.frame}>
       <p role="alert" className={styles.error}>Não foi possível abrir o treino em andamento.</p>
@@ -320,13 +321,17 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   ))
   const editing = actions.addSet.isPending || actions.removeSet.isPending || actions.addExercise.isPending ||
     actions.removeExercise.isPending || actions.replaceExercise.isPending
-  const busy = editing || actions.finish.isPending || actions.discard.isPending
+  const busy = editing || actions.discard.isPending
   const editFailed = actions.addSet.isError || actions.removeSet.isError || actions.removeExercise.isError ||
     actions.discard.isError || (actions.updateSet.isError && !actions.updateSet.isPending)
   const remaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0
 
   function toggleSet(g: Group, s: SessionSet, weight: number | null, reps: number | null) {
     const completed = !s.completed
+    if (completed && (reps === null || !Number.isInteger(reps) || reps < 1)) {
+      confirmation.ask({ title: 'Informe as repetições', description: 'Digite quantas repetições você fez antes de concluir a série.' })
+      return
+    }
     actions.updateSet.mutate({ setId: s.id, patch: { completed, weight_kg: weight, reps } })
     const seconds = restFor(g)
     if (completed) {
@@ -352,23 +357,22 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   }
 
   function finish() {
-    if (done.length === 0) {
-      confirmation.ask({ title: 'Treino sem séries concluídas', description: 'Complete pelo menos uma série ou descarte o treino com o botão X.' })
+    if (!sets.length || sets.some((set) => !set.completed || (set.reps ?? 0) < 1)) {
+      if (currentGroup) setOpen((current) => ({ ...current, [groupKey(currentGroup)]: true }))
+      confirmation.ask({ title: 'Ainda há séries pendentes', description: !sets.length
+        ? 'Adicione e conclua pelo menos uma série para finalizar o treino.'
+        : 'Informe as repetições e conclua todas as séries. Remova as séries que você não vai fazer.' })
       return
     }
     if (changed) {
-      actions.finish.reset()
       setAskingToUpdate(true)
     } else {
-      confirmation.ask({ title: 'Finalizar este treino?', confirmLabel: 'Finalizar', onConfirm: () => complete(false) })
+      review(false)
     }
   }
 
-  function complete(updateRoutine: boolean) {
-    actions.finish.mutate(updateRoutine, { onSuccess: () => {
-      storeRestDurations(id)
-      navigate('/workouts/summary/' + id, { replace: true })
-    } })
+  function review(updateRoutine: boolean) {
+    navigate(`/workouts/summary/${id}?review=1${updateRoutine ? '&updateRoutine=1' : ''}`, { replace: true })
   }
 
   function selectExercise(exercise: Exercise) {
@@ -430,11 +434,11 @@ function ActiveWorkoutSession({ id }: { id: string }) {
             <button type="button" className={styles.pauseBtn} disabled={busy || actions.pause.isPending} onClick={() => actions.pause.mutate(session)} aria-label={session.paused_at ? 'Resume' : 'Pause'}>
               {session.paused_at ? <Play size={15} /> : <Pause size={15} />}
             </button>
-            <button type="button" className={styles.finishBtn} disabled={busy || routine.isFetching} onClick={finish}>Finalizar <Flag size={14} /></button>
+            <button type="button" className={styles.finishBtn} disabled={busy || actions.updateSet.isPending || routine.isFetching} onClick={finish}>Finalizar <Flag size={14} /></button>
           </div>
         </section>
 
-        {(editFailed || (actions.finish.isError && !askingToUpdate)) && <p role="alert" className={styles.empty}>Não foi possível salvar a alteração. Tente novamente.</p>}
+        {editFailed && <p role="alert" className={styles.empty}>Não foi possível salvar a alteração. Tente novamente.</p>}
         {routine.isError && <p role="alert" className={styles.empty}>Não foi possível carregar a rotina para comparar as alterações. <button type="button" onClick={() => routine.refetch()}>Tentar novamente</button></p>}
 
         <section className={styles.statsBar}>
@@ -547,8 +551,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
       {confirmation.dialog}
       {detail && <ExerciseDetail exercise={detail} onClose={() => setDetail(null)} />}
       {askingToUpdate && (
-        <FinishOptions name={routine.data?.name ?? session.name} busy={actions.finish.isPending} error={actions.finish.isError}
-          onClose={() => { actions.finish.reset(); setAskingToUpdate(false) }} onFinish={complete} />
+        <FinishOptions name={routine.data?.name ?? session.name} onClose={() => setAskingToUpdate(false)} onReview={review} />
       )}
     </div>
   )

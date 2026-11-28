@@ -1,4 +1,4 @@
-// Edge Function "neural" — o cérebro do assistente Neural do Digital Brain.
+// Edge Function "neural" — o cérebro do assistente Neural do Hebbian.
 // Recebe a conversa, chama o Gemini (com reserva em outros modelos e no Groq),
 // executa as ferramentas (gravando no banco COMO o usuário logado, respeitando o RLS)
 // e devolve a resposta + "cards" das ações feitas.
@@ -555,7 +555,7 @@ Deno.serve(async (req) => {
   const hb = await db.from("habits").select("id, name").is("deleted_at", null).is("archived_at", null).limit(60);
   const ctx: Ctx = { db, tz, userId: u.user.id, exercises: new Map(), habits: hb.data ?? [] };
 
-  const system = `Você é o Neural, assistente do Digital Brain. Responda em português do Brasil, em até duas frases curtas. Diga somente o que resolve o pedido, sem introdução nem repetição dos cartões.
+  const system = `Você é o Neural, assistente do Hebbian. Responda em português do Brasil, em até duas frases curtas. Diga somente o que resolve o pedido, sem introdução nem repetição dos cartões.
 
 Agora: ${tz.weekday}, ${tz.date} ${tz.time} (fuso ${tz.offStr}).
 

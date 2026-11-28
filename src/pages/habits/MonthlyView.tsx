@@ -1,12 +1,11 @@
-import ChoiceField from '../../components/ui/ChoiceField'
 import { useState } from 'react'
-import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, MoreVertical, PlusCircle, TrendingUp, Zap, Check } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, MoreVertical, TrendingUp, Zap, Check } from 'lucide-react'
 import { addDays, localDateStr, startOfDay, startOfWeek } from '../../lib/date'
 import {
-  CATEGORIES, byTime, currentStreak, dayLevel, isDone, isScheduled, nextRun, rangeStats, rowSub,
+  byTime, currentStreak, dayLevel, isDone, isScheduled, nextRun, rangeStats, rowSub,
   type Habit, type Index,
 } from '../../features/habits/stats'
-import { useCreateHabit, useToggleLog } from '../../features/habits/queries'
+import { useToggleLog } from '../../features/habits/queries'
 import { HABIT_ICONS } from '../../features/onboarding/habitIcons'
 import { DAYS } from '../../features/onboarding/habitPresets'
 import { ViewSwitch, type View } from './common'
@@ -26,16 +25,11 @@ const dayList = (h: Habit) => DAYS.filter((d) => h.weekdays.includes(d.v)).map((
 
 export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props) {
   const toggle = useToggleLog()
-  const create = useCreateHabit()
   const today = startOfDay()
   const todayStr = localDateStr(today)
 
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
   const [showDone, setShowDone] = useState(true)
-  const [name, setName] = useState('')
-  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5])
-  const [time, setTime] = useState('08:00')
-  const [category, setCategory] = useState('mindfulness')
 
   const last30 = rangeStats(habits, ix, addDays(today, -29), today)
   const prev30 = rangeStats(habits, ix, addDays(today, -59), addDays(today, -30))
@@ -52,17 +46,6 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
   const pending = scheduled.filter((h) => !isDone(ix, h.id, todayStr)).sort(byTime)
   const finished = scheduled.filter((h) => isDone(ix, h.id, todayStr))
   const rest = habits.filter((h) => !isScheduled(h, today))
-
-  function toggleDay(v: number) {
-    setDays((cur) => {
-      const next = cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]
-      return next.length ? next : cur
-    })
-  }
-
-  function ignite() {
-    create.mutate({ name: name.trim(), weekdays: days, time, category }, { onSuccess: () => setName('') })
-  }
 
   return (
     <>
@@ -191,33 +174,6 @@ export default function MonthlyView({ habits, ix, view, setView, onEdit }: Props
         </>
       )}
 
-      <section className={styles.panel}>
-        <div className={styles.sectionHead}>
-          <span><PlusCircle size={15} /> Criar novo hábito</span>
-          <em className={styles.badge}>Ciclo neural</em>
-        </div>
-        <span className={styles.cap}>AÇÃO DO HÁBITO</span>
-        <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Ler por 20 minutos" />
-        <div className={styles.rowBetween}>
-          <span className={styles.cap}>DIAS ATIVOS</span>
-          <button type="button" className={styles.link} onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])}>Todos os dias</button>
-        </div>
-        <div className={styles.days}>
-          {DAYS.map((d) => (
-            <button key={d.v} type="button" className={days.includes(d.v) ? styles.dayOn : styles.dayBtn} onClick={() => toggleDay(d.v)} aria-pressed={days.includes(d.v)} aria-label={d.label}>
-              {d.letter}
-            </button>
-          ))}
-        </div>
-        <div className={styles.twoCols}>
-          <label className={styles.field}><Clock size={14} /><input type="time" value={time} onChange={(e) => e.target.value && setTime(e.target.value)} /></label>
-          <ChoiceField label="Categoria do hábito" value={category} onChange={setCategory}
-              options={CATEGORIES.map(({ id, label }) => ({ value: id, label }))} />
-        </div>
-        <button type="button" className={styles.primary} onClick={ignite} disabled={!name.trim() || create.isPending}>
-          <Zap size={14} /> Ativar hábito
-        </button>
-      </section>
     </>
   )
 }

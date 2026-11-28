@@ -1,0 +1,7 @@
+dialog.sheet { position: fixed; inset: auto 0 calc(var(--nav-height) + 12px + env(safe-area-inset-bottom)); margin: 0 auto; }
+.choices { display: grid; gap: 8px; }
+.choices > :is(a, button) { min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px; text-align: left; text-decoration: none; border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text); background: var(--color-surface-2); cursor: pointer; }
+.choices > :is(a, button):hover { border-color: var(--color-secondary); }
+.choices svg { flex: none; color: var(--color-secondary); }
+.choices strong, .choices small { display: block; }
+.choices small { color: var(--color-text-muted); margin-top: 3px; }

@@ -57,7 +57,7 @@ function useHideFabs() {
 }
 
 export default function AppShell() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { data: profile } = useProfile()
   const { data: active } = useActiveWorkout()
   const { scrolledDown, typing } = useHideFabs()
@@ -65,7 +65,8 @@ export default function AppShell() {
   useEnsureWaterHabit() // o hábito de água já vem pronto
 
   const modules: string[] = profile?.enabled_modules ?? []
-  const showAi = modules.includes('assistant') && pathname !== '/assistant'
+  const isFeed = pathname === '/' && new URLSearchParams(search).get('tab') === 'feed'
+  const showAi = modules.includes('assistant') && pathname === '/' && !isFeed
   const showWorkout =
     modules.includes('workouts') && !pathname.startsWith('/workouts') && (ALWAYS_SHOW_WORKOUT_FAB || !!active)
   const fabCount = Number(showAi) + Number(showWorkout)
@@ -73,14 +74,14 @@ export default function AppShell() {
   return (
     <div className={styles.shell}>
       <div className={styles.frame}>
-        <AppHeader title={PAGE_TITLES[pathname] ?? 'Perfil'} />
+        <AppHeader title={isFeed ? 'Feed' : PAGE_TITLES[pathname] ?? 'Perfil'} />
         <main className={`${styles.content} ${fabCount === 1 ? styles.contentFab : ''} ${fabCount === 2 ? styles.contentFab2 : ''}`}>
           <CalendarConnectionNotice />
           <Outlet />
         </main>
         {showAi && <MascotFab hidden={typing} lifted={showWorkout} />}
         {showWorkout && (
-          <div className={`${styles.fabs} ${hideFabs ? styles.fabsHidden : ''}`}>
+          <div className={`${styles.fabs} ${(isFeed || pathname !== '/') ? styles.fabsLeft : ''} ${hideFabs ? styles.fabsHidden : ''}`}>
             <Link
               to={active ? `/workouts/active/${active.id}` : '/workouts'}
               className={`${styles.fab} ${styles.fabDark}`}

@@ -5,11 +5,11 @@ import { resizeImage } from '../workouts/utils'
 
 const bucket = () => supabase.storage.from('exercise-photos')
 
-export async function uploadExercisePhoto(path: string, file: File) {
+export async function uploadExercisePhoto(path: string, file: File, upsert = false) {
   const image = await resizeImage(file, 1280).catch(() => {
     throw new Error('Não foi possível abrir esta imagem. Escolha outra foto.')
   })
-  const { error } = await bucket().upload(path, image, { contentType: 'image/jpeg' })
+  const { error } = await bucket().upload(path, image, { contentType: 'image/jpeg', upsert })
   if (error) throw new Error('Não foi possível enviar a foto. Tente novamente.')
 }
 

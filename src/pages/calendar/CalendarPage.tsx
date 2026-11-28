@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Link2, Plus } from 'lucide-react'
+import { AlarmClock, CalendarDays, ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import FloatingAction from '../../components/ui/FloatingAction'
 import { useConnectGoogle, useGoogleCalendars, useGoogleConnection, useGoogleEvents } from '../../features/calendar/google'
 import type { AgendaItem } from '../../features/calendar/agenda'
 import { useDevice } from '../../expo/device'
@@ -225,7 +226,7 @@ export default function CalendarPage() {
           </section>
         )
       )}
-      <Link to={`/calendar/new?date=${selectedKey}`} state={{ returnTo }} className={styles.primary}><Plus size={18} /> Novo evento</Link>
+      <FloatingAction to={`/calendar/new?date=${selectedKey}`} state={{ returnTo }} label="Novo evento" />
     </div>
   )
 }

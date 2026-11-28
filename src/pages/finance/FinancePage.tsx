@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
-import { CalendarDays, ChevronDown, Sparkles } from 'lucide-react'
+import { CalendarDays, ChevronDown, CirclePlus, Repeat, Sparkles } from 'lucide-react'
+import ActionSheet from '../../components/ui/ActionSheet'
+import Dialog from '../../components/ui/Dialog'
+import FloatingAction from '../../components/ui/FloatingAction'
 import { useOnline } from '../../hooks/useOnline'
 import { useFinanceMonth } from '../../features/finance/queries'
 import {
@@ -9,6 +12,7 @@ import { Breakdown, Hero, Composition } from './parts'
 import QuickAdd from './QuickAdd'
 import TransactionList from './TransactionList'
 import IncomeSheet from './IncomeSheet'
+import RecurringTransactions, { RecurringForm } from './RecurringTransactions'
 import styles from './finance.module.css'
 
 export default function FinancePage() {
@@ -16,6 +20,7 @@ export default function FinancePage() {
   const [month, setMonth] = useState(() => monthKey())
   const [menu, setMenu] = useState(false)
   const [incomeOpen, setIncomeOpen] = useState(false)
+  const [action, setAction] = useState<'menu' | 'once' | 'recurring' | null>(null)
   const { data, isPending, error, refetch } = useFinanceMonth(month)
 
   const current = month === monthKey()
@@ -55,7 +60,7 @@ export default function FinancePage() {
         />
         <Breakdown summary={summary} onEditIncome={() => setIncomeOpen(true)} />
         <Composition summary={summary} />
-        <QuickAdd onAdded={() => setMonth(monthKey())} />
+        <RecurringTransactions />
         {insight && (
           <section className={`${styles.card} ${styles.insight}`}>
             <span className={styles.iconBox}><Sparkles size={18} /></span>
@@ -102,6 +107,15 @@ export default function FinancePage() {
       </div>
 
       {body}
+      <FloatingAction label="Adicionar em Finanças" onClick={() => setAction('menu')} />
+      {action === 'menu' && <ActionSheet title="Adicionar em Finanças" onClose={() => setAction(null)}>
+        <button type="button" onClick={() => setAction('once')}><CirclePlus size={21} /><span><strong>Novo lançamento</strong><small>Registre uma despesa ou uma receita.</small></span></button>
+        <button type="button" onClick={() => setAction('recurring')}><Repeat size={21} /><span><strong>Nova recorrência</strong><small>Adicione uma assinatura ou outro valor que se repete.</small></span></button>
+      </ActionSheet>}
+      {action === 'once' && <Dialog title="Novo lançamento" onClose={() => setAction(null)}>
+        <QuickAdd onAdded={() => { setMonth(monthKey()); setAction(null) }} />
+      </Dialog>}
+      {action === 'recurring' && <RecurringForm onClose={() => setAction(null)} />}
     </div>
   )
 }

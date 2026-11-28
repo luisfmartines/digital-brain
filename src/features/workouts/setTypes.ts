@@ -18,6 +18,7 @@ export function isPreparation(type: SetType) {
 }
 
 export const MAX_REST_SECONDS = 5 * 60
+export const restStorageKey = (workoutId: string) => 'workout-rest:' + workoutId
 
 export function restLabel(seconds: number) {
   const minutes = Math.floor(seconds / 60)

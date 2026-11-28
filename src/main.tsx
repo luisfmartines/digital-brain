@@ -9,7 +9,7 @@ import './bootstrap'
 createRoot(document.getElementById('root')!, {
   onUncaughtError(error) {
     document.getElementById('startup')?.setAttribute('data-failed', '')
-    console.error('Digital Brain render failed', error)
+    console.error('Hebbian render failed', error)
   },
 }).render(
   <StrictMode>

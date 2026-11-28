@@ -96,11 +96,11 @@ export default function AddFriendsPage() {
 
   async function sendLink() {
     const url = `${publicAppOrigin()}/friends/add?u=${profile?.username ?? ''}`
-    const text = `Me adiciona no Digital Brain: ${handle}`
+    const text = `Me adiciona no Hebbian: ${handle}`
     if (device || navigator.share) {
       try {
         if (device) await device.shareText(text, url)
-        else await navigator.share({ title: 'Digital Brain', text, url })
+        else await navigator.share({ title: 'Hebbian', text, url })
       } catch {
         // cancelado
       }

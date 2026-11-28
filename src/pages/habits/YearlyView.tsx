@@ -94,24 +94,24 @@ export default function YearlyView({ habits, ix, view, setView }: Props) {
     const logs = ix.logs.filter((l) => l.log_date >= from && l.log_date <= to)
     const json = JSON.stringify({ year, habits, logs }, null, 2)
     if (device) {
-      void device.exportJson(year, json).catch((error: unknown) => console.error('Digital Brain export failed', error))
+      void device.exportJson(year, json).catch((error: unknown) => console.error('Hebbian export failed', error))
       return
     }
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `digital-brain-habits-${year}.json`
+    a.download = `hebbian-habits-${year}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
 
   async function share() {
-    const text = `Meu Digital Brain ${year}: ${period.pct}% de consistência, ${active} dias ativos e ${completed} hábitos concluídos.`
+    const text = `Meu Hebbian ${year}: ${period.pct}% de consistência, ${active} dias ativos e ${completed} hábitos concluídos.`
     if (device || navigator.share) {
       try {
         if (device) await device.shareText(text)
-        else await navigator.share({ title: 'Digital Brain', text })
+        else await navigator.share({ title: 'Hebbian', text })
       } catch {
         // compartilhamento cancelado
       }
